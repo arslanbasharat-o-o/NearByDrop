@@ -16,19 +16,22 @@ class QrCodeBackgroundView:MTKView{
 		super.awakeFromNib()
 		isPaused=true
 		enableSetNeedsDisplay=false
-		device=MTLCreateSystemDefaultDevice()
+		guard let metalDevice=MTLCreateSystemDefaultDevice(),
+		      let metalLayer=layer as? CAMetalLayer,
+		      let queue=metalDevice.makeCommandQueue(),
+		      let buffer=queue.makeCommandBuffer() else { return }
+		device=metalDevice
 		let brightness=1.5
 		clearColor=MTLClearColor(red: brightness, green: brightness, blue: brightness, alpha: 1)
 		
-		let mtlLayer:CAMetalLayer=(layer as? CAMetalLayer)!
-		mtlLayer.wantsExtendedDynamicRangeContent=true
-		mtlLayer.cornerRadius=20
-		mtlLayer.masksToBounds=true
+		metalLayer.wantsExtendedDynamicRangeContent=true
+		metalLayer.cornerRadius=20
+		metalLayer.masksToBounds=true
 		colorspace=CGColorSpace(name: CGColorSpace.extendedSRGB)
 		colorPixelFormat = .rgba16Float
 		
-		commandQueue=device!.makeCommandQueue()
-		commandBuffer=commandQueue!.makeCommandBuffer()
+		commandQueue=queue
+		commandBuffer=buffer
 		draw()
 	}
 	

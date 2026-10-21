@@ -188,7 +188,7 @@ class NearbyConnection{
 		guard !frame.isEmpty, frame.count <= NearbyConnection.SANE_FRAME_LENGTH else {
 			let error=NearbyError.protocolError("Unexpected packet length")
 			lastError=error
-			failure?(error)
+			if let failure=failure { failure(error) } else { protocolError() }
 			return
 		}
 		var lengthPrefixedData=Data(capacity: frame.count+4)
@@ -204,7 +204,11 @@ class NearbyConnection{
 			guard let self=self else { return }
 			if let error=error{
 				self.lastError=error
-				failure?(error)
+				if let failure=failure {
+					failure(error)
+				}else{
+					self.protocolError()
+				}
 			}else if let completion=completion{
 				completion()
 			}
@@ -258,8 +262,8 @@ class NearbyConnection{
 		sendFrameAsync(try smsg.serializedData(), completion: completion, failure: failure)
 	}
 	
-	internal func sendTransferSetupFrame(_ frame:Sharing_Nearby_Frame) throws{
-		try sendBytesPayload(data: try frame.serializedData(), id: Int64.random(in: Int64.min...Int64.max))
+	internal func sendTransferSetupFrame(_ frame:Sharing_Nearby_Frame, completion:(()->Void)?=nil, failure:((Error)->Void)?=nil) throws{
+		try sendBytesPayload(data: try frame.serializedData(), id: Int64.random(in: Int64.min...Int64.max), completion: completion, failure: failure)
 	}
 	
 	internal func sendBytesPayload(data:Data, id:Int64, completion:(()->Void)?=nil, failure:((Error)->Void)?=nil) throws{
