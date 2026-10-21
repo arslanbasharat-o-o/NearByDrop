@@ -62,6 +62,9 @@ final class QRScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSampl
             }
         } catch { DispatchQueue.main.async { self.message = "Could not read the code. Hold it steady and try again." } }
     }
+    deinit {
+        session.stopRunning()
+    }
 }
 private struct CameraPreview: NSViewRepresentable {
     let session: AVCaptureSession
@@ -81,10 +84,16 @@ private struct CameraPreview: NSViewRepresentable {
     }
 }
 struct QRScannerView: View {
-    @StateObject private var scanner = QRScanner()
+    @ObservedObject var scanner: QRScanner
     @Environment(\.dismiss) private var dismiss
     let onCode: (String) -> String?
     var onCancel: (() -> Void)? = nil
+
+    init(scanner: QRScanner = QRScanner(), onCode: @escaping (String) -> String?, onCancel: (() -> Void)? = nil) {
+        self.scanner = scanner
+        self.onCode = onCode
+        self.onCancel = onCancel
+    }
 
     var body: some View {
         VStack(spacing: 18) {
@@ -92,6 +101,7 @@ struct QRScannerView: View {
                 Text("Scan QR Code").font(.title2.weight(.semibold))
                 Spacer()
                 Button("Cancel") {
+                    scanner.stop()
                     if let onCancel = onCancel {
                         onCancel()
                     } else {
@@ -113,8 +123,9 @@ struct QRScannerView: View {
     }
 }
 
-final class QRScannerWindowController: NSWindowController {
+final class QRScannerWindowController: NSWindowController, NSWindowDelegate {
     static let shared = QRScannerWindowController()
+    private var currentScanner: QRScanner?
 
     private init() {
         let window = NSWindow(
@@ -129,12 +140,16 @@ final class QRScannerWindowController: NSWindowController {
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.center()
         super.init(window: window)
+        window.delegate = self
     }
 
     required init?(coder: NSCoder) { fatalError() }
 
     func show(onCode: @escaping (String) -> String?) {
-        window?.contentView = NSHostingView(rootView: QRScannerView(onCode: { [weak self] code in
+        currentScanner?.stop()
+        let scanner = QRScanner()
+        currentScanner = scanner
+        window?.contentView = NSHostingView(rootView: QRScannerView(scanner: scanner, onCode: { [weak self] code in
             let res = onCode(code)
             if res == nil {
                 DispatchQueue.main.async {
@@ -149,5 +164,18 @@ final class QRScannerWindowController: NSWindowController {
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
         window?.orderFrontRegardless()
+    }
+
+    override func close() {
+        currentScanner?.stop()
+        currentScanner = nil
+        window?.contentView = nil
+        super.close()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        currentScanner?.stop()
+        currentScanner = nil
+        window?.contentView = nil
     }
 }

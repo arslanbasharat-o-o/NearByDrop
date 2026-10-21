@@ -116,71 +116,206 @@ struct USBView: View {
     @ObservedObject var usb: USBModel
     let files: [URL]
     let chooseFiles: () -> Void
-    var horizontalPadding: CGFloat = 28
-    var bottomPadding: CGFloat = 20
+    var horizontalPadding: CGFloat = 14
+    var bottomPadding: CGFloat = 10
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(usb.deviceName.isEmpty ? "Android USB" : usb.deviceName).font(.headline).lineLimit(1)
+                Text(usb.deviceName.isEmpty ? "Connected Devices" : usb.deviceName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
                 Spacer()
-                if !usb.deviceName.isEmpty { Button("Disconnect", action: usb.disconnect).disabled(usb.busy) }
-                Button(action: usb.refresh) { Image(systemName: "arrow.clockwise") }.help("Refresh USB devices").accessibilityLabel("Refresh USB devices").disabled(usb.busy)
+                if !usb.deviceName.isEmpty {
+                    Button("Disconnect", action: usb.disconnect)
+                        .buttonStyle(.bordered)
+                        .controlSize(.mini)
+                        .disabled(usb.busy)
+                }
+                Button(action: usb.refresh) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 12))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.mini)
+                .help("Refresh USB devices")
+                .accessibilityLabel("Refresh USB devices")
+                .disabled(usb.busy)
             }
             if usb.deviceName.isEmpty {
                 if usb.devices.isEmpty {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        Image(systemName: "cable.connector").font(.system(size: 36)).foregroundStyle(.secondary)
-                        Text("Connect your Android phone").font(.headline)
-                        Text("Unlock your phone and select File Transfer for USB.")
+                    Spacer(minLength: 12)
+                    VStack(spacing: 10) {
+                        Image(systemName: "cable.connector")
+                            .font(.system(size: 34))
+                            .foregroundStyle(.secondary)
+                        Text("No USB Device Detected")
+                            .font(.headline)
+                        Text("Connect your Android phone via USB, unlock it, and select File Transfer.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .lineLimit(3)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 8)
-                    }.frame(maxWidth: .infinity)
-                    Spacer()
-                } else {
-                    ForEach(usb.devices, id: \.id) { device in
-                        Button { usb.connect(device.id, name: device.name) } label: { HStack { Label(device.name, systemImage: "iphone"); Spacer(); Image(systemName: "chevron.right") }.padding(12) }.buttonStyle(.bordered).disabled(usb.busy)
                     }
-                    Spacer()
+                    .frame(maxWidth: .infinity)
+                    Spacer(minLength: 12)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 6) {
+                            ForEach(usb.devices, id: \.id) { device in
+                                Button {
+                                    usb.connect(device.id, name: device.name)
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "iphone")
+                                            .font(.system(size: 16))
+                                            .foregroundStyle(Color.accentColor)
+                                            .frame(width: 22)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(device.name)
+                                                .font(.subheadline.weight(.medium))
+                                                .foregroundStyle(.primary)
+                                            Text("Click to explore phone storage & send files")
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.bold))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .padding(10)
+                                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(usb.busy)
+                            }
+                        }
+                    }
+                    Spacer(minLength: 6)
                 }
             } else {
                 HStack {
-                    Button(action: usb.back) { Image(systemName: "chevron.left") }.disabled(usb.path.isEmpty || usb.busy).accessibilityLabel("Parent folder")
+                    Button(action: usb.back) {
+                        Image(systemName: "chevron.left")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.mini)
+                    .disabled(usb.path.isEmpty || usb.busy)
+                    .accessibilityLabel("Parent folder")
+
                     if usb.path.isEmpty {
-                        Picker("Storage", selection: $usb.storage) { ForEach(usb.storages, id: \.id) { Text($0.name).tag($0.id) } }.labelsHidden().disabled(usb.busy).onChange(of: usb.storage) { _, _ in usb.load() }
-                    } else { Text(usb.path.map(\.name).joined(separator: " / ")).lineLimit(1).truncationMode(.head) }
+                        Picker("Storage", selection: $usb.storage) {
+                            ForEach(usb.storages, id: \.id) { Text($0.name).tag($0.id) }
+                        }
+                        .labelsHidden()
+                        .controlSize(.small)
+                        .disabled(usb.busy)
+                        .onChange(of: usb.storage) { _, _ in usb.load() }
+                    } else {
+                        Text(usb.path.map(\.name).joined(separator: " / "))
+                            .font(.caption.weight(.medium))
+                            .lineLimit(1)
+                            .truncationMode(.head)
+                    }
                     Spacer()
                 }
                 ScrollView {
-                    LazyVStack(spacing: 2) {
+                    LazyVStack(spacing: 4) {
                         ForEach(usb.items) { item in
-                            HStack(spacing: 10) {
-                                Image(systemName: item.folder ? "folder.fill" : "doc").foregroundStyle(item.folder ? Color.blue : Color.secondary).frame(width: 22)
-                                Text(item.name).lineLimit(1).truncationMode(.middle)
+                            HStack(spacing: 8) {
+                                Image(systemName: item.folder ? "folder.fill" : "doc")
+                                    .foregroundStyle(item.folder ? Color.blue : Color.secondary)
+                                    .frame(width: 20)
+                                Text(item.name)
+                                    .font(.caption)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
                                 Spacer()
-                                if item.folder { Button("Open") { usb.enter(item) } }
-                                else { Text(ByteCountFormatter.string(fromByteCount: Int64(clamping: item.size), countStyle: .file)).font(.caption).foregroundStyle(.secondary); Button("Save") { usb.download(item) }.help("Save to Downloads") }
-                            }.padding(.vertical, 7).disabled(usb.busy)
+                                if item.folder {
+                                    Button("Open") { usb.enter(item) }
+                                        .buttonStyle(.bordered)
+                                        .controlSize(.mini)
+                                } else {
+                                    Text(ByteCountFormatter.string(fromByteCount: Int64(clamping: item.size), countStyle: .file))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    Button("Save") { usb.download(item) }
+                                        .buttonStyle(.bordered)
+                                        .controlSize(.mini)
+                                        .help("Save to Downloads")
+                                }
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 6)
+                            .background(Color.primary.opacity(0.02), in: RoundedRectangle(cornerRadius: 6))
+                            .disabled(usb.busy)
                         }
-                        if usb.items.isEmpty && !usb.busy { Text("This folder is empty").foregroundStyle(.secondary).padding(24) }
+                        if usb.items.isEmpty && !usb.busy {
+                            Text("This folder is empty")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(20)
+                        }
                     }
                 }
                 HStack {
-                    Button(files.isEmpty ? "Choose Files…" : "Change Files…", action: chooseFiles).disabled(usb.busy)
+                    Button(files.isEmpty ? "Choose Files…" : "Change Files…", action: chooseFiles)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(usb.busy)
                     Spacer()
-                    Button("Send \(files.count == 1 ? "File" : "\(files.count) Files") Here") { usb.upload(files) }.modifier(PrimaryAction()).disabled(files.isEmpty || usb.busy)
+                    Button("Send \(files.count == 1 ? "File" : "\(files.count) Files") Here") {
+                        usb.upload(files)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(files.isEmpty || usb.busy)
                 }
             }
             if usb.transferring {
-                ProgressView(value: usb.progress)
-                HStack { Text(usb.message).font(.callout).lineLimit(2); Spacer(); Button("Cancel", action: usb.cancel) }
-            } else if usb.busy { ProgressView().controlSize(.small) }
-            else if !usb.message.isEmpty { Text(usb.message).font(.callout).foregroundStyle(.secondary) }
-            if let error = usb.error { Text(error).font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
-        }.padding(.horizontal, horizontalPadding).padding(.bottom, bottomPadding).onAppear { if usb.deviceName.isEmpty { usb.refresh() } }
+                VStack(alignment: .leading, spacing: 4) {
+                    ProgressView(value: usb.progress)
+                    HStack {
+                        Text(usb.message)
+                            .font(.caption)
+                            .lineLimit(1)
+                        Spacer()
+                        Button("Cancel", action: usb.cancel)
+                            .buttonStyle(.bordered)
+                            .controlSize(.mini)
+                    }
+                }
+            } else if usb.busy {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text(usb.message.isEmpty ? "Working…" : usb.message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else if !usb.message.isEmpty {
+                Text(usb.message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let error = usb.error {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                        .font(.caption)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+            }
+        }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.bottom, bottomPadding)
+        .onAppear { if usb.deviceName.isEmpty { usb.refresh() } }
     }
 }

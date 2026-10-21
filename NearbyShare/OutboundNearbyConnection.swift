@@ -130,9 +130,18 @@ class OutboundNearbyConnection:NearbyConnection{
 		}
 	}
 	
+	override func handleConnectionClosure() {
+		super.handleConnectionClosure()
+		if !cancelled && currentState != .sendingFiles {
+			let err = lastError ?? NearbyError.protocolError("Connection closed unexpectedly")
+			delegate?.outboundConnection(connection: self, failedWithError: err)
+		}
+	}
+
 	override func protocolError() {
 		super.protocolError()
-		delegate?.outboundConnection(connection: self, failedWithError: lastError!)
+		let err = lastError ?? NearbyError.protocolError("Protocol error occurred")
+		delegate?.outboundConnection(connection: self, failedWithError: err)
 	}
 	
 	private func sendConnectionRequest() throws {
@@ -142,7 +151,7 @@ class OutboundNearbyConnection:NearbyConnection{
 		frame.v1=Location_Nearby_Connections_V1Frame()
 		frame.v1.type = .connectionRequest
 		frame.v1.connectionRequest=Location_Nearby_Connections_ConnectionRequestFrame()
-		frame.v1.connectionRequest.endpointID=String(bytes: NearbyConnectionManager.shared.endpointID, encoding: .ascii)!
+		frame.v1.connectionRequest.endpointID=String(bytes: NearbyConnectionManager.shared.endpointID, encoding: .ascii) ?? "ABCD"
 		frame.v1.connectionRequest.endpointName=deviceName
 		let endpointInfo=EndpointInfo(name: deviceName, deviceType: .computer)
 		frame.v1.connectionRequest.endpointInfo=endpointInfo.serialize()
@@ -162,8 +171,8 @@ class OutboundNearbyConnection:NearbyConnection{
 		var pkey=Securemessage_GenericPublicKey()
 		pkey.type = .ecP256
 		pkey.ecP256PublicKey=Securemessage_EcP256PublicKey()
-		pkey.ecP256PublicKey.x=Data(pubKey.w.x.asSignedBytes())
-		pkey.ecP256PublicKey.y=Data(pubKey.w.y.asSignedBytes())
+		pkey.ecP256PublicKey.x=NearbyConnection.fixedCoordinate32Bytes(pubKey.w.x)
+		pkey.ecP256PublicKey.y=NearbyConnection.fixedCoordinate32Bytes(pubKey.w.y)
 		finish.publicKey=try pkey.serializedData()
 		finishFrame.messageData=try finish.serializedData()
 		ukeyClientFinishMsgData=try finishFrame.serializedData()

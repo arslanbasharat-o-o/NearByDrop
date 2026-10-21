@@ -31,7 +31,14 @@ static NSString *DeviceID(LIBMTP_raw_device_t d) { return [NSString stringWithFo
     for (int i = 0; i < count; i++) if ([DeviceID(raw[i]) isEqual:identifier]) { _device = LIBMTP_Open_Raw_Device_Uncached(&raw[i]); break; }
     free(raw);
     if (!_device) { [self fail:error message:@"Unlock your phone, choose File Transfer for USB, and close other Android transfer apps."]; return nil; }
-    if (LIBMTP_Get_Storage(_device, LIBMTP_STORAGE_SORTBY_NOTSORTED) != 0) { [self fail:error message:@"Phone storage is unavailable. Unlock your phone and reconnect it."]; [self close]; return nil; }
+    if (!_device->storage) {
+        int ret = LIBMTP_Get_Storage(_device, LIBMTP_STORAGE_SORTBY_NOTSORTED);
+        for (int retry = 0; retry < 3 && ret != 0 && !_device->storage; retry++) {
+            usleep(250000);
+            ret = LIBMTP_Get_Storage(_device, LIBMTP_STORAGE_SORTBY_NOTSORTED);
+        }
+    }
+    if (!_device->storage) { [self fail:error message:@"Phone storage is unavailable. Unlock your phone, choose File Transfer for USB, and try again."]; [self close]; return nil; }
     NSMutableArray *items = [NSMutableArray array];
     for (LIBMTP_devicestorage_t *s = _device->storage; s; s = s->next) {
         NSString *name = s->StorageDescription ? [NSString stringWithUTF8String:s->StorageDescription] : nil;

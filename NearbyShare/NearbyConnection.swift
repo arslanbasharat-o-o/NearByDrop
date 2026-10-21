@@ -345,6 +345,13 @@ class NearbyConnection{
 		return String(format: "%04d", abs(hash))
 	}
 	
+	public static func fixedCoordinate32Bytes(_ bint: BInt) -> Data {
+		let raw = Data(bint.asMagnitudeBytes())
+		if raw.count == 32 { return raw }
+		if raw.count > 32 { return raw.suffix(32) }
+		return Data(repeating: 0, count: 32 - raw.count) + raw
+	}
+	
 	internal static func hkdfExtract(salt:Data, ikm:Data) -> Data{
 		return HMAC<SHA256>.authenticationCode(for: ikm, using: SymmetricKey(data: salt)).withUnsafeBytes({return Data(bytes: $0.baseAddress!, count: $0.count)})
 	}

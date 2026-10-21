@@ -387,6 +387,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             FeedbackManager.shared.playIncoming()
             FeedbackManager.shared.vibrateTap()
 
+            // Automatically open UI so incoming transfer is immediately visible
+            if self.model.menuBarOnly {
+                self.showPopover()
+            } else {
+                self.openApp(nil)
+            }
+
             TransferNotificationManager.shared.showIncoming(
                 transfer: transfer,
                 device: device,
@@ -514,6 +521,7 @@ struct MenuView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             .padding(.horizontal, 14)
             .padding(.bottom, 10)
 
@@ -523,7 +531,7 @@ struct MenuView: View {
                 case .send: sendView
                 case .receive: receiveView
                 case .history: historyView
-                case .usb: USBView(usb: model.usb, files: model.urls, chooseFiles: model.chooseFiles, horizontalPadding: 8, bottomPadding: 4)
+                case .usb: USBView(usb: model.usb, files: model.urls, chooseFiles: model.chooseFiles, horizontalPadding: 14, bottomPadding: 8)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -846,7 +854,7 @@ struct MenuView: View {
                     .lineLimit(2)
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
     }
 
     // MARK: - Receive View
@@ -1025,7 +1033,7 @@ struct MenuView: View {
             .padding(.vertical, 6)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
     }
 
     // MARK: - History View
@@ -1105,7 +1113,7 @@ struct MenuView: View {
                 }
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
     }
 
     private var statusText: String {

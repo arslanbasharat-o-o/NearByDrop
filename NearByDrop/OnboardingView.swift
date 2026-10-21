@@ -169,8 +169,11 @@ struct OnboardingView: View {
             Spacer(minLength: 8)
 
             // Action
-            Button(action: onFinish) {
-                Text("Get Started")
+            Button(action: {
+                requestAllPermissions()
+                onFinish()
+            }) {
+                Text(notificationsAllowed && cameraAllowed ? "Get Started" : "Allow & Get Started")
                     .font(.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
             }
@@ -212,6 +215,11 @@ struct OnboardingView: View {
             }
         }
         cameraAllowed = (AVCaptureDevice.authorizationStatus(for: .video) == .authorized)
+    }
+
+    private func requestAllPermissions() {
+        requestNotifications()
+        requestCamera()
     }
 
     private func requestNotifications() {

@@ -295,7 +295,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		tcpOptions.enableKeepalive=true
 		tcpOptions.keepaliveIdle=2
 		let params=NWParameters(tls: .none, tcp: tcpOptions)
-		params.serviceClass = .interactiveVideo
+		params.serviceClass = .responsiveData
 		params.allowFastOpen=true
 		params.preferNoProxies=true
 		tcpListener=try! NWListener(using: params)
@@ -553,10 +553,9 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			print("Device has QR data: \(qrData.base64EncodedString()), our advertising token is \(qrCodeAdvertisingToken!.base64EncodedString())")
 #endif
 			if qrData==qrCodeAdvertisingToken!{
-				if let deviceInfo=deviceInfo{
-					for delegate in shareExtensionDelegates{
-						delegate.startTransferWithQrCode(device: deviceInfo)
-					}
+				let targetDevice = deviceInfo ?? addFoundDevice(foundService: &foundService, endpointInfo: endpointInfo, endpointID: endpointID)
+				for delegate in shareExtensionDelegates{
+					delegate.startTransferWithQrCode(device: targetDevice)
 				}
 			}else if qrData.count>28{
 				do{
@@ -625,20 +624,23 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	}
 	
 	public func startOutgoingTransfer(deviceID:String, delegate:ShareExtensionDelegate, urls:[URL], displayNames:[String]?=nil){
-		guard let info=foundServices[deviceID] else {return}
+		guard let info=foundServices[deviceID] else {
+			delegate.connectionFailed(with: NearbyError.protocolError("Device is no longer reachable"))
+			return
+		}
 		let tcp=NWProtocolTCP.Options()
 		tcp.noDelay=true
 		tcp.enableKeepalive=true
 		tcp.keepaliveIdle=2
 		let params=NWParameters(tls: .none, tcp: tcp)
-		params.serviceClass = .interactiveVideo
-		params.allowFastOpen=true
+		params.serviceClass = .responsiveData
 		params.preferNoProxies=true
 		let nwconn=NWConnection(to: info.service.endpoint, using: params)
 		let conn=OutboundNearbyConnection(connection: nwconn, id: deviceID, urlsToSend: urls, displayNames: displayNames)
 		conn.delegate=self
 		conn.qrCodePrivateKey=qrCodePrivateKey
-		let transfer=OutgoingTransferInfo(service: info.service, device: info.device!, connection: conn, delegate: delegate)
+		let targetDevice = info.device ?? RemoteDeviceInfo(name: "Android Phone", type: .phone, id: deviceID)
+		let transfer=OutgoingTransferInfo(service: info.service, device: targetDevice, connection: conn, delegate: delegate)
 		outgoingTransfers[deviceID]=transfer
 		conn.start()
 	}
