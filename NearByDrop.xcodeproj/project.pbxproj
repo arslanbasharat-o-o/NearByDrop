@@ -1,0 +1,934 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		691F53BC2ABB70840089FD92 /* DeviceListCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 691F53BA2ABB70840089FD92 /* DeviceListCell.xib */; };
+		691F53BE2ABF03820089FD92 /* OutboundNearbyConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691F53BD2ABF03820089FD92 /* OutboundNearbyConnection.swift */; };
+		693D8DC92E41325300E8E7F4 /* sharing_enums.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693D8DC82E41325300E8E7F4 /* sharing_enums.pb.swift */; };
+		693D8DCC2E43771D00E8E7F4 /* QRCode in Frameworks */ = {isa = PBXBuildFile; productRef = 693D8DCB2E43771D00E8E7F4 /* QRCode */; };
+		697DDEEC2E43986400B4749C /* SymmetricKey+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697DDEEB2E43986400B4749C /* SymmetricKey+Extensions.swift */; };
+		697DDF0F2E4422B300B4749C /* QrCodeBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 697DDF0E2E4422B300B4749C /* QrCodeBackgroundView.swift */; };
+		697DDF132E44AAFB00B4749C /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 697DDF122E44AAFB00B4749C /* Localizable.xcstrings */; };
+		697DDF152E44AAFB00B4749C /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 697DDF142E44AAFB00B4749C /* Localizable.xcstrings */; };
+		697DDF172E44AAFB00B4749C /* NearByDrop-InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 697DDF162E44AAFB00B4749C /* NearByDrop-InfoPlist.xcstrings */; };
+		699B03452AB5FBA300E0D718 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 699B03442AB5FBA300E0D718 /* Assets.xcassets */; };
+		699DEBA62AB0573200115D22 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 699DEBA52AB0573200115D22 /* ShareViewController.swift */; };
+		699DEBA92AB0573200115D22 /* ShareViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 699DEBA72AB0573200115D22 /* ShareViewController.xib */; };
+		699DEBAE2AB0573200115D22 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 699DEBA12AB0573200115D22 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		69D2C32F29E7898C00EC7E30 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 69D2C32E29E7898C00EC7E30 /* MainMenu.xib */; };
+		69DA9A1229E0BF5100A442DA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A1129E0BF5100A442DA /* AppDelegate.swift */; };
+		69E000022E44000100000001 /* TransferWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000001 /* TransferWindow.swift */; };
+		69E000022E44000100000002 /* QRCodeScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000002 /* QRCodeScanner.swift */; };
+		69E000022E44000100000003 /* USBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000003 /* USBView.swift */; };
+		69E000022E44000100000004 /* NDUSBTransfer.m in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000005 /* NDUSBTransfer.m */; };
+		69E000022E44000100000005 /* libmtp.9.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000006 /* libmtp.9.dylib */; };
+		69E000022E44000100000006 /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000007 /* libusb-1.0.0.dylib */; };
+		69E000022E44000100000007 /* libmtp.9.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000006 /* libmtp.9.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		69E000022E44000100000008 /* libusb-1.0.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000007 /* libusb-1.0.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		69DA9A1429E0BF5200A442DA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 69DA9A1329E0BF5200A442DA /* Assets.xcassets */; };
+		69DCF48A2AB70E8C00CBE2CC /* wire_format.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A2929E18CB500A442DA /* wire_format.pb.swift */; };
+		69DCF48B2AB70E8C00CBE2CC /* ukey.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A2829E18CB500A442DA /* ukey.pb.swift */; };
+		69DCF48C2AB70E8C00CBE2CC /* device_to_device_messages.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A2A29E18CB500A442DA /* device_to_device_messages.pb.swift */; };
+		69DCF48D2AB70E8C00CBE2CC /* offline_wire_formats.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A2B29E18CB500A442DA /* offline_wire_formats.pb.swift */; };
+		69DCF48E2AB70E8C00CBE2CC /* securegcm.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A2C29E18CB500A442DA /* securegcm.pb.swift */; };
+		69DCF48F2AB70E8C00CBE2CC /* securemessage.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A2D29E18CB500A442DA /* securemessage.pb.swift */; };
+		69DCF4902AB70E9700CBE2CC /* InboundNearbyConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A2229E17F0400A442DA /* InboundNearbyConnection.swift */; };
+		69DCF4912AB70E9700CBE2CC /* NearbyConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698DFAE529E2F91A0064F247 /* NearbyConnection.swift */; };
+		69DCF4922AB70E9700CBE2CC /* NearbyConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A1E29E0C0B300A442DA /* NearbyConnectionManager.swift */; };
+		69DCF4932AB70E9700CBE2CC /* Data+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A2029E0CC4E00A442DA /* Data+Extensions.swift */; };
+		69DCF4942AB8BF7B00CBE2CC /* libNearbyShare.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69DCF4812AB70D0600CBE2CC /* libNearbyShare.dylib */; };
+		69DCF4952AB8BF7B00CBE2CC /* libNearbyShare.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 69DCF4812AB70D0600CBE2CC /* libNearbyShare.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		69DCF49A2AB8C58500CBE2CC /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 69DCF4992AB8C58500CBE2CC /* SwiftProtobuf */; };
+		69DCF49C2AB8C58500CBE2CC /* SwiftECC in Frameworks */ = {isa = PBXBuildFile; productRef = 69DCF49B2AB8C58500CBE2CC /* SwiftECC */; };
+		69DCF49D2AB8C9A500CBE2CC /* libNearbyShare.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69DCF4812AB70D0600CBE2CC /* libNearbyShare.dylib */; };
+		69DCF49E2AB8C9A500CBE2CC /* libNearbyShare.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 69DCF4812AB70D0600CBE2CC /* libNearbyShare.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		699DEBAC2AB0573200115D22 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 69DA9A0629E0BF5100A442DA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 699DEBA02AB0573200115D22;
+			remoteInfo = ShareExtension;
+		};
+		69DCF4962AB8BF7B00CBE2CC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 69DA9A0629E0BF5100A442DA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 69DCF4802AB70D0600CBE2CC;
+			remoteInfo = NearbyShare;
+		};
+		69DCF49F2AB8C9A500CBE2CC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 69DA9A0629E0BF5100A442DA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 69DCF4802AB70D0600CBE2CC;
+			remoteInfo = NearbyShare;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		698DFAFF29E353220064F247 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				699DEBAE2AB0573200115D22 /* ShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		699DEBDB2AB2828400115D22 /* Embed XPC Services */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			name = "Embed XPC Services";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69DCF4982AB8BF7B00CBE2CC /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				69DCF4952AB8BF7B00CBE2CC /* libNearbyShare.dylib in Embed Libraries */,
+				69E000022E44000100000007 /* libmtp.9.dylib in Embed Libraries */,
+				69E000022E44000100000008 /* libusb-1.0.0.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69DCF4A12AB8C9A500CBE2CC /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				69DCF49E2AB8C9A500CBE2CC /* libNearbyShare.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		691F53BA2ABB70840089FD92 /* DeviceListCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = DeviceListCell.xib; sourceTree = "<group>"; };
+		691F53BD2ABF03820089FD92 /* OutboundNearbyConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutboundNearbyConnection.swift; sourceTree = "<group>"; };
+		693D8DC82E41325300E8E7F4 /* sharing_enums.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sharing_enums.pb.swift; sourceTree = "<group>"; };
+		697DDEEB2E43986400B4749C /* SymmetricKey+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SymmetricKey+Extensions.swift"; sourceTree = "<group>"; };
+		697DDF0E2E4422B300B4749C /* QrCodeBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QrCodeBackgroundView.swift; sourceTree = "<group>"; };
+		697DDF122E44AAFB00B4749C /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		697DDF142E44AAFB00B4749C /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		697DDF162E44AAFB00B4749C /* NearByDrop-InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; name = "NearByDrop-InfoPlist.xcstrings"; path = "NearByDrop/NearByDrop-InfoPlist.xcstrings"; sourceTree = "<group>"; };
+		697DDF182E44AAFB00B4749C /* mul */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; name = mul; path = mul.lproj/ShareViewController.xcstrings; sourceTree = "<group>"; };
+		698DFAE529E2F91A0064F247 /* NearbyConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyConnection.swift; sourceTree = "<group>"; };
+		698DFAED29E353220064F247 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
+		698DFAEF29E353220064F247 /* UserNotificationsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotificationsUI.framework; path = System/Library/Frameworks/UserNotificationsUI.framework; sourceTree = SDKROOT; };
+		698DFB0029E362140064F247 /* NearByDrop-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NearByDrop-Bridging-Header.h"; sourceTree = "<group>"; };
+		699B03442AB5FBA300E0D718 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		699DEBA12AB0573200115D22 /* ShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		699DEBA52AB0573200115D22 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		699DEBA82AB0573200115D22 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/ShareViewController.xib; sourceTree = "<group>"; };
+		699DEBAA2AB0573200115D22 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		699DEBAB2AB0573200115D22 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
+		69B5994C30598C1300449F58 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		69D2C32E29E7898C00EC7E30 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
+		69DA9A0E29E0BF5100A442DA /* NearByDrop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NearByDrop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		69DA9A1129E0BF5100A442DA /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		69E000012E44000100000001 /* TransferWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferWindow.swift; sourceTree = "<group>"; };
+		69E000012E44000100000002 /* QRCodeScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeScanner.swift; sourceTree = "<group>"; };
+		69E000012E44000100000003 /* USBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBView.swift; sourceTree = "<group>"; };
+		69E000012E44000100000004 /* NDUSBTransfer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NDUSBTransfer.h; sourceTree = "<group>"; };
+		69E000012E44000100000005 /* NDUSBTransfer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = NDUSBTransfer.m; sourceTree = "<group>"; };
+		69E000012E44000100000006 /* libmtp.9.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmtp.9.dylib; path = Vendor/USB/lib/libmtp.9.dylib; sourceTree = "<group>"; };
+		69E000012E44000100000007 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "Vendor/USB/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
+		69DA9A1329E0BF5200A442DA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		69DA9A1829E0BF5200A442DA /* NearByDrop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NearByDrop.entitlements; sourceTree = "<group>"; };
+		69DA9A1E29E0C0B300A442DA /* NearbyConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyConnectionManager.swift; sourceTree = "<group>"; };
+		69DA9A2029E0CC4E00A442DA /* Data+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Data+Extensions.swift"; sourceTree = "<group>"; };
+		69DA9A2229E17F0400A442DA /* InboundNearbyConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundNearbyConnection.swift; sourceTree = "<group>"; };
+		69DA9A2829E18CB500A442DA /* ukey.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ukey.pb.swift; sourceTree = "<group>"; };
+		69DA9A2929E18CB500A442DA /* wire_format.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = wire_format.pb.swift; sourceTree = "<group>"; };
+		69DA9A2A29E18CB500A442DA /* device_to_device_messages.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = device_to_device_messages.pb.swift; sourceTree = "<group>"; };
+		69DA9A2B29E18CB500A442DA /* offline_wire_formats.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = offline_wire_formats.pb.swift; sourceTree = "<group>"; };
+		69DA9A2C29E18CB500A442DA /* securegcm.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = securegcm.pb.swift; sourceTree = "<group>"; };
+		69DA9A2D29E18CB500A442DA /* securemessage.pb.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = securemessage.pb.swift; sourceTree = "<group>"; };
+		69DCF4812AB70D0600CBE2CC /* libNearbyShare.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libNearbyShare.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		699DEB9E2AB0573200115D22 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				693D8DCC2E43771D00E8E7F4 /* QRCode in Frameworks */,
+				69DCF49D2AB8C9A500CBE2CC /* libNearbyShare.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69DA9A0B29E0BF5100A442DA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69DCF4942AB8BF7B00CBE2CC /* libNearbyShare.dylib in Frameworks */,
+				69E000022E44000100000005 /* libmtp.9.dylib in Frameworks */,
+				69E000022E44000100000006 /* libusb-1.0.0.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69DCF47F2AB70D0600CBE2CC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69DCF49C2AB8C58500CBE2CC /* SwiftECC in Frameworks */,
+				69DCF49A2AB8C58500CBE2CC /* SwiftProtobuf in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		698DFAEC29E353220064F247 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				698DFAED29E353220064F247 /* UserNotifications.framework */,
+				698DFAEF29E353220064F247 /* UserNotificationsUI.framework */,
+				69E000012E44000100000006 /* libmtp.9.dylib */,
+				69E000012E44000100000007 /* libusb-1.0.0.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		699DEBA22AB0573200115D22 /* ShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				699DEBA52AB0573200115D22 /* ShareViewController.swift */,
+				697DDF0E2E4422B300B4749C /* QrCodeBackgroundView.swift */,
+				691F53BA2ABB70840089FD92 /* DeviceListCell.xib */,
+				699DEBA72AB0573200115D22 /* ShareViewController.xib */,
+				699B03442AB5FBA300E0D718 /* Assets.xcassets */,
+				697DDF142E44AAFB00B4749C /* Localizable.xcstrings */,
+				699DEBAA2AB0573200115D22 /* Info.plist */,
+				699DEBAB2AB0573200115D22 /* ShareExtension.entitlements */,
+			);
+			path = ShareExtension;
+			sourceTree = "<group>";
+		};
+		69DA9A0529E0BF5100A442DA = {
+			isa = PBXGroup;
+			children = (
+				697DDF162E44AAFB00B4749C /* NearByDrop-InfoPlist.xcstrings */,
+				69DA9A1029E0BF5100A442DA /* NearByDrop */,
+				699DEBA22AB0573200115D22 /* ShareExtension */,
+				69DCF4822AB70D0600CBE2CC /* NearbyShare */,
+				698DFAEC29E353220064F247 /* Frameworks */,
+				69DA9A0F29E0BF5100A442DA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		69DA9A0F29E0BF5100A442DA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				69DA9A0E29E0BF5100A442DA /* NearByDrop.app */,
+				699DEBA12AB0573200115D22 /* ShareExtension.appex */,
+				69DCF4812AB70D0600CBE2CC /* libNearbyShare.dylib */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		69DA9A1029E0BF5100A442DA /* NearByDrop */ = {
+			isa = PBXGroup;
+			children = (
+				69B5994C30598C1300449F58 /* Info.plist */,
+				69DA9A1129E0BF5100A442DA /* AppDelegate.swift */,
+				69E000012E44000100000001 /* TransferWindow.swift */,
+				69E000012E44000100000002 /* QRCodeScanner.swift */,
+				69E000012E44000100000003 /* USBView.swift */,
+				69E000012E44000100000004 /* NDUSBTransfer.h */,
+				69E000012E44000100000005 /* NDUSBTransfer.m */,
+				69DA9A1329E0BF5200A442DA /* Assets.xcassets */,
+				697DDF122E44AAFB00B4749C /* Localizable.xcstrings */,
+				69DA9A1829E0BF5200A442DA /* NearByDrop.entitlements */,
+				698DFB0029E362140064F247 /* NearByDrop-Bridging-Header.h */,
+				69D2C32E29E7898C00EC7E30 /* MainMenu.xib */,
+			);
+			path = NearByDrop;
+			sourceTree = "<group>";
+		};
+		69DA9A2729E18CB500A442DA /* Protobuf */ = {
+			isa = PBXGroup;
+			children = (
+				69DA9A2829E18CB500A442DA /* ukey.pb.swift */,
+				693D8DC82E41325300E8E7F4 /* sharing_enums.pb.swift */,
+				69DA9A2929E18CB500A442DA /* wire_format.pb.swift */,
+				69DA9A2A29E18CB500A442DA /* device_to_device_messages.pb.swift */,
+				69DA9A2B29E18CB500A442DA /* offline_wire_formats.pb.swift */,
+				69DA9A2C29E18CB500A442DA /* securegcm.pb.swift */,
+				69DA9A2D29E18CB500A442DA /* securemessage.pb.swift */,
+			);
+			path = Protobuf;
+			sourceTree = "<group>";
+		};
+		69DCF4822AB70D0600CBE2CC /* NearbyShare */ = {
+			isa = PBXGroup;
+			children = (
+				69DA9A2729E18CB500A442DA /* Protobuf */,
+				69DA9A1E29E0C0B300A442DA /* NearbyConnectionManager.swift */,
+				69DA9A2229E17F0400A442DA /* InboundNearbyConnection.swift */,
+				691F53BD2ABF03820089FD92 /* OutboundNearbyConnection.swift */,
+				698DFAE529E2F91A0064F247 /* NearbyConnection.swift */,
+				69DA9A2029E0CC4E00A442DA /* Data+Extensions.swift */,
+				697DDEEB2E43986400B4749C /* SymmetricKey+Extensions.swift */,
+			);
+			path = NearbyShare;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		69DCF47D2AB70D0600CBE2CC /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		699DEBA02AB0573200115D22 /* ShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 699DEBB12AB0573200115D22 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
+			buildPhases = (
+				699DEB9D2AB0573200115D22 /* Sources */,
+				699DEB9E2AB0573200115D22 /* Frameworks */,
+				699DEB9F2AB0573200115D22 /* Resources */,
+				69DCF4A12AB8C9A500CBE2CC /* Embed Libraries */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				69DCF4A02AB8C9A500CBE2CC /* PBXTargetDependency */,
+			);
+			name = ShareExtension;
+			productName = ShareExtension;
+			productReference = 699DEBA12AB0573200115D22 /* ShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		69DA9A0D29E0BF5100A442DA /* NearByDrop */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 69DA9A1B29E0BF5200A442DA /* Build configuration list for PBXNativeTarget "NearByDrop" */;
+			buildPhases = (
+				69DA9A0A29E0BF5100A442DA /* Sources */,
+				69DA9A0B29E0BF5100A442DA /* Frameworks */,
+				69DA9A0C29E0BF5100A442DA /* Resources */,
+				698DFAFF29E353220064F247 /* Embed Foundation Extensions */,
+				699DEBDB2AB2828400115D22 /* Embed XPC Services */,
+				69DCF4982AB8BF7B00CBE2CC /* Embed Libraries */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				699DEBAD2AB0573200115D22 /* PBXTargetDependency */,
+				69DCF4972AB8BF7B00CBE2CC /* PBXTargetDependency */,
+			);
+			name = "NearByDrop";
+			packageProductDependencies = (
+			);
+			productName = "NearByDrop";
+			productReference = 69DA9A0E29E0BF5100A442DA /* NearByDrop.app */;
+			productType = "com.apple.product-type.application";
+		};
+		69DCF4802AB70D0600CBE2CC /* NearbyShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 69DCF4892AB70D0600CBE2CC /* Build configuration list for PBXNativeTarget "NearbyShare" */;
+			buildPhases = (
+				69DCF47D2AB70D0600CBE2CC /* Headers */,
+				69DCF47E2AB70D0600CBE2CC /* Sources */,
+				69DCF47F2AB70D0600CBE2CC /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NearbyShare;
+			packageProductDependencies = (
+				69DCF4992AB8C58500CBE2CC /* SwiftProtobuf */,
+				69DCF49B2AB8C58500CBE2CC /* SwiftECC */,
+			);
+			productName = NearbyShare;
+			productReference = 69DCF4812AB70D0600CBE2CC /* libNearbyShare.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		69DA9A0629E0BF5100A442DA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1430;
+				LastUpgradeCheck = 2710;
+				TargetAttributes = {
+					699DEBA02AB0573200115D22 = {
+						CreatedOnToolsVersion = 14.3.1;
+					};
+					69DA9A0D29E0BF5100A442DA = {
+						CreatedOnToolsVersion = 14.3;
+						LastSwiftMigration = 1430;
+					};
+					69DCF4802AB70D0600CBE2CC = {
+						CreatedOnToolsVersion = 14.3.1;
+					};
+				};
+			};
+			buildConfigurationList = 69DA9A0929E0BF5100A442DA /* Build configuration list for PBXProject "NearByDrop" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+				it,
+				ru,
+				de,
+				es,
+				th,
+				"pt-BR",
+				hu,
+				nl,
+				"zh-Hans",
+				ko,
+				ja,
+				uk,
+				"pt-PT",
+				fr,
+				ar,
+				ro,
+				"zh-Hant",
+			);
+			mainGroup = 69DA9A0529E0BF5100A442DA;
+			packageReferences = (
+				69DA9A2429E189EF00A442DA /* XCRemoteSwiftPackageReference "swift-protobuf" */,
+				69DA9A3429E1994C00A442DA /* XCRemoteSwiftPackageReference "SwiftECC" */,
+				693D8DCA2E43771D00E8E7F4 /* XCRemoteSwiftPackageReference "qrcode" */,
+			);
+			productRefGroup = 69DA9A0F29E0BF5100A442DA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				69DA9A0D29E0BF5100A442DA /* NearByDrop */,
+				699DEBA02AB0573200115D22 /* ShareExtension */,
+				69DCF4802AB70D0600CBE2CC /* NearbyShare */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		699DEB9F2AB0573200115D22 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				699B03452AB5FBA300E0D718 /* Assets.xcassets in Resources */,
+				697DDF152E44AAFB00B4749C /* Localizable.xcstrings in Resources */,
+				691F53BC2ABB70840089FD92 /* DeviceListCell.xib in Resources */,
+				699DEBA92AB0573200115D22 /* ShareViewController.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69DA9A0C29E0BF5100A442DA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69DA9A1429E0BF5200A442DA /* Assets.xcassets in Resources */,
+				697DDF132E44AAFB00B4749C /* Localizable.xcstrings in Resources */,
+				697DDF172E44AAFB00B4749C /* NearByDrop-InfoPlist.xcstrings in Resources */,
+				69D2C32F29E7898C00EC7E30 /* MainMenu.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		699DEB9D2AB0573200115D22 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				699DEBA62AB0573200115D22 /* ShareViewController.swift in Sources */,
+				697DDF0F2E4422B300B4749C /* QrCodeBackgroundView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69DA9A0A29E0BF5100A442DA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69DA9A1229E0BF5100A442DA /* AppDelegate.swift in Sources */,
+				69E000022E44000100000001 /* TransferWindow.swift in Sources */,
+				69E000022E44000100000002 /* QRCodeScanner.swift in Sources */,
+				69E000022E44000100000003 /* USBView.swift in Sources */,
+				69E000022E44000100000004 /* NDUSBTransfer.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69DCF47E2AB70D0600CBE2CC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69DCF48D2AB70E8C00CBE2CC /* offline_wire_formats.pb.swift in Sources */,
+				69DCF48F2AB70E8C00CBE2CC /* securemessage.pb.swift in Sources */,
+				69DCF4912AB70E9700CBE2CC /* NearbyConnection.swift in Sources */,
+				69DCF4922AB70E9700CBE2CC /* NearbyConnectionManager.swift in Sources */,
+				693D8DC92E41325300E8E7F4 /* sharing_enums.pb.swift in Sources */,
+				69DCF48E2AB70E8C00CBE2CC /* securegcm.pb.swift in Sources */,
+				691F53BE2ABF03820089FD92 /* OutboundNearbyConnection.swift in Sources */,
+				69DCF48C2AB70E8C00CBE2CC /* device_to_device_messages.pb.swift in Sources */,
+				69DCF4902AB70E9700CBE2CC /* InboundNearbyConnection.swift in Sources */,
+				69DCF48B2AB70E8C00CBE2CC /* ukey.pb.swift in Sources */,
+				69DCF48A2AB70E8C00CBE2CC /* wire_format.pb.swift in Sources */,
+				697DDEEC2E43986400B4749C /* SymmetricKey+Extensions.swift in Sources */,
+				69DCF4932AB70E9700CBE2CC /* Data+Extensions.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		699DEBAD2AB0573200115D22 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 699DEBA02AB0573200115D22 /* ShareExtension */;
+			targetProxy = 699DEBAC2AB0573200115D22 /* PBXContainerItemProxy */;
+		};
+		69DCF4972AB8BF7B00CBE2CC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 69DCF4802AB70D0600CBE2CC /* NearbyShare */;
+			targetProxy = 69DCF4962AB8BF7B00CBE2CC /* PBXContainerItemProxy */;
+		};
+		69DCF4A02AB8C9A500CBE2CC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 69DCF4802AB70D0600CBE2CC /* NearbyShare */;
+			targetProxy = 69DCF49F2AB8C9A500CBE2CC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		699DEBA72AB0573200115D22 /* ShareViewController.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				699DEBA82AB0573200115D22 /* Base */,
+				697DDF182E44AAFB00B4749C /* mul */,
+			);
+			name = ShareViewController.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		699DEBAF2AB0573200115D22 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 12;
+				DEAD_CODE_STRIPPING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "NearByDrop";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 2.2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		699DEBB02AB0573200115D22 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 12;
+				DEAD_CODE_STRIPPING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "NearByDrop";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 2.2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		69DA9A1929E0BF5200A442DA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		69DA9A1A29E0BF5200A442DA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		69DA9A1C29E0BF5200A442DA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = NearByDrop/NearByDrop.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 12;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Vendor/USB/include",
+				);
+				INFOPLIST_FILE = NearByDrop/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "NearByDrop needs access to the camera to scan Quick Share QR codes.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "NearByDrop needs access to your local network to send and receive files.";
+				INFOPLIST_KEY_NSMainNibFile = MainMenu;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Vendor/USB/lib",
+				);
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 2.2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop;
+				PRODUCT_NAME = "NearByDrop";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "NearByDrop/NearByDrop-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		69DA9A1D29E0BF5200A442DA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = NearByDrop/NearByDrop.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 12;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Vendor/USB/include",
+				);
+				INFOPLIST_FILE = NearByDrop/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "NearByDrop needs access to the camera to scan Quick Share QR codes.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "NearByDrop needs access to your local network to send and receive files.";
+				INFOPLIST_KEY_NSMainNibFile = MainMenu;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Vendor/USB/lib",
+				);
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MARKETING_VERSION = 2.2.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop;
+				PRODUCT_NAME = "NearByDrop";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "NearByDrop/NearByDrop-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		69DCF4872AB70D0600CBE2CC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@executable_path/../Frameworks";
+				EXECUTABLE_PREFIX = lib;
+				LD_DYLIB_INSTALL_NAME = "$(DYLIB_INSTALL_NAME_BASE:standardizepath)/$(EXECUTABLE_PATH)";
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		69DCF4882AB70D0600CBE2CC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@executable_path/../Frameworks";
+				EXECUTABLE_PREFIX = lib;
+				LD_DYLIB_INSTALL_NAME = "$(DYLIB_INSTALL_NAME_BASE:standardizepath)/$(EXECUTABLE_PATH)";
+				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		699DEBB12AB0573200115D22 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				699DEBAF2AB0573200115D22 /* Debug */,
+				699DEBB02AB0573200115D22 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		69DA9A0929E0BF5100A442DA /* Build configuration list for PBXProject "NearByDrop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				69DA9A1929E0BF5200A442DA /* Debug */,
+				69DA9A1A29E0BF5200A442DA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		69DA9A1B29E0BF5200A442DA /* Build configuration list for PBXNativeTarget "NearByDrop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				69DA9A1C29E0BF5200A442DA /* Debug */,
+				69DA9A1D29E0BF5200A442DA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		69DCF4892AB70D0600CBE2CC /* Build configuration list for PBXNativeTarget "NearbyShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				69DCF4872AB70D0600CBE2CC /* Debug */,
+				69DCF4882AB70D0600CBE2CC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		693D8DCA2E43771D00E8E7F4 /* XCRemoteSwiftPackageReference "qrcode" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/dagronf/qrcode.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 26.10.0;
+			};
+		};
+		69DA9A2429E189EF00A442DA /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-protobuf.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+		69DA9A3429E1994C00A442DA /* XCRemoteSwiftPackageReference "SwiftECC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/leif-ibsen/SwiftECC";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		693D8DCB2E43771D00E8E7F4 /* QRCode */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 693D8DCA2E43771D00E8E7F4 /* XCRemoteSwiftPackageReference "qrcode" */;
+			productName = QRCode;
+		};
+		69DCF4992AB8C58500CBE2CC /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 69DA9A2429E189EF00A442DA /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+		69DCF49B2AB8C58500CBE2CC /* SwiftECC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 69DA9A3429E1994C00A442DA /* XCRemoteSwiftPackageReference "SwiftECC" */;
+			productName = SwiftECC;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 69DA9A0629E0BF5100A442DA /* Project object */;
+}
