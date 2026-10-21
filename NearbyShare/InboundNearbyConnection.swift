@@ -36,6 +36,7 @@ class InboundNearbyConnection: NearbyConnection{
 			lastError=NearbyError.protocolError("Connection closed before file transfer completed")
 		}
 		super.handleConnectionClosure()
+		NSLog("[NearByDrop] Inbound connection closed in state: %@, lastError: %@", String(describing: currentState), String(describing: lastError))
 		currentState = .disconnected
 		do{
 			try deletePartiallyReceivedFiles()
@@ -69,6 +70,7 @@ class InboundNearbyConnection: NearbyConnection{
 			}
 		}catch{
 			lastError=error
+			NSLog("[NearByDrop] Inbound deserialization/processing error: %@ in state %@", error.localizedDescription, String(describing: currentState))
 			print("Deserialization error: \(error) in state \(currentState)")
 			protocolError()
 		}
@@ -160,6 +162,7 @@ class InboundNearbyConnection: NearbyConnection{
 		// the shared parser handles the "hidden" case where the name is absent.
 		guard let endpointInfo=EndpointInfo(data: frame.v1.connectionRequest.endpointInfo) else { throw NearbyError.protocolError("Endpoint info could not be parsed") }
 		let name=endpointInfo.name ?? "Unknown device"
+		NSLog("[NearByDrop] Inbound ConnectionRequest from device '%@' (type: %@)", name, String(describing: endpointInfo.deviceType))
 		remoteDeviceInfo=RemoteDeviceInfo(name: name, type: endpointInfo.deviceType, id: frame.v1.connectionRequest.endpointID.isEmpty ? nil : frame.v1.connectionRequest.endpointID)
 		currentState = .receivedConnectionRequest
 	}
@@ -279,7 +282,7 @@ class InboundNearbyConnection: NearbyConnection{
 	
 	private func processPairedKeyEncryptionFrame(_ frame:Sharing_Nearby_Frame) throws{
 		guard frame.hasV1, frame.v1.hasPairedKeyEncryption else { throw NearbyError.requiredFieldMissing("shareNearbyFrame.v1.pairedKeyEncryption") }
-        if let key=qrSenderPublicKey {
+        if let key=qrSenderPublicKey, !frame.v1.pairedKeyEncryption.qrCodeHandshakeData.isEmpty {
             let proof=frame.v1.pairedKeyEncryption.qrCodeHandshakeData
             guard let authKey=authKey, let signature=try? P256.Signing.ECDSASignature(rawRepresentation: proof),
                   key.isValidSignature(signature, for: authKey.data()) else {
@@ -339,6 +342,7 @@ class InboundNearbyConnection: NearbyConnection{
 	private func processIntroductionFrame(_ frame:Sharing_Nearby_Frame) throws{
 		guard frame.hasV1, frame.v1.hasIntroduction else { throw NearbyError.requiredFieldMissing("shareNearbyFrame.v1.introduction") }
 		currentState = .waitingForUserConsent
+		NSLog("[NearByDrop] Inbound Introduction received: %lu files, %lu text items", frame.v1.introduction.fileMetadata.count, frame.v1.introduction.textMetadata.count)
 		if !frame.v1.introduction.fileMetadata.isEmpty {
 			let downloadsDirectory=NearbyConnectionManager.downloadDirectory.resolvingSymlinksInPath()
 			for file in frame.v1.introduction.fileMetadata{
