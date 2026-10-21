@@ -76,6 +76,9 @@ class NearbyConnection{
 		guard !closureHandled else { return }
 		closureHandled=true
 		connectionClosed=true
+		payloadBuffers.removeAll()
+		payloadSizes.removeAll()
+		bufferedPayloadBytes=0
 		stopKeepAliveTimer()
 		print("Connection closed")
 	}
@@ -116,11 +119,13 @@ class NearbyConnection{
 		return Int64(bodyCount) <= totalSize - offset
 	}
 
-	private func failProtocol(_ error:Error){
-		lastError=error
-		protocolError()
+	private func discardBufferedPayload(_ id:Int64){
+		if let buffer=payloadBuffers.removeValue(forKey: id) {
+			bufferedPayloadBytes=max(0, bufferedPayloadBytes-Int64(buffer.count))
+		}
+		payloadSizes.removeValue(forKey: id)
 	}
-	
+
 	private func receiveFrameAsync(){
 		connection.receive(minimumIncompleteLength: 4, maximumLength: 4) { [weak self] content, _, isComplete, error in
 			guard let self=self else { return }
@@ -301,6 +306,8 @@ class NearbyConnection{
 		guard hmac==smsg.signature else { throw NearbyError.protocolError("hmac!=signature") }
 		let headerAndBody=try Securemessage_HeaderAndBody(serializedData: smsg.headerAndBody)
 		guard headerAndBody.hasHeader, headerAndBody.hasBody,
+			  headerAndBody.header.hasEncryptionScheme, headerAndBody.header.encryptionScheme == .aes256Cbc,
+			  headerAndBody.header.hasSignatureScheme, headerAndBody.header.signatureScheme == .hmacSha256,
 			  headerAndBody.header.hasIv, headerAndBody.header.iv.count == kCCBlockSizeAES128,
 			  !headerAndBody.body.isEmpty, headerAndBody.body.count % kCCBlockSizeAES128 == 0,
 			  headerAndBody.body.count <= NearbyConnection.SANE_FRAME_LENGTH else {
@@ -348,13 +355,11 @@ class NearbyConnection{
 			if case .bytes = header.type{
 				let payloadID=header.id
 				guard header.totalSize <= Int64(NearbyConnection.SANE_FRAME_LENGTH) else {
-					payloadBuffers.removeValue(forKey: payloadID)
-					payloadSizes.removeValue(forKey: payloadID)
+					self.discardBufferedPayload(payloadID)
 					throw NearbyError.protocolError("Payload too large (\(header.totalSize) bytes)")
 				}
 				guard NearbyConnection.isValidPayloadRange(totalSize: header.totalSize, offset: chunk.offset, bodyCount: chunk.hasBody ? chunk.body.count : 0) else {
-					payloadBuffers.removeValue(forKey: payloadID)
-					payloadSizes.removeValue(forKey: payloadID)
+					self.discardBufferedPayload(payloadID)
 					throw NearbyError.protocolError("Invalid byte payload range")
 				}
 				if payloadBuffers[payloadID]==nil {
@@ -366,15 +371,12 @@ class NearbyConnection{
 					payloadBuffers[payloadID]=NSMutableData(capacity: Int(header.totalSize))
 				}
 				guard payloadSizes[payloadID] == header.totalSize else {
-					payloadBuffers.removeValue(forKey: payloadID)
-					payloadSizes.removeValue(forKey: payloadID)
+					self.discardBufferedPayload(payloadID)
 					throw NearbyError.protocolError("Payload size changed mid-transfer")
 				}
 				let buffer=payloadBuffers[payloadID]!
 				guard chunk.offset==buffer.count else {
-					payloadBuffers.removeValue(forKey: payloadID)
-					payloadSizes.removeValue(forKey: payloadID)
-					bufferedPayloadBytes-=Int64(buffer.count)
+					self.discardBufferedPayload(payloadID)
 					throw NearbyError.protocolError("Unexpected chunk offset \(chunk.offset), expected \(buffer.count)")
 				}
 				if chunk.hasBody {
@@ -383,9 +385,7 @@ class NearbyConnection{
 				}
 				if (chunk.flags & 1)==1 {
 					guard Int64(buffer.count) == header.totalSize else {
-						payloadBuffers.removeValue(forKey: payloadID)
-						payloadSizes.removeValue(forKey: payloadID)
-						bufferedPayloadBytes-=Int64(buffer.count)
+						self.discardBufferedPayload(payloadID)
 						throw NearbyError.protocolError("Byte payload ended before the advertised byte count")
 					}
 					payloadBuffers.removeValue(forKey: payloadID)
@@ -536,14 +536,17 @@ class NearbyConnection{
 		}))
 	}
 	
-	internal func sendDisconnectionAndDisconnect() throws{
+	internal func sendDisconnectionAndDisconnect(completion:(()->Void)?=nil) throws{
 		var offlineFrame=Location_Nearby_Connections_OfflineFrame()
 		offlineFrame.version = .v1
 		offlineFrame.v1.type = .disconnection
 		offlineFrame.v1.disconnection=Location_Nearby_Connections_DisconnectionFrame()
 		
 		let serialized=try offlineFrame.serializedData()
-		let finish: () -> Void = { [weak self] in self?.disconnect() }
+		let finish: () -> Void = { [weak self] in
+			completion?()
+			self?.disconnect()
+		}
 		let fail: (Error) -> Void = { [weak self] (error:Error) in
 			self?.lastError=error
 			self?.disconnect()

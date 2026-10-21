@@ -22,30 +22,73 @@ class InboundNearbyConnection: NearbyConnection{
 	private var cipherCommitment:Data?
 	
 	private var textPayloadID:Int64=0
+	private var timeoutWorkItem:DispatchWorkItem?
+	private var terminationReported=false
+	private static let handshakeTimeout:TimeInterval=15
+	private static let consentTimeout:TimeInterval=60
 	
 	enum State{
-		case initial, receivedConnectionRequest, sentUkeyServerInit, receivedUkeyClientFinish, sentConnectionResponse, sentPairedKeyResult, receivedPairedKeyResult, waitingForUserConsent, receivingFiles, disconnected
+		case initial, receivedConnectionRequest, sentUkeyServerInit, receivedUkeyClientFinish, sentConnectionResponse, sentPairedKeyResult, receivedPairedKeyResult, waitingForUserConsent, receivingFiles, finishing, completed, failed, cancelled, disconnected
 	}
 	
 	override init(connection: NWConnection, id:String) {
 		super.init(connection: connection, id: id)
 	}
+
+	override func start(){
+		NearbyConnection.connectionQueue.async { [weak self] in self?.setState(.initial) }
+		super.start()
+	}
 	
 	override func handleConnectionClosure() {
-		if lastError==nil && currentState == .receivingFiles && transferredFiles.values.contains(where: {$0.created}){
-			lastError=NearbyError.protocolError("Connection closed before file transfer completed")
+		guard !terminationReported else { return }
+		timeoutWorkItem?.cancel()
+		timeoutWorkItem=nil
+		if currentState == .finishing && lastError == nil {
+			currentState = .completed
+		}else if currentState != .completed && currentState != .failed && currentState != .cancelled {
+			lastError=lastError ?? NearbyError.protocolError("Connection closed before file transfer completed")
+			currentState = .disconnected
 		}
 		super.handleConnectionClosure()
 		NSLog("[NearByDrop] Inbound connection closed in state: %@, lastError: %@", String(describing: currentState), String(describing: lastError))
-		currentState = .disconnected
-		do{
-			try deletePartiallyReceivedFiles()
-		}catch{
-			print("Error deleting partially received files: \(error)")
+		terminationReported=true
+		if currentState != .completed {
+			do{
+				try deletePartiallyReceivedFiles()
+			}catch{
+				print("Error deleting partially received files: \(error)")
+			}
 		}
+		let terminationError=currentState == .completed ? nil : (lastError ?? NearbyError.protocolError("Connection terminated"))
 		DispatchQueue.main.async {
-			self.delegate?.connectionWasTerminated(connection: self, error: self.lastError)
+			self.delegate?.connectionWasTerminated(connection: self, error: terminationError)
 		}
+	}
+
+	private func setState(_ state:State){
+		currentState=state
+		timeoutWorkItem?.cancel()
+		timeoutWorkItem=nil
+		let timeout:TimeInterval
+		switch state {
+		case .waitingForUserConsent: timeout=Self.consentTimeout
+		case .initial, .receivedConnectionRequest, .sentUkeyServerInit, .receivedUkeyClientFinish, .sentConnectionResponse, .sentPairedKeyResult, .receivedPairedKeyResult: timeout=Self.handshakeTimeout
+		default: return
+		}
+		let expectedState=state
+		let work=DispatchWorkItem { [weak self] in
+			guard let self=self, self.currentState == expectedState, !self.terminationReported else { return }
+			self.lastError=NearbyError.canceled(reason: .timedOut)
+			if expectedState == .waitingForUserConsent {
+				self.rejectTransfer(with: .timedOut)
+			}else{
+				self.setState(.failed)
+				self.disconnect()
+			}
+		}
+		timeoutWorkItem=work
+		NearbyConnection.connectionQueue.asyncAfter(deadline: .now()+timeout, execute: work)
 	}
 	
 	override internal func processReceivedFrame(frameData:Data){
@@ -77,11 +120,12 @@ class InboundNearbyConnection: NearbyConnection{
 	}
 	
 	override internal func processTransferSetupFrame(_ frame:Sharing_Nearby_Frame) throws{
-		guard frame.hasV1 else { return }
+		guard frame.hasV1, frame.v1.hasType else { throw NearbyError.requiredFieldMissing("shareNearbyFrame.v1.type") }
 		if frame.v1.hasType, case .cancel = frame.v1.type {
 			print("Transfer canceled")
-			currentState = .disconnected
-			try sendDisconnectionAndDisconnect()
+			lastError=NearbyError.canceled(reason: .userCanceled)
+			setState(.cancelled)
+			do { try sendDisconnectionAndDisconnect() } catch { disconnect() }
 			return
 		}
 		if frame.v1.hasPairedKeyEncryption {
@@ -106,9 +150,16 @@ class InboundNearbyConnection: NearbyConnection{
 	override func processFileChunk(frame: Location_Nearby_Connections_PayloadTransferFrame) throws{
 		let id=frame.payloadHeader.id
 		guard let fileInfo=transferredFiles[id] else { throw NearbyError.protocolError("File payload ID \(id) is not known") }
+		guard frame.payloadHeader.totalSize == fileInfo.meta.size,
+			  frame.payloadChunk.offset >= 0,
+			  NearbyConnection.isValidPayloadRange(totalSize: fileInfo.meta.size,
+				  offset: frame.payloadChunk.offset,
+				  bodyCount: frame.payloadChunk.hasBody ? frame.payloadChunk.body.count : 0) else {
+			throw NearbyError.protocolError("Invalid file payload range")
+		}
 		let currentOffset=fileInfo.bytesTransferred
 		guard frame.payloadChunk.offset==currentOffset else { throw NearbyError.protocolError("Invalid offset into file \(frame.payloadChunk.offset), expected \(currentOffset)") }
-		guard currentOffset+Int64(frame.payloadChunk.body.count)<=fileInfo.meta.size else { throw NearbyError.protocolError("Transferred file size exceeds previously specified value") }
+		guard currentOffset <= fileInfo.meta.size - Int64(frame.payloadChunk.body.count) else { throw NearbyError.protocolError("Transferred file size exceeds previously specified value") }
 		if frame.payloadChunk.body.count>0{
 			guard let fileHandle=fileInfo.fileHandle else { throw NearbyError.inputOutput }
 			try fileHandle.write(contentsOf: frame.payloadChunk.body)
@@ -123,7 +174,7 @@ class InboundNearbyConnection: NearbyConnection{
 			fileInfo.progress?.unpublish()
 			transferredFiles.removeValue(forKey: id)
 			if transferredFiles.isEmpty{
-				try sendDisconnectionAndDisconnect()
+				beginFinishing()
 			}
 		}
 	}
@@ -132,14 +183,15 @@ class InboundNearbyConnection: NearbyConnection{
 		if id==textPayloadID{
 			// Only open http(s). Any other scheme would make the Mac launch an
 			// arbitrary URL handler after the user consented to a generic "link".
-			if let urlStr=String(data: payload, encoding: .utf8), let url=URL(string: urlStr),
-			   url.scheme=="http" || url.scheme=="https"{
-				NSWorkspace.shared.open(url)
+			guard let urlStr=String(data: payload, encoding: .utf8), let url=URL(string: urlStr),
+				  url.scheme=="http" || url.scheme=="https" else {
+				throw NearbyError.protocolError("Invalid URL payload")
 			}
-			try sendDisconnectionAndDisconnect()
+			NSWorkspace.shared.open(url)
+			beginFinishing()
 			return true
 		}else if let fileInfo=transferredFiles[id]{
-			guard fileInfo.bytesTransferred+Int64(payload.count)<=fileInfo.meta.size else { throw NearbyError.protocolError("Transferred file size exceeds previously specified value") }
+			guard fileInfo.bytesTransferred <= fileInfo.meta.size - Int64(payload.count) else { throw NearbyError.protocolError("Transferred file size exceeds previously specified value") }
 			guard let fileHandle=fileInfo.fileHandle else { throw NearbyError.inputOutput }
 			try fileHandle.write(contentsOf: payload)
 			transferredFiles[id]!.bytesTransferred+=Int64(payload.count)
@@ -149,7 +201,7 @@ class InboundNearbyConnection: NearbyConnection{
 			transferredFiles[id]!.fileHandle=nil
 			fileInfo.progress?.unpublish()
 			transferredFiles.removeValue(forKey: id)
-			try sendDisconnectionAndDisconnect()
+			beginFinishing()
 			return true
 		}
 		return false
@@ -164,7 +216,7 @@ class InboundNearbyConnection: NearbyConnection{
 		let name=endpointInfo.name ?? "Unknown device"
 		NSLog("[NearByDrop] Inbound ConnectionRequest from device '%@' (type: %@)", name, String(describing: endpointInfo.deviceType))
 		remoteDeviceInfo=RemoteDeviceInfo(name: name, type: endpointInfo.deviceType, id: frame.v1.connectionRequest.endpointID.isEmpty ? nil : frame.v1.connectionRequest.endpointID)
-		currentState = .receivedConnectionRequest
+		setState(.receivedConnectionRequest)
 	}
 	
 	private func processUkey2ClientInit(_ msg:Securegcm_Ukey2Message) throws{
@@ -228,7 +280,7 @@ class InboundNearbyConnection: NearbyConnection{
 		let serverInitData=try serverInitMsg.serializedData()
 		ukeyServerInitMsgData=serverInitData
 		sendFrameAsync(serverInitData)
-		currentState = .sentUkeyServerInit
+		setState(.sentUkeyServerInit)
 	}
 	
 	private func processUkey2ClientFinish(_ msg:Securegcm_Ukey2Message, raw:Data) throws{
@@ -245,7 +297,7 @@ class InboundNearbyConnection: NearbyConnection{
 		
 		try finalizeKeyExchange(peerKey: clientKey)
 		
-		currentState = .receivedUkeyClientFinish
+		setState(.receivedUkeyClientFinish)
 	}
 	
 	private func processConnectionResponseFrame(_ frame:Location_Nearby_Connections_OfflineFrame) throws{
@@ -274,7 +326,7 @@ class InboundNearbyConnection: NearbyConnection{
 			pairedEncryption.v1.pairedKeyEncryption.secretIDHash=Data.randomData(length: 6)
 			pairedEncryption.v1.pairedKeyEncryption.signedData=Data.randomData(length: 72)
 			try sendTransferSetupFrame(pairedEncryption)
-			currentState = .sentConnectionResponse
+			setState(.sentConnectionResponse)
 		} else {
 			print("Unhandled offline frame plaintext: \(frame)")
 		}
@@ -282,13 +334,15 @@ class InboundNearbyConnection: NearbyConnection{
 	
 	private func processPairedKeyEncryptionFrame(_ frame:Sharing_Nearby_Frame) throws{
 		guard frame.hasV1, frame.v1.hasPairedKeyEncryption else { throw NearbyError.requiredFieldMissing("shareNearbyFrame.v1.pairedKeyEncryption") }
-        if let key=qrSenderPublicKey, !frame.v1.pairedKeyEncryption.qrCodeHandshakeData.isEmpty {
-            let proof=frame.v1.pairedKeyEncryption.qrCodeHandshakeData
-            guard let authKey=authKey, let signature=try? P256.Signing.ECDSASignature(rawRepresentation: proof),
-                  key.isValidSignature(signature, for: authKey.data()) else {
-                throw NearbyError.protocolError("The sender does not match the scanned QR code.")
-            }
-        }
+		if let key=qrSenderPublicKey {
+			let proof=frame.v1.pairedKeyEncryption.qrCodeHandshakeData
+			guard let authKey=authKey, let signature=try? P256.Signing.ECDSASignature(rawRepresentation: proof),
+				  key.isValidSignature(signature, for: authKey.data()) else {
+				throw NearbyError.protocolError("The sender does not match the scanned QR code.")
+			}
+			let identity=Data(SHA256.hash(data: key.rawRepresentation)).map { String(format: "%02x", $0) }.joined()
+			remoteDeviceInfo?.id="qr:\(identity)"
+		}
 		var pairedResult=Sharing_Nearby_Frame()
 		pairedResult.version = .v1
 		pairedResult.v1=Sharing_Nearby_V1Frame()
@@ -296,12 +350,12 @@ class InboundNearbyConnection: NearbyConnection{
 		pairedResult.v1.pairedKeyResult=Sharing_Nearby_PairedKeyResultFrame()
 		pairedResult.v1.pairedKeyResult.status = .unable
 		try sendTransferSetupFrame(pairedResult)
-		currentState = .sentPairedKeyResult
+		setState(.sentPairedKeyResult)
 	}
 	
 	private func processPairedKeyResultFrame(_ frame:Sharing_Nearby_Frame) throws{
 		guard frame.hasV1, frame.v1.hasPairedKeyResult else { throw NearbyError.requiredFieldMissing("shareNearbyFrame.v1.pairedKeyResult") }
-		currentState = .receivedPairedKeyResult
+		setState(.receivedPairedKeyResult)
 	}
 	
 	private func makeFileDestinationURL(_ name:String, in downloadsDirectory:URL) -> URL{
@@ -341,24 +395,38 @@ class InboundNearbyConnection: NearbyConnection{
 	
 	private func processIntroductionFrame(_ frame:Sharing_Nearby_Frame) throws{
 		guard frame.hasV1, frame.v1.hasIntroduction else { throw NearbyError.requiredFieldMissing("shareNearbyFrame.v1.introduction") }
-		currentState = .waitingForUserConsent
+		let introduction=frame.v1.introduction
+		guard introduction.fileMetadata.count <= 128,
+			  introduction.textMetadata.count <= 1,
+			  introduction.fileMetadata.isEmpty || introduction.textMetadata.isEmpty else {
+			throw NearbyError.protocolError("Malformed introduction payload")
+		}
 		NSLog("[NearByDrop] Inbound Introduction received: %lu files, %lu text items", frame.v1.introduction.fileMetadata.count, frame.v1.introduction.textMetadata.count)
-		if !frame.v1.introduction.fileMetadata.isEmpty {
+		if !introduction.fileMetadata.isEmpty {
+			var payloadIDs=Set<Int64>()
 			let downloadsDirectory=NearbyConnectionManager.downloadDirectory.resolvingSymlinksInPath()
-			for file in frame.v1.introduction.fileMetadata{
+			for file in introduction.fileMetadata{
+				guard file.size >= 0, file.name.utf8.count <= 4096, payloadIDs.insert(file.payloadID).inserted else {
+					throw NearbyError.protocolError("Malformed file metadata")
+				}
 				let dest=makeFileDestinationURL(file.name, in: downloadsDirectory)
 				let info=InternalFileInfo(meta: FileMetadata(name: dest.lastPathComponent, size: file.size, mimeType: file.mimeType),
 										  payloadID: file.payloadID,
 										  destinationURL: dest)
 				transferredFiles[file.payloadID]=info
 			}
+			setState(.waitingForUserConsent)
 			let metadata=TransferMetadata(files: transferredFiles.map({$0.value.meta}), id: id, pinCode: pinCode)
 			requestOrAutomaticConsent(metadata: metadata)
-		}else if !frame.v1.introduction.textMetadata.isEmpty {
-			let meta=frame.v1.introduction.textMetadata[0]
+		}else if !introduction.textMetadata.isEmpty {
+			let meta=introduction.textMetadata[0]
+			guard meta.size >= 0, meta.size <= Int64(NearbyConnection.SANE_FRAME_LENGTH) else {
+				throw NearbyError.protocolError("Byte payload is too large")
+			}
 			if case .url=meta.type{
 				let metadata=TransferMetadata(files: [], id: id, pinCode: pinCode, textDescription: meta.textTitle)
 				textPayloadID=meta.payloadID
+				setState(.waitingForUserConsent)
 				requestOrAutomaticConsent(metadata: metadata)
 			}else{
 				let downloadsDirectory=NearbyConnectionManager.downloadDirectory.resolvingSymlinksInPath()
@@ -367,8 +435,9 @@ class InboundNearbyConnection: NearbyConnection{
 				let dest=makeFileDestinationURL("\(dateFormatter.string(from: Date())).txt", in: downloadsDirectory)
 				let info=InternalFileInfo(meta: FileMetadata(name: dest.lastPathComponent, size: meta.size, mimeType: "text/plain"),
 										  payloadID: meta.payloadID,
-										  destinationURL: dest)
+											  destinationURL: dest)
 				transferredFiles[meta.payloadID]=info
+				setState(.waitingForUserConsent)
 				requestOrAutomaticConsent(metadata: TransferMetadata(files: [info.meta], id: self.id, pinCode: self.pinCode))
 			}
 		}else{
@@ -389,7 +458,8 @@ class InboundNearbyConnection: NearbyConnection{
 	}
 	
 	func submitUserConsent(accepted:Bool){
-		DispatchQueue.global(qos: .userInitiated).async {
+		NearbyConnection.connectionQueue.async { [weak self] in
+			guard let self=self, self.currentState == .waitingForUserConsent, !self.terminationReported else { return }
 			if accepted{
 				self.acceptTransfer()
 			}else{
@@ -418,15 +488,25 @@ class InboundNearbyConnection: NearbyConnection{
 			frame.version = .v1
 			frame.v1.type = .response
 			frame.v1.connectionResponse.status = .accept
-			currentState = .receivingFiles
 			try sendTransferSetupFrame(frame)
+			setState(.receivingFiles)
 		}catch{
 			lastError=error
-			protocolError()
+			setState(.failed)
+			disconnect()
 		}
 	}
 	
 	private func rejectTransfer(with reason:Sharing_Nearby_ConnectionResponseFrame.Status = .reject){
+		let error:NearbyError
+		switch reason {
+		case .timedOut: error = .canceled(reason: .timedOut)
+		case .notEnoughSpace: error = .canceled(reason: .notEnoughSpace)
+		case .unsupportedAttachmentType: error = .canceled(reason: .unsupportedType)
+		default: error = .canceled(reason: .userRejected)
+		}
+		lastError=error
+		setState(.failed)
 		var frame=Sharing_Nearby_Frame()
 		frame.version = .v1
 		frame.v1.type = .response
@@ -435,16 +515,32 @@ class InboundNearbyConnection: NearbyConnection{
 			try sendTransferSetupFrame(frame)
 			try sendDisconnectionAndDisconnect()
 		}catch{
-			print("Error \(error)")
-			protocolError()
+			lastError=error
+			disconnect()
+		}
+	}
+
+	private func beginFinishing(){
+		guard currentState == .receivingFiles, !terminationReported else { return }
+		setState(.finishing)
+		do {
+			try sendDisconnectionAndDisconnect()
+		}catch{
+			lastError=error
+			setState(.failed)
+			disconnect()
 		}
 	}
 	
 	private func deletePartiallyReceivedFiles() throws{
-		for (_, file) in transferredFiles{
+		for file in transferredFiles.values{
 			guard file.created else { continue }
+			if let handle=file.fileHandle {
+				try handle.close()
+			}
 			try FileManager.default.removeItem(at: file.destinationURL)
 		}
+		transferredFiles.removeAll()
 	}
 }
 

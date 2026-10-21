@@ -28,11 +28,14 @@ class OutboundNearbyConnection:NearbyConnection{
 	private var totalBytesSent:Int64=0
 	private var cancelled:Bool=false
 	private var textPayloadID:Int64=0
+	private var resultReported=false
+	private var handlesClosed=false
+	private var disconnectionSent=false
 	
 	public var qrCodePrivateKey:P256.Signing.PrivateKey?
 	
 	enum State{
-		case initial, sentUkeyClientInit, sentUkeyClientFinish, sentPairedKeyEncryption, sentPairedKeyResult, sentIntroduction, sendingFiles
+		case initial, sentUkeyClientInit, sentUkeyClientFinish, sentPairedKeyEncryption, sentPairedKeyResult, sentIntroduction, sendingFiles, finishing, completed, failed, cancelled, disconnected
 	}
 	
 	init(connection: NWConnection, id: String, urlsToSend:[URL], displayNames:[String]?=nil){
@@ -45,26 +48,29 @@ class OutboundNearbyConnection:NearbyConnection{
 	}
 	
 	deinit {
-		if let transfer=currentTransfer, let handle=transfer.handle{
-			try? handle.close()
-		}
-		for transfer in queue{
-			if let handle=transfer.handle{
-				try? handle.close()
-			}
-		}
+		closeAllTransferHandles()
 	}
 	
 	public func cancel(){
-		cancelled=true
-		if encryptionDone{
-			var cancel=Sharing_Nearby_Frame()
-			cancel.version = .v1
-			cancel.v1=Sharing_Nearby_V1Frame()
-			cancel.v1.type = .cancel
-			try? sendTransferSetupFrame(cancel)
+		NearbyConnection.connectionQueue.async { [weak self] in
+			guard let self=self, !self.resultReported else { return }
+			self.cancelled=true
+			self.currentState = .cancelled
+			let error=NearbyError.canceled(reason: .userCanceled)
+			self.lastError=error
+			self.reportFailure(error)
+			if self.encryptionDone{
+				var cancel=Sharing_Nearby_Frame()
+				cancel.version = .v1
+				cancel.v1=Sharing_Nearby_V1Frame()
+				cancel.v1.type = .cancel
+				try? self.sendTransferSetupFrame(cancel)
+			}
+			do { try self.sendDisconnectionAndDisconnect() } catch {
+				self.lastError=error
+				self.disconnect()
+			}
 		}
-		try? sendDisconnectionAndDisconnect()
 	}
 	
 	override func connectionReady() {
@@ -111,8 +117,11 @@ class OutboundNearbyConnection:NearbyConnection{
 	override func processTransferSetupFrame(_ frame: Sharing_Nearby_Frame) throws {
 		if frame.hasV1 && frame.v1.hasType, case .cancel = frame.v1.type {
 			print("Transfer canceled")
+			currentState = .cancelled
+			let error=NearbyError.canceled(reason: .userCanceled)
+			lastError=error
+			reportFailure(error)
 			try sendDisconnectionAndDisconnect()
-			delegate?.outboundConnection(connection: self, failedWithError: NearbyError.canceled(reason: .userCanceled))
 			return
 		}
 		print(frame)
@@ -126,24 +135,37 @@ class OutboundNearbyConnection:NearbyConnection{
 		case .sendingFiles:
 			break
 		default:
-			assertionFailure("Unexpected state \(currentState)")
+			throw NearbyError.protocolError("Unexpected transfer setup state")
 		}
 	}
 	
 	override func handleConnectionClosure() {
+		guard !resultReported || currentState == .finishing else { return }
 		super.handleConnectionClosure()
 		NSLog("[NearByDrop] Outbound connection closed in state: %@, lastError: %@", String(describing: currentState), String(describing: lastError))
-		if !cancelled && currentState != .sendingFiles {
-			let err = lastError ?? NearbyError.protocolError("Connection closed unexpectedly")
-			delegate?.outboundConnection(connection: self, failedWithError: err)
+		if currentState == .finishing && disconnectionSent && lastError == nil {
+			currentState = .completed
+			closeAllTransferHandles()
+			guard !resultReported else { return }
+			resultReported=true
+			delegate?.outboundConnectionTransferFinished(connection: self)
+			return
 		}
+		guard !resultReported else { return }
+		let err = lastError ?? NearbyError.protocolError("Connection closed unexpectedly")
+		lastError=err
+		currentState = cancelled ? .cancelled : .failed
+		closeAllTransferHandles()
+		reportFailure(err)
 	}
 
 	override func protocolError() {
-		super.protocolError()
 		NSLog("[NearByDrop] Outbound protocol error in state: %@, lastError: %@", String(describing: currentState), String(describing: lastError))
 		let err = lastError ?? NearbyError.protocolError("Protocol error occurred")
-		delegate?.outboundConnection(connection: self, failedWithError: err)
+		lastError=err
+		currentState = cancelled ? .cancelled : .failed
+		reportFailure(err)
+		super.protocolError()
 	}
 	
 	private func sendConnectionRequest() throws {
@@ -349,24 +371,39 @@ class OutboundNearbyConnection:NearbyConnection{
 				try sendNextFileChunk()
 			}
 		case .reject, .unknown:
-			delegate?.outboundConnection(connection: self, failedWithError: NearbyError.canceled(reason: .userRejected))
+			let error=NearbyError.canceled(reason: .userRejected)
+			lastError=error
+			currentState = .failed
+			reportFailure(error)
 			try sendDisconnectionAndDisconnect()
 		case .notEnoughSpace:
-			delegate?.outboundConnection(connection: self, failedWithError: NearbyError.canceled(reason: .notEnoughSpace))
+			let error=NearbyError.canceled(reason: .notEnoughSpace)
+			lastError=error
+			currentState = .failed
+			reportFailure(error)
 			try sendDisconnectionAndDisconnect()
 		case .timedOut:
-			delegate?.outboundConnection(connection: self, failedWithError: NearbyError.canceled(reason: .timedOut))
+			let error=NearbyError.canceled(reason: .timedOut)
+			lastError=error
+			currentState = .failed
+			reportFailure(error)
 			try sendDisconnectionAndDisconnect()
 		case .unsupportedAttachmentType:
-			delegate?.outboundConnection(connection: self, failedWithError: NearbyError.canceled(reason: .unsupportedType))
+			let error=NearbyError.canceled(reason: .unsupportedType)
+			lastError=error
+			currentState = .failed
+			reportFailure(error)
 			try sendDisconnectionAndDisconnect()
 		}
 	}
 	
 	private func sendURL() throws{
-		try sendBytesPayload(data: Data(urlsToSend[0].absoluteString.utf8), id: textPayloadID)
-		delegate?.outboundConnectionTransferFinished(connection: self)
-		try sendDisconnectionAndDisconnect()
+		try sendBytesPayload(data: Data(urlsToSend[0].absoluteString.utf8), id: textPayloadID, completion: { [weak self] in
+			self?.beginFinishing()
+		}, failure: { [weak self] error in
+			self?.lastError=error
+			self?.protocolError()
+		})
 	}
 	
 	private func sendNextFileChunk() throws{
@@ -374,15 +411,16 @@ class OutboundNearbyConnection:NearbyConnection{
 			return
 		}
 		if currentTransfer==nil || currentTransfer?.currentOffset==currentTransfer?.totalBytes{
-			if currentTransfer != nil && currentTransfer?.handle != nil{
-				try currentTransfer?.handle?.close()
+			if var transfer=currentTransfer, transfer.handle != nil{
+				try transfer.handle?.close()
+				transfer.handle=nil
+				currentTransfer=transfer
 			}
 			if queue.isEmpty{
 				#if DEBUG
 				print("Disconnecting because all files have been transferred")
 				#endif
-				try sendDisconnectionAndDisconnect()
-				delegate?.outboundConnectionTransferFinished(connection: self)
+				beginFinishing()
 				return
 			}
 			currentTransfer=queue.removeFirst()
@@ -390,8 +428,16 @@ class OutboundNearbyConnection:NearbyConnection{
 		if currentTransfer!.totalBytes==0{
 			// Zero-byte file: read(upToCount:) returns nil at EOF, so there is no
 			// data chunk — just the end-of-file marker.
-			try sendEOFChunk()
-			try sendNextFileChunk()
+			try sendEOFChunk(completion: { [weak self] in
+				guard let self=self else { return }
+				do { try self.sendNextFileChunk() } catch {
+					self.lastError=error
+					self.protocolError()
+				}
+			}, failure: { [weak self] error in
+				self?.lastError=error
+				self?.protocolError()
+			})
 			return
 		}
 
@@ -421,12 +467,30 @@ class OutboundNearbyConnection:NearbyConnection{
 		wrapper.v1=Location_Nearby_Connections_V1Frame()
 		wrapper.v1.type = .payloadTransfer
 		wrapper.v1.payloadTransfer=transfer
+		let reachesEOF=currentTransfer!.currentOffset==currentTransfer!.totalBytes
 		try encryptAndSendOfflineFrame(wrapper, completion: {
-			do{
-				try self.sendNextFileChunk()
-			}catch{
-				self.lastError=error
-				self.protocolError()
+			if reachesEOF {
+				do {
+					try self.sendEOFChunk(completion: {
+						do { try self.sendNextFileChunk() } catch {
+							self.lastError=error
+							self.protocolError()
+						}
+					}, failure: { error in
+						self.lastError=error
+						self.protocolError()
+					})
+				} catch {
+					self.lastError=error
+					self.protocolError()
+				}
+			} else {
+				do{
+					try self.sendNextFileChunk()
+				}catch{
+					self.lastError=error
+					self.protocolError()
+				}
 			}
 		}, failure: { error in
 			self.lastError=error
@@ -438,13 +502,9 @@ class OutboundNearbyConnection:NearbyConnection{
 		totalBytesSent+=Int64(fileBuffer.count)
 		delegate?.outboundConnection(connection: self, transferProgress: totalBytesToSend>0 ? Double(totalBytesSent)/Double(totalBytesToSend) : 0)
 		
-		if currentTransfer!.currentOffset==currentTransfer!.totalBytes{
-			// Signal end of file (yes, all this for one bit)
-			try sendEOFChunk()
-		}
 	}
 	
-	private func sendEOFChunk() throws{
+	private func sendEOFChunk(completion:(()->Void)?=nil, failure:((Error)->Void)?=nil) throws{
 		guard let transfer=currentTransfer else { return }
 		var frameTransfer=Location_Nearby_Connections_PayloadTransferFrame()
 		frameTransfer.packetType = .data
@@ -460,10 +520,44 @@ class OutboundNearbyConnection:NearbyConnection{
 		wrapper.v1=Location_Nearby_Connections_V1Frame()
 		wrapper.v1.type = .payloadTransfer
 		wrapper.v1.payloadTransfer=frameTransfer
-		try encryptAndSendOfflineFrame(wrapper)
+		try encryptAndSendOfflineFrame(wrapper, completion: completion, failure: failure)
 		#if DEBUG
 		print("sent EOF, current transfer: \(String(describing: transfer))")
 		#endif
+	}
+
+	private func beginFinishing(){
+		guard !resultReported, currentState == .sendingFiles else { return }
+		currentState = .finishing
+		do {
+			try sendDisconnectionAndDisconnect { [weak self] in self?.disconnectionSent=true }
+		}catch{
+			lastError=error
+			protocolError()
+		}
+	}
+
+	private func reportFailure(_ error:Error){
+		guard !resultReported else { return }
+		resultReported=true
+		closeAllTransferHandles()
+		delegate?.outboundConnection(connection: self, failedWithError: error)
+	}
+
+	private func closeAllTransferHandles(){
+		guard !handlesClosed else { return }
+		handlesClosed=true
+		if var transfer=currentTransfer, let handle=transfer.handle {
+			try? handle.close()
+			transfer.handle=nil
+			currentTransfer=transfer
+		}
+		for index in queue.indices {
+			if let handle=queue[index].handle {
+				try? handle.close()
+				queue[index].handle=nil
+			}
+		}
 	}
 	
 	private static func sanitizeFileName(name:String)->String{
@@ -475,7 +569,7 @@ class OutboundNearbyConnection:NearbyConnection{
 fileprivate struct OutgoingFileTransfer{
 	let url:URL
 	let payloadID:Int64
-	let handle:FileHandle?
+	var handle:FileHandle?
 	let totalBytes:Int64
 	var currentOffset:Int64
 }
