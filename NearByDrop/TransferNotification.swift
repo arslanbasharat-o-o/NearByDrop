@@ -54,7 +54,7 @@ final class TransferNotificationPanel: NSPanel {
             defer: false
         )
         self.isFloatingPanel = true
-        self.level = .floating
+        self.level = NSWindow.Level(Int(CGWindowLevelForKey(.popUpMenuWindow)) + 2)
         self.isOpaque = false
         self.backgroundColor = .clear
         self.hasShadow = false
@@ -486,10 +486,10 @@ struct TransferNotificationBannerView: View {
 
     private func stateSubtitle(for state: NotificationTransferState) -> String {
         switch state {
-        case .incoming: return "Quick Share • Wants to send"
-        case .receiving: return "Quick Share • Receiving…"
-        case .completed: return "Quick Share • Saved"
-        case .failed: return "Quick Share • Finished"
+        case .incoming: return "Incoming Transfer"
+        case .receiving: return "Receiving…"
+        case .completed: return "Saved to Downloads"
+        case .failed: return "Transfer Failed"
         }
     }
 }

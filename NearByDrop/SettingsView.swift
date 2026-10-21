@@ -215,7 +215,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Transfer Notifications")
                             .font(.subheadline)
-                        Text("Preview incoming floating notification banner with animations.")
+                        Text("Show a sample transfer notification banner.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -237,7 +237,7 @@ struct SettingsView: View {
     // MARK: - Appearance Tab
     private var appearanceTab: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(title: "Theme", subtitle: "Appearance mode for windows and menus.")
+            sectionHeader(title: "Theme", subtitle: "Choose light, dark, or system appearance.")
             HStack(spacing: 12) {
                 ForEach(AppTheme.allCases) { t in
                     Button {
@@ -331,7 +331,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                     Text("No Trusted Devices")
                         .font(.headline)
-                    Text("When an incoming transfer arrives, check \"Trust this device\" to auto-accept future transfers.")
+                    Text("Transfers from trusted devices are accepted automatically.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
