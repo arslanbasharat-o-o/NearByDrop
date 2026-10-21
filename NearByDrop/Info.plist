@@ -8,5 +8,9 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>NearByDrop needs camera access to scan Quick Share QR codes.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>NearByDrop uses Bluetooth to detect nearby Android devices sharing via Quick Share.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>NearByDrop needs access to the local network to discover and transfer files with nearby devices via Wi-Fi.</string>
 </dict>
 </plist>
