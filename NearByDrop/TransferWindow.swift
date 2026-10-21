@@ -516,10 +516,11 @@ final class TransferWindowController: NSWindowController {
 }
 
 struct PrimaryAction: ViewModifier {
+    @ObservedObject private var theme = ThemeManager.shared
     func body(content: Content) -> some View {
         content
             .buttonStyle(.borderedProminent)
-            .tint(.blue)
+            .tint(theme.currentAccent.color)
     }
 }
 struct NavigationSurface: ViewModifier {
@@ -543,6 +544,7 @@ struct StatusLabel: View {
 }
 struct TransferView: View {
     @ObservedObject var model: TransferModel
+    @ObservedObject private var theme = ThemeManager.shared
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -553,6 +555,10 @@ struct TransferView: View {
                 Spacer()
                 Button(action: TransferModel.openDownloads) { Image(systemName: "folder").frame(width: 26, height: 26) }
                     .buttonStyle(.bordered).help("Open Downloads").accessibilityLabel("Open Downloads")
+                Button(action: { (NSApp.delegate as? AppDelegate)?.openSettings(nil) }) {
+                    Image(systemName: "gearshape").frame(width: 26, height: 26)
+                }
+                .buttonStyle(.bordered).help("Settings").accessibilityLabel("Settings")
             }.padding(.horizontal, 28).padding(.top, 36).padding(.bottom, 16)
             Picker("Transfer method", selection: $model.tab) {
                 ForEach(TransferModel.Tab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
@@ -587,7 +593,7 @@ struct TransferView: View {
     private var sendView: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 14) {
-                Image(systemName: model.urls.count > 1 ? "doc.on.doc" : "doc").font(.system(size: 28)).foregroundStyle(.blue).frame(width: 40)
+                Image(systemName: model.urls.count > 1 ? "doc.on.doc" : "doc").font(.system(size: 28)).foregroundStyle(theme.currentAccent.color).frame(width: 40)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.urls.isEmpty ? "Choose what to send" : model.urls.count == 1 ? model.urls[0].lastPathComponent : "\(model.urls.count) files selected").font(.headline).lineLimit(2)
                     Text(model.urls.isEmpty ? "Drag files here or click Choose." : "Ready to share").font(.callout).foregroundStyle(.secondary)
@@ -681,7 +687,7 @@ struct TransferView: View {
                     case .connecting(let sender):
                         Image(systemName: "antenna.radiowaves.left.and.right")
                             .font(.system(size: 46, weight: .light))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(theme.currentAccent.color)
                             .padding(.top, 28)
                         Text(sender ?? "Connecting to phone…")
                             .font(.title2.weight(.semibold))
@@ -697,7 +703,7 @@ struct TransferView: View {
                     case .downloading(let sender, let description):
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 46, weight: .light))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(theme.currentAccent.color)
                             .padding(.top, 28)
                         Text(sender)
                             .font(.title2.weight(.semibold))
@@ -760,7 +766,7 @@ struct TransferView: View {
                         if model.incoming.isEmpty {
                             Image(systemName: "arrow.down.circle")
                                 .font(.system(size: 46, weight: .light))
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(theme.currentAccent.color)
                                 .padding(.top, 20)
                             Text("Send to this Mac")
                                 .font(.title2.weight(.semibold))
@@ -787,7 +793,7 @@ struct TransferView: View {
                                 HStack(alignment: .top, spacing: 10) {
                                     Image(systemName: "switch.2")
                                         .font(.system(size: 13))
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(theme.currentAccent.color)
                                         .frame(width: 18)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Quick Settings Tile")
@@ -801,7 +807,7 @@ struct TransferView: View {
                                 HStack(alignment: .top, spacing: 10) {
                                     Image(systemName: "qrcode")
                                         .font(.system(size: 13))
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(theme.currentAccent.color)
                                         .frame(width: 18)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("QR Code Pairing")
@@ -815,7 +821,7 @@ struct TransferView: View {
                                 HStack(alignment: .top, spacing: 10) {
                                     Image(systemName: "wifi")
                                         .font(.system(size: 13))
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(theme.currentAccent.color)
                                         .frame(width: 18)
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Same Wi-Fi Network")
