@@ -360,6 +360,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             self.model.tab = .receive
             self.model.stopQRReceive()
 
+            // When receiving via QR code scanner, the user actively initiated by scanning the sender's code
+            if self.model.qrStatus != .idle {
+                let desc: String
+                if let text = transfer.textDescription {
+                    desc = text
+                } else if let first = transfer.files.first {
+                    desc = transfer.files.count > 1 ? "\(first.name) (+\(transfer.files.count - 1))" : first.name
+                } else {
+                    desc = "Files"
+                }
+                self.model.qrStatus = .downloading(sender: device.name, description: desc)
+                self.consent(transfer.id, accept: true)
+                FeedbackManager.shared.playIncoming()
+                FeedbackManager.shared.vibrateTap()
+                return
+            }
+
             // Auto-accept transfers from trusted devices
             if self.model.isDeviceTrusted(device) {
                 self.consent(transfer.id, accept: true)
@@ -421,10 +438,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                     completeContent.userInfo = ["filePath": fileURL.path]
                 }
                 UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "complete_" + id, content: completeContent, trigger: nil))
+
+                if self.model.qrStatus != .idle {
+                    self.model.qrStatus = .completed(filename: fileName, count: info.transfer.files.count)
+                }
             } else if error != nil {
                 FeedbackManager.shared.playError()
                 FeedbackManager.shared.vibrateTap()
                 TransferNotificationManager.shared.transferDidFinish(id: id, error: error, fileURL: nil, fileName: fileName)
+                if self.model.qrStatus != .idle {
+                    self.model.qrStatus = .failed(error: error.map(TransferModel.errorMessage) ?? "Transfer failed")
+                }
             }
             self.model.incoming.removeValue(forKey: id)
             self.model.accepted.remove(id)
