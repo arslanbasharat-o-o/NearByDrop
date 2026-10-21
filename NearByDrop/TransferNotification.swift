@@ -57,7 +57,7 @@ final class TransferNotificationPanel: NSPanel {
         self.level = NSWindow.Level(Int(CGWindowLevelForKey(.popUpMenuWindow)) + 2)
         self.isOpaque = false
         self.backgroundColor = .clear
-        self.hasShadow = false
+        self.hasShadow = true
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         self.isMovableByWindowBackground = false
         self.hidesOnDeactivate = false
@@ -76,7 +76,7 @@ final class TransferNotificationManager: ObservableObject {
     private var dismissalID = 0
     private var transitionID = 0
     private let panelWidth: CGFloat = 360
-    private let panelHeight: CGFloat = 190
+    private let panelHeight: CGFloat = 135
 
     private init() {}
 
@@ -291,25 +291,29 @@ struct TransferNotificationBannerView: View {
 
     @ViewBuilder
     private func contentCard(item: TransferNotificationItem) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             // Header: Device avatar + Device Name + Close
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 deviceAvatar(item: item)
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 6) {
                         Text(item.deviceName)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(.primary)
                             .lineLimit(1)
 
                         if let pin = item.pinCode, item.state == .incoming {
                             Text("PIN \(pin)")
-                                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                .foregroundStyle(theme.currentAccent.color)
+                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(.primary)
                                 .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(theme.currentAccent.color.opacity(0.12), in: Capsule())
+                                .padding(.vertical, 1.5)
+                                .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                        .stroke(Color(nsColor: .separatorColor), lineWidth: 0.5)
+                                )
                         }
                     }
 
@@ -328,8 +332,8 @@ struct TransferNotificationBannerView: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(.secondary)
-                        .padding(5)
-                        .background(Color.primary.opacity(0.06), in: Circle())
+                        .padding(4)
+                        .background(Color(nsColor: .quaternaryLabelColor), in: Circle())
                 }
                 .buttonStyle(.plain)
                 .help("Dismiss")
@@ -338,7 +342,7 @@ struct TransferNotificationBannerView: View {
             // Summary text
             Text(item.summary)
                 .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
 
             // Dynamic State Body
@@ -350,7 +354,7 @@ struct TransferNotificationBannerView: View {
                         set: { manager.setTrust(for: item, trusted: $0) }
                     ))
                     .toggleStyle(.checkbox)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
 
                     Spacer()
@@ -377,7 +381,7 @@ struct TransferNotificationBannerView: View {
                 .padding(.top, 2)
 
             case .receiving:
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 4) {
                     ProgressView()
                         .progressViewStyle(.linear)
                         .tint(theme.currentAccent.color)
@@ -393,32 +397,14 @@ struct TransferNotificationBannerView: View {
             case .completed(let fileURL):
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(.green)
-                        .scaleEffect(checkmarkPop ? 1.0 : 0.4)
-                        .onAppear {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.55)) {
-                                checkmarkPop = true
-                            }
-                        }
 
-                    Text("Transfer Complete")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.green)
+                    Text("Saved to \(NearbyConnectionManager.downloadDirectory.lastPathComponent)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
 
                     Spacer()
-
-                    Button("Finder") {
-                        FeedbackManager.shared.vibrateClick()
-                        if let url = fileURL, FileManager.default.fileExists(atPath: url.path) {
-                            NSWorkspace.shared.activateFileViewerSelecting([url])
-                        } else {
-                            TransferModel.openDownloads()
-                        }
-                        manager.dismiss(animated: true)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
 
                     Button("Open") {
                         FeedbackManager.shared.vibrateClick()
@@ -438,7 +424,7 @@ struct TransferNotificationBannerView: View {
             case .failed(let message):
                 HStack(spacing: 8) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 18))
+                        .font(.system(size: 16))
                         .foregroundStyle(.red)
                     Text(message)
                         .font(.system(size: 12, weight: .medium))
@@ -448,16 +434,18 @@ struct TransferNotificationBannerView: View {
                 .padding(.top, 2)
             }
         }
-        .padding(14)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+        .padding(12)
+        .frame(width: 360)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .windowBackgroundColor))
         )
-        .shadow(color: Color.black.opacity(0.2), radius: 14, x: 0, y: 6)
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .onTapGesture {
-            // Clicking body of notification brings main window or popover
             if let delegate = NSApp.delegate as? AppDelegate {
                 delegate.openApp(nil)
             }
@@ -467,25 +455,14 @@ struct TransferNotificationBannerView: View {
     @ViewBuilder
     private func deviceAvatar(item: TransferNotificationItem) -> some View {
         ZStack {
-            if item.state == .incoming {
-                Circle()
-                    .stroke(theme.currentAccent.color.opacity(isPulsing ? 0 : 0.6), lineWidth: 2)
-                    .scaleEffect(isPulsing ? 1.55 : 1.0)
-                    .onAppear {
-                        withAnimation(.easeInOut(duration: 1.3).repeatForever(autoreverses: false)) {
-                            isPulsing = true
-                        }
-                    }
-            }
-
-            Circle()
-                .fill(theme.currentAccent.color.opacity(0.15))
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(theme.currentAccent.color.opacity(0.12))
 
             Image(systemName: deviceSymbol(item.deviceType))
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(theme.currentAccent.color)
         }
-        .frame(width: 40, height: 40)
+        .frame(width: 32, height: 32)
     }
 
     private func deviceSymbol(_ type: RemoteDeviceInfo.DeviceType) -> String {
@@ -500,9 +477,9 @@ struct TransferNotificationBannerView: View {
 
     private func stateSubtitle(for state: NotificationTransferState) -> String {
         switch state {
-        case .incoming: return "Incoming Transfer"
-        case .receiving: return "Receiving…"
-        case .completed: return "Saved to Downloads"
+        case .incoming: return "Quick Share"
+        case .receiving: return "Receiving file…"
+        case .completed: return "Transfer Complete"
         case .failed: return "Transfer Failed"
         }
     }

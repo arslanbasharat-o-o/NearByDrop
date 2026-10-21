@@ -64,7 +64,21 @@ class OutboundNearbyConnection:NearbyConnection{
 				cancel.version = .v1
 				cancel.v1=Sharing_Nearby_V1Frame()
 				cancel.v1.type = .cancel
-				try? self.sendTransferSetupFrame(cancel)
+				do {
+					try self.sendTransferSetupFrame(cancel, completion: {
+						do { try self.sendDisconnectionAndDisconnect() } catch {
+							self.lastError=error
+							self.disconnect()
+						}
+					}, failure: { error in
+						self.lastError=error
+						self.disconnect()
+					})
+				} catch {
+					self.lastError=error
+					self.disconnect()
+				}
+				return
 			}
 			do { try self.sendDisconnectionAndDisconnect() } catch {
 				self.lastError=error

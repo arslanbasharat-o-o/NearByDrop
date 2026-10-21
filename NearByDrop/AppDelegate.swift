@@ -457,12 +457,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 FeedbackManager.shared.vibrateTap()
                 TransferNotificationManager.shared.transferDidFinish(id: id, error: error, fileURL: nil, fileName: fileName)
                 if self.model.qrStatus != .idle {
-                    self.model.qrStatus = .failed(error: error.map(TransferModel.errorMessage) ?? "Transfer failed")
+                    self.model.qrStatus = .failed(error: TransferModel.errorMessage(error))
                 }
             }
             self.model.incoming.removeValue(forKey: id)
             self.model.accepted.remove(id)
-            self.model.receiveMessage = error.map(TransferModel.errorMessage) ?? "Saved to \(self.model.downloadDirectory.lastPathComponent)"
+            self.model.receiveMessage = error.map(TransferModel.errorMessage) ?? "Saved to \(self.model.downloadDirectoryDisplayPath)"
             UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["transfer_" + id])
         }
     }
@@ -559,7 +559,7 @@ struct MenuView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .help("Open Downloads: \(model.downloadDirectory.lastPathComponent)")
+                .help("Open Downloads: \(model.downloadDirectoryDisplayPath)")
                 .accessibilityLabel("Open Downloads")
 
                 if let settings = settings {
@@ -1023,7 +1023,7 @@ struct MenuView: View {
                         Image(systemName: "folder.fill")
                             .foregroundStyle(theme.currentAccent.color)
                             .font(.system(size: 14))
-                        Text(model.downloadDirectory.lastPathComponent)
+                        Text(model.downloadDirectoryDisplayPath)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.primary)
                             .lineLimit(1)
@@ -1069,9 +1069,7 @@ struct MenuView: View {
                     var isDir: ObjCBool = false
                     if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
                         DispatchQueue.main.async {
-                            _ = url.startAccessingSecurityScopedResource()
-                            NearbyConnectionManager.downloadDirectory = url
-                            model.downloadDirectory = url
+                            model.setDownloadDirectory(url)
                         }
                     }
                 }

@@ -346,9 +346,7 @@ final class USBModel: ObservableObject {
             self.prepareTransfer("Receiving \(item.name)…")
             self.queue.async {
                 do {
-                    guard let savedURL = try self.bridge.download(item.id, name: targetURL.lastPathComponent, directory: dir) else {
-                        throw NSError(domain: "USB", code: 2, userInfo: [NSLocalizedDescriptionKey: "The file could not be saved."])
-                    }
+                    let savedURL = try self.bridge.download(item.id, name: targetURL.lastPathComponent, directory: dir)
                     DispatchQueue.main.async {
                         self.busy = false
                         self.transferring = false
