@@ -84,9 +84,22 @@ struct QRScannerView: View {
     @StateObject private var scanner = QRScanner()
     @Environment(\.dismiss) private var dismiss
     let onCode: (String) -> String?
+    var onCancel: (() -> Void)? = nil
+
     var body: some View {
         VStack(spacing: 18) {
-            HStack { Text("Scan QR Code").font(.title2.weight(.semibold)); Spacer(); Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction) }
+            HStack {
+                Text("Scan QR Code").font(.title2.weight(.semibold))
+                Spacer()
+                Button("Cancel") {
+                    if let onCancel = onCancel {
+                        onCancel()
+                    } else {
+                        dismiss()
+                    }
+                }
+                .keyboardShortcut(.cancelAction)
+            }
             CameraPreview(session: scanner.session)
                 .frame(height: 240).background(.black).clipShape(RoundedRectangle(cornerRadius: 16))
                 .overlay { Image(systemName: "viewfinder").font(.system(size: 120, weight: .ultraLight)).foregroundStyle(.white.opacity(0.8)).accessibilityHidden(true) }
@@ -97,5 +110,41 @@ struct QRScannerView: View {
         }.padding(24).frame(width: 440)
             .onAppear { scanner.onCode = onCode; scanner.start() }
             .onDisappear { scanner.stop() }
+    }
+}
+
+final class QRScannerWindowController: NSWindowController {
+    static let shared = QRScannerWindowController()
+
+    private init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 380),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Scan QR Code"
+        window.isReleasedWhenClosed = false
+        window.center()
+        super.init(window: window)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    func show(onCode: @escaping (String) -> String?) {
+        window?.contentView = NSHostingView(rootView: QRScannerView(onCode: { [weak self] code in
+            let res = onCode(code)
+            if res == nil {
+                DispatchQueue.main.async {
+                    self?.close()
+                }
+            }
+            return res
+        }, onCancel: { [weak self] in
+            self?.close()
+        }))
+        showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
     }
 }

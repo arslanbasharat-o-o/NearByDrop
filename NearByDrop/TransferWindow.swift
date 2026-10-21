@@ -54,6 +54,14 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     // Preferences & persistence
     @Published var downloadDirectory: URL = NearbyConnectionManager.downloadDirectory
     @Published var launchAtLogin: Bool = false
+    @Published var menuBarOnly: Bool = UserDefaults.standard.bool(forKey: "menuBarOnly") {
+        didSet {
+            UserDefaults.standard.set(menuBarOnly, forKey: "menuBarOnly")
+            if menuBarOnly {
+                window?.close()
+            }
+        }
+    }
     @Published var trustedDevices: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? [])
     @Published var history: [TransferHistoryItem] = []
     private static let historyKey = "transferHistory"
@@ -276,45 +284,16 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     func showQR() {
         guard !urls.isEmpty, !sending else { return }
 
-        guard let url = LocalFileShareServer.shared.start(
-            urls: urls,
-            displayNames: displayNames.isEmpty ? nil : displayNames,
-            onProgress: { [weak self] progress, speed, eta in
-                DispatchQueue.main.async {
-                    self?.qrTransferProgress = progress
-                    self?.qrTransferSpeed = eta.isEmpty ? speed : "\(speed) • \(eta)"
-                    self?.qrTransferStatus = "Sending to phone…"
-                }
-            },
-            onCompleted: { [weak self] fileName, fileSize, fileURL in
-                DispatchQueue.main.async {
-                    self?.qrTransferProgress = 1.0
-                    self?.qrTransferStatus = "Sent \(fileName) successfully!"
-                    FeedbackManager.shared.playSuccess()
-                    FeedbackManager.shared.vibrateSuccess()
-                    self?.recordTransfer(fileName: fileName, fileSize: fileSize, direction: .outgoing, peerName: "Phone", fileURL: fileURL)
-                }
-            },
-            onError: { [weak self] err in
-                DispatchQueue.main.async {
-                    self?.qrTransferStatus = err
-                    FeedbackManager.shared.playError()
-                    FeedbackManager.shared.vibrateTap()
-                }
-            }
-        ) else {
-            error = "Could not start local transfer. Make sure Wi-Fi is connected."
-            FeedbackManager.shared.playError()
-            return
-        }
+        let qrKey = NearbyConnectionManager.shared.generateQrCodeKey()
+        let quickShareURL = "https://quickshare.google/qrcode#key=\(qrKey)"
 
-        qrServerURLString = url.absoluteString
+        qrServerURLString = quickShareURL
         qrTransferStatus = "Waiting for phone to scan…"
         qrTransferProgress = 0
         qrTransferSpeed = ""
 
         let filter = CIFilter.qrCodeGenerator()
-        filter.message = Data(url.absoluteString.utf8)
+        filter.message = Data(quickShareURL.utf8)
         filter.correctionLevel = "M"
         if let output = filter.outputImage, let cg = CIContext().createCGImage(output.transformed(by: .init(scaleX: 8, y: 8)), from: output.extent.applying(.init(scaleX: 8, y: 8))) {
             qrImage = NSImage(cgImage: cg, size: NSSize(width: 240, height: 240))
@@ -323,7 +302,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
 
     func dismissQR() {
-        LocalFileShareServer.shared.stop()
         NearbyConnectionManager.shared.clearQrCodeKey()
         showingQR = false
         qrImage = nil
@@ -382,7 +360,13 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             self.devices.removeAll { $0.id == id }
         }
     }
-    func startTransferWithQrCode(device: RemoteDeviceInfo) { if showingQR { send(to: device) } }
+    func startTransferWithQrCode(device: RemoteDeviceInfo) {
+        DispatchQueue.main.async {
+            if self.showingQR {
+                self.send(to: device)
+            }
+        }
+    }
     func connectionWasEstablished(pinCode: String) { sendMessage = "Confirm code \(pinCode) on \(recipient)" }
     func connectionFailed(with error: Error) {
         timeout?.cancel()
@@ -691,8 +675,8 @@ struct TransferView: View {
         .sheet(isPresented: $model.scanning) { QRScannerView(onCode: model.scan) }
         .sheet(isPresented: $model.showingQR, onDismiss: model.dismissQR) {
             VStack(spacing: 16) {
-                Text("Scan to Receive").font(.title2.weight(.semibold))
-                Text("Open your phone’s camera or Google Lens to scan and download.")
+                Text("Quick Share with Phone").font(.title2.weight(.semibold))
+                Text("Scan this QR code with your phone’s Camera or Google Lens to connect directly via Quick Share.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -707,56 +691,21 @@ struct TransferView: View {
                         .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
                 }
 
-                if !model.qrServerURLString.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "wifi")
-                            .font(.caption)
-                            .foregroundStyle(theme.currentAccent.color)
-                        Text(model.qrServerURLString)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                        Button {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(model.qrServerURLString, forType: .string)
-                        } label: {
-                            Image(systemName: "doc.on.doc")
-                                .font(.caption)
-                        }
-                        .buttonStyle(.borderless)
-                        .help("Copy Link")
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color(nsColor: .controlBackgroundColor), in: Capsule())
+                HStack(spacing: 8) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(theme.currentAccent.color)
+                    Text("Quick Share Pairing Code")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.primary)
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .background(Color(nsColor: .controlBackgroundColor), in: Capsule())
 
-                if model.qrTransferProgress > 0 && model.qrTransferProgress < 1.0 {
-                    VStack(spacing: 6) {
-                        ProgressView(value: model.qrTransferProgress)
-                        HStack {
-                            Text(model.qrTransferStatus)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Text(model.qrTransferSpeed)
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                } else if model.qrTransferProgress >= 1.0 {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                        Text(model.qrTransferStatus)
-                            .font(.callout.weight(.medium))
-                            .foregroundStyle(.green)
-                    }
-                } else {
-                    Text(model.qrTransferStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text(model.qrTransferStatus)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Button("Done", action: model.dismissQR)
                     .keyboardShortcut(.cancelAction)
