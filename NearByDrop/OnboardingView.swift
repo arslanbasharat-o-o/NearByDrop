@@ -26,7 +26,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
     init(onFinished: @escaping () -> Void) {
         self.onFinished = onFinished
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 530),
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 600),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -34,6 +34,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
         window.title = "Welcome to NearByDrop"
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
+        window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
         window.center()
         super.init(window: window)
@@ -67,15 +68,15 @@ struct OnboardingView: View {
     @State private var cameraAllowed: Bool = false
 
     var body: some View {
-        VStack(spacing: 22) {
+        VStack(spacing: 16) {
             // Header
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 ZStack {
                     Circle()
                         .fill(theme.currentAccent.color.opacity(0.12))
-                        .frame(width: 72, height: 72)
+                        .frame(width: 64, height: 64)
                     Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.system(size: 32, weight: .semibold))
+                        .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(theme.currentAccent.color)
                 }
 
@@ -87,10 +88,10 @@ struct OnboardingView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            .padding(.top, 14)
+            .padding(.top, 8)
 
             // Features list
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 12) {
                 featureItem(
                     icon: "arrow.up.and.down.circle.fill",
                     color: theme.currentAccent.color,
@@ -112,7 +113,7 @@ struct OnboardingView: View {
                     text: "Plug in a USB cable to browse and transfer files in wired MTP mode."
                 )
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 6)
 
             Divider()
 
@@ -163,9 +164,9 @@ struct OnboardingView: View {
                 }
             }
             .padding(12)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
 
-            Spacer()
+            Spacer(minLength: 8)
 
             // Action
             Button(action: onFinish) {
@@ -178,8 +179,10 @@ struct OnboardingView: View {
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
         }
-        .padding(26)
-        .frame(width: 500, height: 530)
+        .padding(.horizontal, 28)
+        .padding(.top, 20)
+        .padding(.bottom, 22)
+        .frame(width: 480, height: 600)
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
             checkPermissions()
