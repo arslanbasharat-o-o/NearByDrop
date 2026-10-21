@@ -49,6 +49,17 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 
     // Preferences & persistence
     @Published var downloadDirectory: URL = NearbyConnectionManager.downloadDirectory
+    var downloadDirectoryDisplayPath: String {
+        let home = NSHomeDirectory()
+        let path = downloadDirectory.path
+        if path.hasPrefix(home + "/Downloads") {
+            let relative = path.dropFirst(home.count + 1)
+            return String(relative)
+        } else if path.hasPrefix(home) {
+            return "~" + path.dropFirst(home.count)
+        }
+        return downloadDirectory.lastPathComponent
+    }
     @Published var isChoosingDirectory: Bool = false
     @Published var launchAtLogin: Bool = false
     @Published var menuBarOnly: Bool = UserDefaults.standard.bool(forKey: "menuBarOnly") {
@@ -904,7 +915,7 @@ struct TransferView: View {
                                     Image(systemName: "folder.fill")
                                         .foregroundStyle(theme.currentAccent.color)
                                         .font(.system(size: 14))
-                                    Text(model.downloadDirectory.lastPathComponent)
+                                    Text(model.downloadDirectoryDisplayPath)
                                         .font(.callout.weight(.medium))
                                         .foregroundStyle(.primary)
                                         .lineLimit(1)

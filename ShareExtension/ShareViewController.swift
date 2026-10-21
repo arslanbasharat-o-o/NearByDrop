@@ -16,6 +16,7 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 	private var chosenDevice:RemoteDeviceInfo?
 	private var lastError:Error?
 	private var sheetWindow:NSWindow?
+	private var completionGeneration = 0
 	
 	@IBOutlet var filesIcon:NSImageView?
 	@IBOutlet var filesLabel:NSTextField?
@@ -46,7 +47,19 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 	
 		guard let item=self.extensionContext?.inputItems.first as? NSExtensionItem else {
 			let cancelError = NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError, userInfo: nil)
-			self.extensionContext?.cancelRequest(withError: cancelError)
+			extensionContext?.cancelRequest(withError: cancelError)
+			return
+		}
+		guard let contentWrap,
+		      let listViewWrapper,
+		      let loadingOverlay,
+		      let progressView,
+		      let largeProgress,
+		      let listView,
+		      let progressDeviceIconWrap,
+		      let qrCodeWrapView else {
+			let loadError = NSError(domain: NSCocoaErrorDomain, code: NSFileReadCorruptFileError, userInfo: [NSLocalizedDescriptionKey: "The share extension interface could not be loaded."])
+			extensionContext?.cancelRequest(withError: loadError)
 			return
 		}
 		if let attachments = item.attachments, !attachments.isEmpty {
@@ -68,7 +81,7 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 						}
 						guard completedCount==attachments.count else { return }
 						if let loadError=loadError {
-							self.extensionContext!.cancelRequest(withError: loadError)
+							self.extensionContext?.cancelRequest(withError: loadError)
 						}else{
 							self.urlsReady()
 						}
@@ -77,49 +90,49 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 			}
 		} else {
 			let cancelError = NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError, userInfo: nil)
-			self.extensionContext!.cancelRequest(withError: cancelError)
+			self.extensionContext?.cancelRequest(withError: cancelError)
 			return
 		}
 		
-		contentWrap!.addSubview(listViewWrapper!)
-		contentWrap!.addSubview(loadingOverlay!)
-		contentWrap!.addSubview(progressView!)
-		progressView!.isHidden=true
+		contentWrap.addSubview(listViewWrapper)
+		contentWrap.addSubview(loadingOverlay)
+		contentWrap.addSubview(progressView)
+		progressView.isHidden=true
 		
-		listViewWrapper!.translatesAutoresizingMaskIntoConstraints=false
-		loadingOverlay!.translatesAutoresizingMaskIntoConstraints=false
-		progressView!.translatesAutoresizingMaskIntoConstraints=false
+		listViewWrapper.translatesAutoresizingMaskIntoConstraints=false
+		loadingOverlay.translatesAutoresizingMaskIntoConstraints=false
+		progressView.translatesAutoresizingMaskIntoConstraints=false
 		NSLayoutConstraint.activate([
-			NSLayoutConstraint(item: listViewWrapper!, attribute: .width, relatedBy: .equal, toItem: contentWrap, attribute: .width, multiplier: 1, constant: 0),
-			NSLayoutConstraint(item: listViewWrapper!, attribute: .height, relatedBy: .equal, toItem: contentWrap, attribute: .height, multiplier: 1, constant: 0),
+			NSLayoutConstraint(item: listViewWrapper, attribute: .width, relatedBy: .equal, toItem: contentWrap, attribute: .width, multiplier: 1, constant: 0),
+			NSLayoutConstraint(item: listViewWrapper, attribute: .height, relatedBy: .equal, toItem: contentWrap, attribute: .height, multiplier: 1, constant: 0),
 			
-			NSLayoutConstraint(item: loadingOverlay!, attribute: .width, relatedBy: .equal, toItem: contentWrap, attribute: .width, multiplier: 1, constant: 0),
-			NSLayoutConstraint(item: loadingOverlay!, attribute: .centerY, relatedBy: .equal, toItem: contentWrap, attribute: .centerY, multiplier: 1, constant: 0),
+			NSLayoutConstraint(item: loadingOverlay, attribute: .width, relatedBy: .equal, toItem: contentWrap, attribute: .width, multiplier: 1, constant: 0),
+			NSLayoutConstraint(item: loadingOverlay, attribute: .centerY, relatedBy: .equal, toItem: contentWrap, attribute: .centerY, multiplier: 1, constant: 0),
 			
-			NSLayoutConstraint(item: progressView!, attribute: .width, relatedBy: .equal, toItem: contentWrap, attribute: .width, multiplier: 1, constant: 0),
-			NSLayoutConstraint(item: progressView!, attribute: .centerY, relatedBy: .equal, toItem: contentWrap, attribute: .centerY, multiplier: 1, constant: 0)
+			NSLayoutConstraint(item: progressView, attribute: .width, relatedBy: .equal, toItem: contentWrap, attribute: .width, multiplier: 1, constant: 0),
+			NSLayoutConstraint(item: progressView, attribute: .centerY, relatedBy: .equal, toItem: contentWrap, attribute: .centerY, multiplier: 1, constant: 0)
 		])
 		
-		largeProgress!.startAnimation(nil)
+		largeProgress.startAnimation(nil)
 		let flowLayout=NSCollectionViewFlowLayout()
 		flowLayout.itemSize=NSSize(width: 75, height: 90)
 		flowLayout.sectionInset=NSEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
 		flowLayout.minimumInteritemSpacing=10
 		flowLayout.minimumLineSpacing=10
-		listView!.collectionViewLayout=flowLayout
-		listView!.dataSource=self
-		listView!.delegate=self
-		listView!.isSelectable=true
+		listView.collectionViewLayout=flowLayout
+		listView.dataSource=self
+		listView.delegate=self
+		listView.isSelectable=true
 		
-		progressDeviceIconWrap!.wantsLayer=true
-		progressDeviceIconWrap!.layer!.masksToBounds=false
+		progressDeviceIconWrap.wantsLayer=true
+		progressDeviceIconWrap.layer?.masksToBounds=false
 		
-		qrCodeWrapView!.wantsLayer=true
-		qrCodeWrapView!.layer!.masksToBounds=false
-		qrCodeWrapView!.layer!.shadowColor = .black
-		qrCodeWrapView!.layer!.shadowOpacity=0.3
-		qrCodeWrapView!.layer!.shadowRadius=12
-		qrCodeWrapView!.layer!.shadowOffset=CGSizeMake(0, -5)
+		qrCodeWrapView.wantsLayer=true
+		qrCodeWrapView.layer?.masksToBounds=false
+		qrCodeWrapView.layer?.shadowColor = .black
+		qrCodeWrapView.layer?.shadowOpacity=0.3
+		qrCodeWrapView.layer?.shadowRadius=12
+		qrCodeWrapView.layer?.shadowOffset=CGSizeMake(0, -5)
 	}
 	
 	override func viewDidLoad(){
@@ -129,6 +142,10 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 	}
 	
 	override func viewWillDisappear() {
+		completionGeneration += 1
+		if chosenDevice == nil {
+			closeQrCodeSheet(clearKey: true)
+		}
 		if chosenDevice==nil{
 			NearbyConnectionManager.shared.stopDeviceDiscovery()
 		}
@@ -136,71 +153,106 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 	}
 
 	@IBAction func cancel(_ sender: AnyObject?) {
-		if let device=chosenDevice{
-			NearbyConnectionManager.shared.cancelOutgoingTransfer(id: device.id!)
+		completionGeneration += 1
+		closeQrCodeSheet(clearKey: true)
+		if let device=chosenDevice, let id=device.id{
+			NearbyConnectionManager.shared.cancelOutgoingTransfer(id: id)
 		}
 		let cancelError = NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError, userInfo: nil)
-		self.extensionContext!.cancelRequest(withError: cancelError)
+		extensionContext?.cancelRequest(withError: cancelError)
 	}
 	
 	@IBAction func useQrCode(_ sender: AnyObject?) {
-		let window=contentWrap!.window!
+		guard let window=contentWrap?.window,
+		      let qrCodeSheetView,
+		      let qrCodeView else { return }
+		closeQrCodeSheet(clearKey: true)
 		let sheetWindow=NSWindow()
-		sheetWindow.contentView=qrCodeSheetView!
+		sheetWindow.contentView=qrCodeSheetView
 		let size=NSSize(width: 380, height: 400)
 		sheetWindow.contentMaxSize=size
 		sheetWindow.contentMinSize=size
 		sheetWindow.setContentSize(size)
 		
 		let qrKey=NearbyConnectionManager.shared.generateQrCodeKey()
-		let qrCodeImage=try! QRCode.build
-			.text("https://quickshare.google/qrcode#key=\(qrKey)")
-			.backgroundColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0))
-			.quietZonePixelCount(3)
-			.onPixels.shape(.circle())
-			.eye.shape(.roundedPointing())
-			.errorCorrection(.low)
-			.generate.image(dimension: Int(qrCodeView!.frame.width)*2)
-		qrCodeView!.image=NSImage(cgImage: qrCodeImage, size: qrCodeImage.size)
+		do {
+			let qrCodeImage=try QRCode.build
+				.text("https://quickshare.google/qrcode#key=\(qrKey)")
+				.backgroundColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0))
+				.quietZonePixelCount(3)
+				.onPixels.shape(.circle())
+				.eye.shape(.roundedPointing())
+				.errorCorrection(.low)
+				.generate.image(dimension: max(1, Int(qrCodeView.frame.width) * 2))
+			qrCodeView.image=NSImage(cgImage: qrCodeImage, size: qrCodeImage.size)
+		} catch {
+			NearbyConnectionManager.shared.clearQrCodeKey()
+			let alert=NSAlert(error: error)
+			if let window=view.window {
+				alert.beginSheetModal(for: window)
+			} else {
+				alert.runModal()
+			}
+			return
+		}
 		
 		self.sheetWindow=sheetWindow
-		window.beginSheet(sheetWindow) { response in
+		window.beginSheet(sheetWindow) { [weak self, weak sheetWindow] _ in
+			guard let self, self.sheetWindow === sheetWindow else { return }
 			self.sheetWindow=nil
+			NearbyConnectionManager.shared.clearQrCodeKey()
 		}
 	}
 	
 	@IBAction func dismissQrCodeSheet(_ sender: AnyObject?){
-		contentWrap!.window!.endSheet(sheetWindow!)
-		sheetWindow=nil
+		closeQrCodeSheet(clearKey: true)
+	}
+
+	private func closeQrCodeSheet(clearKey: Bool) {
+		if let sheetWindow {
+			if let parent=contentWrap?.window, parent.attachedSheet === sheetWindow {
+				parent.endSheet(sheetWindow)
+			}
+			self.sheetWindow=nil
+		}
+		if clearKey {
+			NearbyConnectionManager.shared.clearQrCodeKey()
+		}
 	}
 	
 	private func urlsReady(){
 		for url in urls{
 			if url.isFileURL{
-				let isDirectory=UnsafeMutablePointer<ObjCBool>.allocate(capacity: 1)
-				if FileManager.default.fileExists(atPath: url.path, isDirectory: isDirectory) && isDirectory.pointee.boolValue{
+				var isDirectory: ObjCBool = false
+				if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue{
 					print("Canceling share request because URL \(url) is a directory")
 					let cancelError = NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError, userInfo: nil)
-					self.extensionContext!.cancelRequest(withError: cancelError)
+					extensionContext?.cancelRequest(withError: cancelError)
 					return
 				}
 			}
 		}
 		if urls.count==1{
 			if urls[0].isFileURL{
-				filesLabel!.stringValue=urls[0].lastPathComponent
-				filesIcon!.image=NSWorkspace.shared.icon(forFile: urls[0].path)
+				filesLabel?.stringValue=urls[0].lastPathComponent
+				filesIcon?.image=NSWorkspace.shared.icon(forFile: urls[0].path)
 			}else if urls[0].scheme=="http" || urls[0].scheme=="https"{
-				filesLabel!.stringValue=urls[0].absoluteString
-				filesIcon!.image=NSImage(named: NSImage.networkName)
+				filesLabel?.stringValue=urls[0].absoluteString
+				filesIcon?.image=NSImage(named: NSImage.networkName)
 			}
 		}else{
-			filesLabel!.stringValue=String.localizedStringWithFormat(NSLocalizedString("NFiles", value: "%d files", comment: ""), urls.count)
-			filesIcon!.image=NSImage(named: NSImage.multipleDocumentsName)
+			filesLabel?.stringValue=String.localizedStringWithFormat(NSLocalizedString("NFiles", value: "%d files", comment: ""), urls.count)
+			filesIcon?.image=NSImage(named: NSImage.multipleDocumentsName)
 		}
 	}
 	
 	func addDevice(device: RemoteDeviceInfo) {
+		let key=device.id ?? "name:\(device.name)"
+		if let index=foundDevices.firstIndex(where: { ($0.id ?? "name:\($0.name)") == key }) {
+			foundDevices[index]=device
+			listView?.reloadData()
+			return
+		}
 		if foundDevices.isEmpty{
 			loadingOverlay?.animator().isHidden=true
 		}
@@ -225,7 +277,7 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 	}
 	
 	func startTransferWithQrCode(device: RemoteDeviceInfo){
-		dismissQrCodeSheet(nil)
+		closeQrCodeSheet(clearKey: false)
 		selectDevice(device: device)
 	}
 	
@@ -258,8 +310,12 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 			dismissDelayed()
 		}else{
 			let alert=NSAlert(error: error)
-			alert.beginSheetModal(for: view.window!) { resp in
-				self.extensionContext!.cancelRequest(withError: error)
+			if let window=view.window {
+				alert.beginSheetModal(for: window) { [weak self] _ in
+					self?.extensionContext?.cancelRequest(withError: error)
+				}
+			} else {
+				extensionContext?.cancelRequest(withError: error)
 			}
 		}
 	}
@@ -269,15 +325,19 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 	}
 	
 	func transferProgress(progress: Double) {
-		progressProgressBar!.doubleValue=progress*progressProgressBar!.maxValue
+		if let progressProgressBar {
+			progressProgressBar.doubleValue=progress*progressProgressBar.maxValue
+		}
 	}
 	
 	func transferFinished() {
+		lastError=nil
 		progressState?.stringValue=NSLocalizedString("TransferFinished", value: "Transfer finished", comment: "")
 		dismissDelayed()
 	}
 	
 	func selectDevice(device:RemoteDeviceInfo){
+		guard chosenDevice == nil, let deviceID=device.id else { return }
 		NearbyConnectionManager.shared.stopDeviceDiscovery()
 		listViewWrapper?.animator().isHidden=true
 		progressView?.animator().isHidden=false
@@ -286,16 +346,21 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 		progressDeviceIcon?.image=imageForDeviceType(type: device.type)
 		progressProgressBar?.startAnimation(nil)
 		progressState?.stringValue=NSLocalizedString("Connecting", value: "Connecting...", comment: "")
+		lastError=nil
 		chosenDevice=device
-		NearbyConnectionManager.shared.startOutgoingTransfer(deviceID: device.id!, delegate: self, urls: urls)
+		NearbyConnectionManager.shared.startOutgoingTransfer(deviceID: deviceID, delegate: self, urls: urls)
+		NearbyConnectionManager.shared.clearQrCodeKey()
 	}
 	
 	private func dismissDelayed(){
-		DispatchQueue.main.asyncAfter(deadline: .now()+2.0){
+		completionGeneration += 1
+		let generation=completionGeneration
+		DispatchQueue.main.asyncAfter(deadline: .now()+2.0){ [weak self] in
+			guard let self, self.completionGeneration == generation else { return }
 			if let error=self.lastError{
-				self.extensionContext!.cancelRequest(withError: error)
+				self.extensionContext?.cancelRequest(withError: error)
 			}else{
-				self.extensionContext!.completeRequest(returningItems: nil, completionHandler: nil)
+				self.extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
 			}
 		}
 	}
