@@ -75,23 +75,26 @@ class InboundNearbyConnection: NearbyConnection{
 	}
 	
 	override internal func processTransferSetupFrame(_ frame:Sharing_Nearby_Frame) throws{
-		if frame.hasV1 && frame.v1.hasType, case .cancel = frame.v1.type {
+		guard frame.hasV1 else { return }
+		if frame.v1.hasType, case .cancel = frame.v1.type {
 			print("Transfer canceled")
 			currentState = .disconnected
 			try sendDisconnectionAndDisconnect()
 			return
 		}
-		switch currentState{
-		case .sentConnectionResponse:
+		if frame.v1.hasPairedKeyEncryption {
 			try processPairedKeyEncryptionFrame(frame)
-		case .sentPairedKeyResult:
-			try processPairedKeyResultFrame(frame)
-		case .receivedPairedKeyResult:
-			try processIntroductionFrame(frame)
-		default:
-			print("Unexpected connection state in processTransferSetupFrame: \(currentState)")
-			print(frame)
+			return
 		}
+		if frame.v1.hasPairedKeyResult {
+			try processPairedKeyResultFrame(frame)
+			return
+		}
+		if frame.v1.hasIntroduction {
+			try processIntroductionFrame(frame)
+			return
+		}
+		print("Unexpected or unhandled frame in processTransferSetupFrame: \(frame)")
 	}
 	
 	override func isServer() -> Bool {
@@ -336,7 +339,7 @@ class InboundNearbyConnection: NearbyConnection{
 	private func processIntroductionFrame(_ frame:Sharing_Nearby_Frame) throws{
 		guard frame.hasV1, frame.v1.hasIntroduction else { throw NearbyError.requiredFieldMissing("shareNearbyFrame.v1.introduction") }
 		currentState = .waitingForUserConsent
-		if frame.v1.introduction.fileMetadata.count>0 && frame.v1.introduction.textMetadata.isEmpty{
+		if !frame.v1.introduction.fileMetadata.isEmpty {
 			let downloadsDirectory=NearbyConnectionManager.downloadDirectory.resolvingSymlinksInPath()
 			for file in frame.v1.introduction.fileMetadata{
 				let dest=makeFileDestinationURL(file.name, in: downloadsDirectory)
@@ -347,13 +350,13 @@ class InboundNearbyConnection: NearbyConnection{
 			}
 			let metadata=TransferMetadata(files: transferredFiles.map({$0.value.meta}), id: id, pinCode: pinCode)
 			requestOrAutomaticConsent(metadata: metadata)
-		}else if frame.v1.introduction.textMetadata.count==1{
+		}else if !frame.v1.introduction.textMetadata.isEmpty {
 			let meta=frame.v1.introduction.textMetadata[0]
 			if case .url=meta.type{
 				let metadata=TransferMetadata(files: [], id: id, pinCode: pinCode, textDescription: meta.textTitle)
 				textPayloadID=meta.payloadID
 				requestOrAutomaticConsent(metadata: metadata)
-			}else if case .text=meta.type{
+			}else{
 				let downloadsDirectory=NearbyConnectionManager.downloadDirectory.resolvingSymlinksInPath()
 				let dateFormatter=DateFormatter()
 				dateFormatter.dateFormat="yyyy-MM-dd HH.mm.ss"
@@ -363,8 +366,6 @@ class InboundNearbyConnection: NearbyConnection{
 										  destinationURL: dest)
 				transferredFiles[meta.payloadID]=info
 				requestOrAutomaticConsent(metadata: TransferMetadata(files: [info.meta], id: self.id, pinCode: self.pinCode))
-			}else{
-				rejectTransfer(with: .unsupportedAttachmentType)
 			}
 		}else{
 			rejectTransfer(with: .unsupportedAttachmentType)

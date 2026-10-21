@@ -349,7 +349,7 @@ struct USBView: View {
                                             Text(device.name)
                                                 .font(.subheadline.weight(.medium))
                                                 .foregroundStyle(.primary)
-                                            Text("Browse files, photos & two-way transfer")
+                                            Text("Connected via USB")
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
                                         }
