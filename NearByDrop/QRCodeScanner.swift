@@ -125,6 +125,8 @@ final class QRScannerWindowController: NSWindowController {
         )
         window.title = "Scan QR Code"
         window.isReleasedWhenClosed = false
+        window.level = .floating
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.center()
         super.init(window: window)
     }
@@ -146,5 +148,6 @@ final class QRScannerWindowController: NSWindowController {
         showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
+        window?.orderFrontRegardless()
     }
 }
