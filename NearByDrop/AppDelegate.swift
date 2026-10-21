@@ -450,6 +450,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                     self.model.qrStatus = .completed(filename: fileName, count: info.transfer.files.count)
                 }
             } else if error != nil {
+                NSLog("[NearByDrop] Inbound transfer %@ finished with error: %@", id, error!.localizedDescription)
                 FeedbackManager.shared.playError()
                 FeedbackManager.shared.vibrateTap()
                 TransferNotificationManager.shared.transferDidFinish(id: id, error: error, fileURL: nil, fileName: fileName)

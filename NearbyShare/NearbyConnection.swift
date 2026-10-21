@@ -15,16 +15,19 @@ import BigInt
 
 class NearbyConnection{
 	internal static let SANE_FRAME_LENGTH=5*1024*1024
-	private static let dispatchQueue=DispatchQueue(label: "com.arslanbasharat.NearByDrop.queue", qos: .userInitiated) // High priority FIFO queue for high-throughput transfers
+	internal static let connectionQueue=DispatchQueue(label: "com.arslanbasharat.NearByDrop.queue", qos: .userInitiated) // High priority FIFO queue for high-throughput transfers
 	
 	internal let connection:NWConnection
 	internal var remoteDeviceInfo:RemoteDeviceInfo?
 	private var payloadBuffers:[Int64:NSMutableData]=[:]
+	private var payloadSizes:[Int64:Int64]=[:]
+	private var bufferedPayloadBytes:Int64=0
 	internal var encryptionDone:Bool=false
 	internal var transferredFiles:[Int64:InternalFileInfo]=[:]
 	public let id:String
 	internal var lastError:Error?
 	private var connectionClosed:Bool=false
+	private var closureHandled:Bool=false
 	private var keepAliveTimer:DispatchSourceTimer?
 	
 	// UKEY2-related state
@@ -60,15 +63,18 @@ class NearbyConnection{
 				self.lastError=err
 				print("Error opening socket: \(err)")
 				self.handleConnectionClosure()
+			} else if case .cancelled = state {
+				self.handleConnectionClosure()
 			}
 		}
-		//connection.start(queue: .global(qos: .utility))
-		connection.start(queue: NearbyConnection.dispatchQueue)
+		connection.start(queue: NearbyConnection.connectionQueue)
 	}
 	
 	func connectionReady(){}
 	
 	internal func handleConnectionClosure(){
+		guard !closureHandled else { return }
+		closureHandled=true
 		connectionClosed=true
 		stopKeepAliveTimer()
 		print("Connection closed")
@@ -97,17 +103,31 @@ class NearbyConnection{
 	internal func processBytesPayload(payload:Data, id:Int64)throws ->Bool{
 		return false
 	}
+
+	internal static func frameLength(from header:Data) -> Int? {
+		guard header.count == 4 else { return nil }
+		let length=UInt32(header[0]) << 24 | UInt32(header[1]) << 16 | UInt32(header[2]) << 8 | UInt32(header[3])
+		guard length > 0, length <= UInt32(SANE_FRAME_LENGTH) else { return nil }
+		return Int(length)
+	}
+
+	internal static func isValidPayloadRange(totalSize:Int64, offset:Int64, bodyCount:Int) -> Bool {
+		guard totalSize >= 0, offset >= 0, bodyCount >= 0, offset <= totalSize else { return false }
+		return Int64(bodyCount) <= totalSize - offset
+	}
+
+	private func failProtocol(_ error:Error){
+		lastError=error
+		protocolError()
+	}
 	
 	private func receiveFrameAsync(){
-		connection.receive(minimumIncompleteLength: 4, maximumLength: 4) { content, contentContext, isComplete, error in
+		connection.receive(minimumIncompleteLength: 4, maximumLength: 4) { [weak self] content, _, isComplete, error in
+			guard let self=self else { return }
 			if self.connectionClosed{
 				return
 			}
-			if isComplete{
-				self.handleConnectionClosure()
-				return
-			}
-			if !(error==nil){
+			if let error=error{
 				self.lastError=error
 				self.protocolError()
 				return
@@ -117,8 +137,7 @@ class NearbyConnection{
 				self.protocolError()
 				return
 			}
-			let frameLength:UInt32=UInt32(content[0]) << 24 | UInt32(content[1]) << 16 | UInt32(content[2]) << 8 | UInt32(content[3])
-			guard frameLength<NearbyConnection.SANE_FRAME_LENGTH else {
+			guard let frameLength=NearbyConnection.frameLength(from: content), !isComplete else {
 				self.lastError=NearbyError.protocolError("Unexpected packet length")
 				self.protocolError()
 				return
@@ -127,8 +146,9 @@ class NearbyConnection{
 		}
 	}
 	
-	private func receiveFrameAsync(length:UInt32){
-		connection.receive(minimumIncompleteLength: Int(length), maximumLength: Int(length)) { content, contentContext, isComplete, error in
+	private func receiveFrameAsync(length:Int){
+		connection.receive(minimumIncompleteLength: length, maximumLength: length) { [weak self] content, _, isComplete, error in
+			guard let self=self else { return }
 			if self.connectionClosed{
 				return
 			}
@@ -137,21 +157,33 @@ class NearbyConnection{
 				self.protocolError()
 				return
 			}
-			if isComplete{
-				self.handleConnectionClosure()
-				return
-			}
 			guard let content=content else {
 				self.protocolError()
 				return
 			}
+			guard content.count == length else {
+				self.lastError=NearbyError.protocolError("Incomplete frame payload")
+				self.protocolError()
+				return
+			}
 			self.processReceivedFrame(frameData: content)
-			self.receiveFrameAsync()
+			if isComplete {
+				self.handleConnectionClosure()
+			} else {
+				self.receiveFrameAsync()
+			}
 		}
 	}
 	
 	internal func sendFrameAsync(_ frame:Data, completion:(()->Void)?=nil, failure:((Error)->Void)?=nil){
 		if connectionClosed{
+			failure?(NearbyError.protocolError("Connection is closed"))
+			return
+		}
+		guard !frame.isEmpty, frame.count <= NearbyConnection.SANE_FRAME_LENGTH else {
+			let error=NearbyError.protocolError("Unexpected packet length")
+			lastError=error
+			failure?(error)
 			return
 		}
 		var lengthPrefixedData=Data(capacity: frame.count+4)
@@ -163,7 +195,8 @@ class NearbyConnection{
 			UInt8(truncatingIfNeeded: length)
 		])
 		lengthPrefixedData.append(frame)
-		connection.send(content: lengthPrefixedData, completion: .contentProcessed({ error in
+		connection.send(content: lengthPrefixedData, completion: .contentProcessed({ [weak self] error in
+			guard let self=self else { return }
 			if let error=error{
 				self.lastError=error
 				failure?(error)
@@ -174,6 +207,7 @@ class NearbyConnection{
 	}
 	
 	internal func encryptAndSendOfflineFrame(_ frame:Location_Nearby_Connections_OfflineFrame, completion:(()->Void)?=nil, failure:((Error)->Void)?=nil) throws{
+		guard let encryptKey=encryptKey, let sendHmacKey=sendHmacKey else { throw NearbyError.protocolError("Encryption is not ready") }
 		var d2dMsg=Securegcm_DeviceToDeviceMessage()
 		serverSeq+=1
 		d2dMsg.sequenceNumber=serverSeq
@@ -187,11 +221,11 @@ class NearbyConnection{
 		iv.withUnsafeBytes { ivBytes in
 			serializedMsg.withUnsafeBytes { msgBytes in
 				encryptedData.withUnsafeMutableBytes { outBytes in
-					encryptionStatus=CCCrypt(
+						encryptionStatus=CCCrypt(
 						CCOperation(kCCEncrypt),
 						CCAlgorithm(kCCAlgorithmAES128),
 						CCOptions(kCCOptionPKCS7Padding),
-						encryptKey, kCCKeySizeAES256,
+							encryptKey, kCCKeySizeAES256,
 						ivBytes.baseAddress,
 						msgBytes.baseAddress, serializedMsg.count,
 						outBytes.baseAddress, outBytes.count,
@@ -215,7 +249,7 @@ class NearbyConnection{
 		
 		var smsg=Securemessage_SecureMessage()
 		smsg.headerAndBody=try hb.serializedData()
-		smsg.signature=Data(HMAC<SHA256>.authenticationCode(for: smsg.headerAndBody, using: sendHmacKey!))
+		smsg.signature=Data(HMAC<SHA256>.authenticationCode(for: smsg.headerAndBody, using: sendHmacKey))
 		sendFrameAsync(try smsg.serializedData(), completion: completion, failure: failure)
 	}
 	
@@ -223,7 +257,8 @@ class NearbyConnection{
 		try sendBytesPayload(data: try frame.serializedData(), id: Int64.random(in: Int64.min...Int64.max))
 	}
 	
-	internal func sendBytesPayload(data:Data, id:Int64) throws{
+	internal func sendBytesPayload(data:Data, id:Int64, completion:(()->Void)?=nil, failure:((Error)->Void)?=nil) throws{
+		guard data.count <= NearbyConnection.SANE_FRAME_LENGTH else { throw NearbyError.protocolError("Payload too large (\(data.count) bytes)") }
 		var transfer=Location_Nearby_Connections_PayloadTransferFrame()
 		transfer.packetType = .data
 		transfer.payloadChunk.offset=0
@@ -239,20 +274,38 @@ class NearbyConnection{
 		wrapper.v1=Location_Nearby_Connections_V1Frame()
 		wrapper.v1.type = .payloadTransfer
 		wrapper.v1.payloadTransfer=transfer
-		try encryptAndSendOfflineFrame(wrapper)
-		
-		transfer.payloadChunk.flags=1 // .lastChunk
-		transfer.payloadChunk.offset=Int64(transfer.payloadChunk.body.count)
-		transfer.payloadChunk.clearBody()
-		wrapper.v1.payloadTransfer=transfer
-		try encryptAndSendOfflineFrame(wrapper)
+		try encryptAndSendOfflineFrame(wrapper, completion: { [weak self] in
+			guard let self=self else { return }
+			var lastTransfer=transfer
+			lastTransfer.payloadChunk.flags=1 // .lastChunk
+			lastTransfer.payloadChunk.offset=Int64(lastTransfer.payloadChunk.body.count)
+			lastTransfer.payloadChunk.clearBody()
+			var lastWrapper=Location_Nearby_Connections_OfflineFrame()
+			lastWrapper.version = .v1
+			lastWrapper.v1=Location_Nearby_Connections_V1Frame()
+			lastWrapper.v1.type = .payloadTransfer
+			lastWrapper.v1.payloadTransfer=lastTransfer
+			do {
+				try self.encryptAndSendOfflineFrame(lastWrapper, completion: completion, failure: failure)
+			}catch{
+				self.lastError=error
+				failure?(error)
+			}
+		}, failure: failure)
 	}
 	
 	internal func decryptAndProcessReceivedSecureMessage(_ smsg:Securemessage_SecureMessage) throws{
 		guard smsg.hasSignature, smsg.hasHeaderAndBody else { throw NearbyError.requiredFieldMissing("secureMessage.signature|headerAndBody") }
-		let hmac=Data(HMAC<SHA256>.authenticationCode(for: smsg.headerAndBody, using: recvHmacKey!))
+		guard let recvHmacKey=recvHmacKey, let decryptKey=decryptKey else { throw NearbyError.protocolError("Encryption is not ready") }
+		let hmac=Data(HMAC<SHA256>.authenticationCode(for: smsg.headerAndBody, using: recvHmacKey))
 		guard hmac==smsg.signature else { throw NearbyError.protocolError("hmac!=signature") }
 		let headerAndBody=try Securemessage_HeaderAndBody(serializedData: smsg.headerAndBody)
+		guard headerAndBody.hasHeader, headerAndBody.hasBody,
+			  headerAndBody.header.hasIv, headerAndBody.header.iv.count == kCCBlockSizeAES128,
+			  !headerAndBody.body.isEmpty, headerAndBody.body.count % kCCBlockSizeAES128 == 0,
+			  headerAndBody.body.count <= NearbyConnection.SANE_FRAME_LENGTH else {
+			throw NearbyError.protocolError("Malformed encrypted payload")
+		}
 		var decryptedData=Data(count: headerAndBody.body.count)
 		
 		var decryptedLength:Int=0
@@ -288,34 +341,66 @@ class NearbyConnection{
 			let payloadTransfer=offlineFrame.v1.payloadTransfer
 			let header=payloadTransfer.payloadHeader;
 			let chunk=payloadTransfer.payloadChunk;
-			guard header.hasType, header.hasID else { throw NearbyError.requiredFieldMissing("payloadHeader.type|id") }
+			guard header.hasType, header.hasID, header.hasTotalSize else { throw NearbyError.requiredFieldMissing("payloadHeader.type|id|totalSize") }
 			guard payloadTransfer.hasPayloadChunk, chunk.hasOffset, chunk.hasFlags else { throw NearbyError.requiredFieldMissing("payloadTransfer.payloadChunk|offset|flags") }
+			guard chunk.flags == 0 || chunk.flags == 1 else { throw NearbyError.protocolError("Unknown payload chunk flags") }
+			guard header.totalSize >= 0, chunk.offset >= 0 else { throw NearbyError.protocolError("Negative payload size or offset") }
 			if case .bytes = header.type{
 				let payloadID=header.id
-				if header.totalSize>InboundNearbyConnection.SANE_FRAME_LENGTH{
+				guard header.totalSize <= Int64(NearbyConnection.SANE_FRAME_LENGTH) else {
 					payloadBuffers.removeValue(forKey: payloadID)
+					payloadSizes.removeValue(forKey: payloadID)
 					throw NearbyError.protocolError("Payload too large (\(header.totalSize) bytes)")
 				}
+				guard NearbyConnection.isValidPayloadRange(totalSize: header.totalSize, offset: chunk.offset, bodyCount: chunk.hasBody ? chunk.body.count : 0) else {
+					payloadBuffers.removeValue(forKey: payloadID)
+					payloadSizes.removeValue(forKey: payloadID)
+					throw NearbyError.protocolError("Invalid byte payload range")
+				}
 				if payloadBuffers[payloadID]==nil {
+					guard payloadBuffers.count < 16,
+						  bufferedPayloadBytes <= Int64(NearbyConnection.SANE_FRAME_LENGTH) - header.totalSize else {
+						throw NearbyError.protocolError("Too many buffered payloads")
+					}
+					payloadSizes[payloadID]=header.totalSize
 					payloadBuffers[payloadID]=NSMutableData(capacity: Int(header.totalSize))
+				}
+				guard payloadSizes[payloadID] == header.totalSize else {
+					payloadBuffers.removeValue(forKey: payloadID)
+					payloadSizes.removeValue(forKey: payloadID)
+					throw NearbyError.protocolError("Payload size changed mid-transfer")
 				}
 				let buffer=payloadBuffers[payloadID]!
 				guard chunk.offset==buffer.count else {
 					payloadBuffers.removeValue(forKey: payloadID)
+					payloadSizes.removeValue(forKey: payloadID)
+					bufferedPayloadBytes-=Int64(buffer.count)
 					throw NearbyError.protocolError("Unexpected chunk offset \(chunk.offset), expected \(buffer.count)")
 				}
 				if chunk.hasBody {
 					buffer.append(chunk.body)
+					bufferedPayloadBytes+=Int64(chunk.body.count)
 				}
 				if (chunk.flags & 1)==1 {
+					guard Int64(buffer.count) == header.totalSize else {
+						payloadBuffers.removeValue(forKey: payloadID)
+						payloadSizes.removeValue(forKey: payloadID)
+						bufferedPayloadBytes-=Int64(buffer.count)
+						throw NearbyError.protocolError("Byte payload ended before the advertised byte count")
+					}
 					payloadBuffers.removeValue(forKey: payloadID)
+					payloadSizes.removeValue(forKey: payloadID)
+					bufferedPayloadBytes-=Int64(buffer.count)
 					if !(try processBytesPayload(payload: Data(buffer), id: payloadID)){
 						let innerFrame=try Sharing_Nearby_Frame(serializedData: buffer as Data)
 						try processTransferSetupFrame(innerFrame)
 					}
 				}
 			}else if case .file = header.type{
+				guard chunk.hasBody || chunk.flags == 1 else { throw NearbyError.protocolError("Empty file payload chunk") }
 				try processFileChunk(frame: payloadTransfer)
+			}else{
+				throw NearbyError.protocolError("Unsupported payload type")
 			}
 		}else if offlineFrame.hasV1 && offlineFrame.v1.hasType, case .keepAlive = offlineFrame.v1.type{
 #if DEBUG
@@ -391,14 +476,18 @@ class NearbyConnection{
 		}
 		let key=try ECPublicKey(domain: domain, w: Point(BInt(magnitude: [UInt8](clientX)), BInt(magnitude: [UInt8](clientY))))
 		
-		let dhs=(try privateKey?.domain.multiplyPoint(key.w, privateKey!.s).x.asMagnitudeBytes())!
+		guard let privateKey=privateKey else { throw NearbyError.protocolError("Missing local key") }
+		let dhs=try privateKey.domain.multiplyPoint(key.w, privateKey.s).x.asMagnitudeBytes()
 		var sha=SHA256()
 		sha.update(data: dhs)
 		let derivedSecretKey=Data(sha.finalize())
 		
 		var ukeyInfo=Data()
-		ukeyInfo.append(ukeyClientInitMsgData!)
-		ukeyInfo.append(ukeyServerInitMsgData!)
+		guard let ukeyClientInitMsgData=ukeyClientInitMsgData, let ukeyServerInitMsgData=ukeyServerInitMsgData else {
+			throw NearbyError.protocolError("Missing UKEY2 transcript")
+		}
+		ukeyInfo.append(ukeyClientInitMsgData)
+		ukeyInfo.append(ukeyServerInitMsgData)
 		let authString=NearbyConnection.hkdf(inputKeyMaterial: SymmetricKey(data: derivedSecretKey), salt: "UKEY2 v1 auth".data(using: .utf8)!, info: ukeyInfo, outputByteCount: 32)
 		let nextSecret=NearbyConnection.hkdf(inputKeyMaterial: SymmetricKey(data: derivedSecretKey), salt: "UKEY2 v1 next".data(using: .utf8)!, info: ukeyInfo, outputByteCount: 32)
 		
@@ -440,7 +529,9 @@ class NearbyConnection{
 		}
 		connectionClosed=true
 		stopKeepAliveTimer()
-		connection.send(content: nil, isComplete: true, completion: .contentProcessed({ error in
+		connection.send(content: nil, isComplete: true, completion: .contentProcessed({ [weak self] error in
+			guard let self=self else { return }
+			if let error=error { self.lastError=error }
 			self.handleConnectionClosure()
 		}))
 	}
@@ -451,22 +542,34 @@ class NearbyConnection{
 		offlineFrame.v1.type = .disconnection
 		offlineFrame.v1.disconnection=Location_Nearby_Connections_DisconnectionFrame()
 		
-		if encryptionDone{
-			try encryptAndSendOfflineFrame(offlineFrame)
-		}else{
-			sendFrameAsync(try offlineFrame.serializedData())
+		let serialized=try offlineFrame.serializedData()
+		let finish: () -> Void = { [weak self] in self?.disconnect() }
+		let fail: (Error) -> Void = { [weak self] (error:Error) in
+			self?.lastError=error
+			self?.disconnect()
 		}
-		disconnect()
+		if encryptionDone{
+			try encryptAndSendOfflineFrame(offlineFrame, completion: finish, failure: fail)
+		}else{
+			sendFrameAsync(serialized, completion: finish, failure: fail)
+		}
 	}
-	
+
 	internal func sendUkey2Alert(type:Securegcm_Ukey2Alert.AlertType){
 		var alert=Securegcm_Ukey2Alert()
 		alert.type=type
 		var msg=Securegcm_Ukey2Message()
 		msg.messageType = .alert
-		msg.messageData = try! alert.serializedData()
-		sendFrameAsync(try! msg.serializedData())
-		disconnect()
+		do {
+			msg.messageData = try alert.serializedData()
+			sendFrameAsync(try msg.serializedData(), completion: { [weak self] in self?.disconnect() }, failure: { [weak self] error in
+				self?.lastError=error
+				self?.disconnect()
+			})
+		}catch{
+			lastError=error
+			disconnect()
+		}
 	}
 	
 	internal func sendKeepAlive(ack:Bool){
@@ -488,7 +591,7 @@ class NearbyConnection{
 
 	internal func startKeepAliveTimer(){
 		guard encryptionDone, !connectionClosed, keepAliveTimer==nil else { return }
-		let timer=DispatchSource.makeTimerSource(queue: NearbyConnection.dispatchQueue)
+		let timer=DispatchSource.makeTimerSource(queue: NearbyConnection.connectionQueue)
 		timer.schedule(deadline: DispatchTime.now() + DispatchTimeInterval.seconds(10), repeating: DispatchTimeInterval.seconds(10))
 		timer.setEventHandler { [weak self] in
 			guard let self=self, self.encryptionDone, !self.connectionClosed else { return }
