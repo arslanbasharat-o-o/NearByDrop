@@ -20,7 +20,7 @@ struct TransferHistoryItem: Codable, Identifiable, Hashable {
 }
 
 final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
-    enum Tab: String, CaseIterable { case send = "Send", receive = "Receive", usb = "USB" }
+    enum Tab: String, CaseIterable { case send = "Send", receive = "Receive", history = "Transfers", usb = "USB" }
     @Published var tab: Tab = .send
     @Published var urls: [URL] = []
     @Published var devices: [RemoteDeviceInfo] = []
@@ -55,7 +55,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     private static let historyKey = "transferHistory"
 
     let usb = USBModel()
-    let deviceName = Host.current().localizedName ?? "This Mac"
+    var deviceName: String { NearbyConnectionManager.currentDeviceName }
     weak var window: NSWindow?
     var onConsent: ((String, Bool) -> Void)?
     private var chosenID: String?
@@ -314,6 +314,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         let fileName = displayNames.first ?? urls.first?.lastPathComponent ?? "Files"
         let display = urls.count > 1 ? "\(fileName) (+\(urls.count - 1))" : fileName
         recordTransfer(fileName: display, fileSize: totalBytes, direction: .outgoing, peerName: peer, fileURL: urls.first)
+        NSSound(named: "Glass")?.play()
         resetSpeedTracking()
     }
 
@@ -362,6 +363,11 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         guard let data = UserDefaults.standard.data(forKey: Self.historyKey),
               let items = try? JSONDecoder().decode([TransferHistoryItem].self, from: data) else { return }
         history = items
+    }
+
+    func clearHistory() {
+        history.removeAll()
+        UserDefaults.standard.removeObject(forKey: Self.historyKey)
     }
 
     func recordTransfer(fileName: String, fileSize: Int64, direction: TransferHistoryItem.Direction, peerName: String, fileURL: URL?) {
@@ -567,6 +573,7 @@ struct TransferView: View {
                 switch model.tab {
                 case .send: sendView
                 case .receive: receiveView
+                case .history: historyView
                 case .usb: USBView(usb: model.usb, files: model.urls, chooseFiles: model.chooseFiles)
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -767,10 +774,10 @@ struct TransferView: View {
                             Image(systemName: "arrow.down.circle")
                                 .font(.system(size: 46, weight: .light))
                                 .foregroundStyle(theme.currentAccent.color)
-                                .padding(.top, 20)
+                                .padding(.top, 28)
                             Text("Send to this Mac")
                                 .font(.title2.weight(.semibold))
-                            Text("Choose \(model.deviceName) in Quick Share or scan a code.")
+                            Text("Choose \"\(model.deviceName)\" in Quick Share or scan a code.")
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                             Button { model.scanning = true } label: {
@@ -784,58 +791,6 @@ struct TransferView: View {
                                     .foregroundStyle(.secondary)
                                     .textSelection(.enabled)
                             }
-
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Connecting from Android:")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.secondary)
-
-                                HStack(alignment: .top, spacing: 10) {
-                                    Image(systemName: "switch.2")
-                                        .font(.system(size: 13))
-                                        .foregroundStyle(theme.currentAccent.color)
-                                        .frame(width: 18)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Quick Settings Tile")
-                                            .font(.caption.weight(.medium))
-                                        Text("Swipe down on Android and tap Quick Share to turn on discovery.")
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-
-                                HStack(alignment: .top, spacing: 10) {
-                                    Image(systemName: "qrcode")
-                                        .font(.system(size: 13))
-                                        .foregroundStyle(theme.currentAccent.color)
-                                        .frame(width: 18)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("QR Code Pairing")
-                                            .font(.caption.weight(.medium))
-                                        Text("Tap the QR icon in Android Quick Share, then click Scan QR Code above.")
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-
-                                HStack(alignment: .top, spacing: 10) {
-                                    Image(systemName: "wifi")
-                                        .font(.system(size: 13))
-                                        .foregroundStyle(theme.currentAccent.color)
-                                        .frame(width: 18)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Same Wi-Fi Network")
-                                            .font(.caption.weight(.medium))
-                                        Text("Both devices must be on the same local network.")
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                            .padding(14)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(nsColor: .controlBackgroundColor).opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
-                            .padding(.top, 6)
                         } else {
                             ForEach(model.incoming.keys.sorted(), id: \.self) { id in
                                 if let item = model.incoming[id] {
@@ -876,49 +831,104 @@ struct TransferView: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+                    }.frame(maxWidth: .infinity).padding(.horizontal, 28).padding(.bottom, 24)
+                }
+            }
+        }
+    }
 
-                        // Recent Transfers
-                        if !model.history.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack {
-                                    Text("Recent Transfers")
-                                        .font(.headline)
-                                    Spacer()
-                                }
-                                VStack(spacing: 6) {
-                                    ForEach(model.history.prefix(5)) { item in
-                                        HStack(spacing: 12) {
-                                            Image(systemName: item.direction == .incoming ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
-                                                .font(.title3)
-                                                .foregroundStyle(item.direction == .incoming ? Color.green : Color.blue)
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(item.fileName)
-                                                    .font(.subheadline.weight(.medium))
-                                                    .lineLimit(1)
-                                                Text("\(item.peerName) • \(TransferModel.formatBytes(item.fileSize)) • \(TransferModel.formatDate(item.timestamp))")
-                                                    .font(.caption2)
-                                                    .foregroundStyle(.secondary)
-                                            }
-                                            Spacer()
-                                            if let url = item.fileURL {
-                                                Button("Show in Finder") {
-                                                    if FileManager.default.fileExists(atPath: url.path) {
-                                                        NSWorkspace.shared.activateFileViewerSelecting([url])
-                                                    } else {
-                                                        TransferModel.openDownloads()
-                                                    }
-                                                }
-                                                .buttonStyle(.bordered)
-                                                .controlSize(.mini)
-                                            }
-                                        }
-                                        .padding(10)
-                                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+    private var historyView: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Transfer History")
+                    .font(.headline)
+                Spacer()
+                if !model.history.isEmpty {
+                    Button("Clear History") {
+                        model.clearHistory()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 12)
+
+            if model.history.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 38, weight: .light))
+                        .foregroundStyle(.secondary)
+                    Text("No Transfers Yet")
+                        .font(.headline)
+                    Text("Files you send or receive will appear here.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(model.history) { item in
+                            HStack(spacing: 12) {
+                                Image(systemName: item.direction == .incoming ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(item.direction == .incoming ? Color.green : Color.blue)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.fileName)
+                                        .font(.subheadline.weight(.medium))
+                                        .lineLimit(1)
+                                    HStack(spacing: 6) {
+                                        Text(item.direction.rawValue)
+                                            .font(.caption2.weight(.semibold))
+                                            .padding(.horizontal, 5)
+                                            .padding(.vertical, 1)
+                                            .background(
+                                                (item.direction == .incoming ? Color.green : Color.blue).opacity(0.12),
+                                                in: RoundedRectangle(cornerRadius: 4)
+                                            )
+                                        Text("•")
+                                            .font(.caption2)
+                                            .foregroundStyle(.quaternary)
+                                        Text(item.peerName)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                        Text("•")
+                                            .font(.caption2)
+                                            .foregroundStyle(.quaternary)
+                                        Text(TransferModel.formatBytes(item.fileSize))
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                        Text("•")
+                                            .font(.caption2)
+                                            .foregroundStyle(.quaternary)
+                                        Text(TransferModel.formatDate(item.timestamp))
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
                                     }
                                 }
+
+                                Spacer()
+
+                                if let url = item.fileURL {
+                                    Button("Show in Finder") {
+                                        if FileManager.default.fileExists(atPath: url.path) {
+                                            NSWorkspace.shared.activateFileViewerSelecting([url])
+                                        } else {
+                                            TransferModel.openDownloads()
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                }
                             }
+                            .padding(12)
+                            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
                         }
-                    }.frame(maxWidth: .infinity).padding(.horizontal, 28).padding(.bottom, 24)
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 20)
                 }
             }
         }
