@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build (Release)
+        run: |
+          set -o pipefail
+          xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop \
+            -configuration Release -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build | tee build.log | grep -E '(error|warning):' || true
+          test -d build/Build/Products/Release/NearByDrop.app
+
+      - name: Package
+        run: |
+          cd build/Build/Products/Release
+          zip -r NearByDrop.zip NearByDrop.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NearByDrop
+          path: build/Build/Products/Release/NearByDrop.zip
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/Build/Products/Release/NearByDrop.zip

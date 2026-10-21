@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>NSBonjourServices</key>
+		<array>
+			<string>_FC9F5ED42C8A._tcp</string>
+		</array>
+		<key>NSLocalNetworkUsageDescription</key>
+		<string>NearByDrop Created by Arslan Basharat needs access to your local network to send files.</string>
+		<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionAttributes</key>
+		<dict>
+			<key>NSExtensionActivationRule</key>
+			<string>SUBQUERY (
+    extensionItems,
+    $extensionItem,
+    SUBQUERY (
+        $extensionItem.attachments,
+        $attachment,
+        ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.file-url"
+        OR ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url"
+        AND NOT (ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.folder")
+    ).@count == $extensionItem.attachments.@count
+).@count &gt; 0</string>
+		</dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.share-services</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
+	</dict>
+</dict>
+</plist>
