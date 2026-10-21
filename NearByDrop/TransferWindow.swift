@@ -29,6 +29,10 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var qrImage: NSImage?
     @Published var showingQR = false
     @Published var waitingForQR = false
+    @Published var qrServerURLString: String = ""
+    @Published var qrTransferProgress: Double = 0
+    @Published var qrTransferSpeed: String = ""
+    @Published var qrTransferStatus: String = "Waiting for phone to scan…"
     @Published var incoming: [String: TransferInfo] = [:]
     @Published var accepted: Set<String> = []
     @Published var receiveMessage = ""
@@ -271,16 +275,63 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
     func showQR() {
         guard !urls.isEmpty, !sending else { return }
-        let key = NearbyConnectionManager.shared.generateQrCodeKey()
+
+        guard let url = LocalFileShareServer.shared.start(
+            urls: urls,
+            displayNames: displayNames.isEmpty ? nil : displayNames,
+            onProgress: { [weak self] progress, speed, eta in
+                DispatchQueue.main.async {
+                    self?.qrTransferProgress = progress
+                    self?.qrTransferSpeed = eta.isEmpty ? speed : "\(speed) • \(eta)"
+                    self?.qrTransferStatus = "Sending to phone…"
+                }
+            },
+            onCompleted: { [weak self] fileName, fileSize, fileURL in
+                DispatchQueue.main.async {
+                    self?.qrTransferProgress = 1.0
+                    self?.qrTransferStatus = "Sent \(fileName) successfully!"
+                    FeedbackManager.shared.playSuccess()
+                    FeedbackManager.shared.vibrateSuccess()
+                    self?.recordTransfer(fileName: fileName, fileSize: fileSize, direction: .outgoing, peerName: "Phone", fileURL: fileURL)
+                }
+            },
+            onError: { [weak self] err in
+                DispatchQueue.main.async {
+                    self?.qrTransferStatus = err
+                    FeedbackManager.shared.playError()
+                    FeedbackManager.shared.vibrateTap()
+                }
+            }
+        ) else {
+            error = "Could not start local transfer. Make sure Wi-Fi is connected."
+            FeedbackManager.shared.playError()
+            return
+        }
+
+        qrServerURLString = url.absoluteString
+        qrTransferStatus = "Waiting for phone to scan…"
+        qrTransferProgress = 0
+        qrTransferSpeed = ""
+
         let filter = CIFilter.qrCodeGenerator()
-        filter.message = Data("https://quickshare.google/qrcode#key=\(key)".utf8)
+        filter.message = Data(url.absoluteString.utf8)
         filter.correctionLevel = "M"
         if let output = filter.outputImage, let cg = CIContext().createCGImage(output.transformed(by: .init(scaleX: 8, y: 8)), from: output.extent.applying(.init(scaleX: 8, y: 8))) {
             qrImage = NSImage(cgImage: cg, size: NSSize(width: 240, height: 240))
             showingQR = true
         }
     }
-    func dismissQR() { NearbyConnectionManager.shared.clearQrCodeKey(); showingQR = false; qrImage = nil }
+
+    func dismissQR() {
+        LocalFileShareServer.shared.stop()
+        NearbyConnectionManager.shared.clearQrCodeKey()
+        showingQR = false
+        qrImage = nil
+        qrServerURLString = ""
+        qrTransferProgress = 0
+        qrTransferSpeed = ""
+        qrTransferStatus = "Waiting for phone to scan…"
+    }
     func scan(_ value: String) -> String? {
         guard let url = URL(string: value) else { return "Invalid QR code" }
         lastScannedURL = url
@@ -639,12 +690,80 @@ struct TransferView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .sheet(isPresented: $model.scanning) { QRScannerView(onCode: model.scan) }
         .sheet(isPresented: $model.showingQR, onDismiss: model.dismissQR) {
-            VStack(spacing: 20) {
-                Text("Scan to receive").font(.title2.weight(.semibold))
-                Text("Scan this code with your phone’s camera.").foregroundStyle(.secondary)
-                if let image = model.qrImage { Image(nsImage: image).interpolation(.none).resizable().frame(width: 240, height: 240).padding(16).background(.white, in: RoundedRectangle(cornerRadius: 16)) }
-                Button("Done", action: model.dismissQR).keyboardShortcut(.cancelAction)
-            }.padding(28).frame(width: 380)
+            VStack(spacing: 16) {
+                Text("Scan to Receive").font(.title2.weight(.semibold))
+                Text("Open your phone’s camera or Google Lens to scan and download.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                if let image = model.qrImage {
+                    Image(nsImage: image)
+                        .interpolation(.none)
+                        .resizable()
+                        .frame(width: 220, height: 220)
+                        .padding(14)
+                        .background(.white, in: RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+                }
+
+                if !model.qrServerURLString.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "wifi")
+                            .font(.caption)
+                            .foregroundStyle(theme.currentAccent.color)
+                        Text(model.qrServerURLString)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(model.qrServerURLString, forType: .string)
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                                .font(.caption)
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Copy Link")
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color(nsColor: .controlBackgroundColor), in: Capsule())
+                }
+
+                if model.qrTransferProgress > 0 && model.qrTransferProgress < 1.0 {
+                    VStack(spacing: 6) {
+                        ProgressView(value: model.qrTransferProgress)
+                        HStack {
+                            Text(model.qrTransferStatus)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text(model.qrTransferSpeed)
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                } else if model.qrTransferProgress >= 1.0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text(model.qrTransferStatus)
+                            .font(.callout.weight(.medium))
+                            .foregroundStyle(.green)
+                    }
+                } else {
+                    Text(model.qrTransferStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button("Done", action: model.dismissQR)
+                    .keyboardShortcut(.cancelAction)
+                    .modifier(PrimaryAction())
+            }
+            .padding(24)
+            .frame(width: 380)
         }
     }
     private var sendView: some View {
