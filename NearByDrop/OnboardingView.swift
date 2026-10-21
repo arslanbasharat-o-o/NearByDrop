@@ -3,10 +3,11 @@ import SwiftUI
 import UserNotifications
 import AVFoundation
 
-final class OnboardingWindowController: NSWindowController {
+final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
     static var current: OnboardingWindowController?
 
     let onFinished: () -> Void
+    private var hasFinished = false
 
     static func showOnboarding(onFinished: @escaping () -> Void = {}) {
         if let existing = current {
@@ -15,10 +16,7 @@ final class OnboardingWindowController: NSWindowController {
             existing.window?.makeKeyAndOrderFront(nil)
             return
         }
-        let controller = OnboardingWindowController {
-            current = nil
-            onFinished()
-        }
+        let controller = OnboardingWindowController(onFinished: onFinished)
         current = controller
         controller.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -39,20 +37,31 @@ final class OnboardingWindowController: NSWindowController {
         window.isReleasedWhenClosed = false
         window.center()
         super.init(window: window)
-        window.contentView = NSHostingView(rootView: OnboardingView(controller: self))
+        window.delegate = self
+        window.contentView = NSHostingView(rootView: OnboardingView(onFinish: { [weak self] in
+            self?.finish()
+        }))
     }
 
     required init?(coder: NSCoder) { fatalError() }
 
     func finish() {
+        guard !hasFinished else { return }
+        hasFinished = true
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        window?.orderOut(nil)
         close()
+        OnboardingWindowController.current = nil
         onFinished()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        finish()
     }
 }
 
 struct OnboardingView: View {
-    weak var controller: OnboardingWindowController?
+    let onFinish: () -> Void
     @ObservedObject private var theme = ThemeManager.shared
     @State private var currentStep = 0
     @State private var notificationsAllowed: Bool = false
@@ -73,7 +82,7 @@ struct OnboardingView: View {
                 Spacer()
                 if currentStep < 3 {
                     Button("Skip") {
-                        controller?.finish()
+                        onFinish()
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
@@ -119,7 +128,7 @@ struct OnboardingView: View {
                     .controlSize(.regular)
                 } else {
                     Button("Get Started") {
-                        controller?.finish()
+                        onFinish()
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(theme.currentAccent.color)
