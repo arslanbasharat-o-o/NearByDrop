@@ -117,6 +117,9 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             if case .failed = self.qrStatus { return }
 
             let lower = desc.lowercased()
+            if lower.contains("can't receive") || lower.contains("cannot receive") || lower.contains("unsupported") {
+                return
+            }
             if lower.contains("saved") || lower.contains("downloaded") || lower.contains("complete") {
                 self.qrExpiry?.cancel()
                 self.qrStatus = .completed(filename: desc, count: 1)
@@ -317,12 +320,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             try NearbyConnectionManager.shared.receiveQRCode(value)
             scanning = false
             waitingForQR = true
-            if url.host == "quickshare.google" || url.host == "www.quickshare.google" {
-                qrStatus = .connecting(sender: nil)
-                qrDownloader.start(url: url, inWindow: window)
-            } else {
-                receiveMessage = "Waiting for sender to connect…"
-            }
+            qrStatus = .connecting(sender: "Phone")
+            receiveMessage = "Waiting for phone to connect…"
             qrExpiry?.cancel()
             let expiry = DispatchWorkItem { [weak self] in
                 guard let self = self else { return }
@@ -333,19 +332,25 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
                 }
             }
             qrExpiry = expiry
-            DispatchQueue.main.asyncAfter(deadline: .now() + 180, execute: expiry)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 120, execute: expiry)
             window?.makeKeyAndOrderFront(nil)
             return nil
         } catch { return Self.errorMessage(error) }
     }
     func stopQRReceive() {
         qrExpiry?.cancel()
+        qrExpiry = nil
         waitingForQR = false
         qrDownloader.cancel()
         NearbyConnectionManager.shared.stopReceivingQRCode()
     }
     func resetQRTransfer() {
         stopQRReceive()
+        for id in incoming.keys {
+            onConsent?(id, false)
+        }
+        incoming.removeAll()
+        accepted.removeAll()
         qrStatus = .idle
     }
     func addDevice(device: RemoteDeviceInfo) {
