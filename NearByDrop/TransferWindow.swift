@@ -53,6 +53,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 
     // Preferences & persistence
     @Published var downloadDirectory: URL = NearbyConnectionManager.downloadDirectory
+    @Published var isChoosingDirectory: Bool = false
     @Published var launchAtLogin: Bool = false
     @Published var menuBarOnly: Bool = UserDefaults.standard.bool(forKey: "menuBarOnly") {
         didSet {
@@ -529,8 +530,12 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         panel.prompt = "Select"
         panel.message = "Choose a download folder for received files"
         panel.directoryURL = downloadDirectory
-        panel.level = .floating
+        panel.level = NSWindow.Level(Int(CGWindowLevelForKey(.popUpMenuWindow)) + 1)
+        isChoosingDirectory = true
         let handler: (NSApplication.ModalResponse) -> Void = { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isChoosingDirectory = false
+            }
             guard result == .OK, let url = panel.url, let self = self else { return }
             _ = url.startAccessingSecurityScopedResource()
             NearbyConnectionManager.downloadDirectory = url
@@ -697,8 +702,8 @@ struct TransferView: View {
         .sheet(isPresented: $model.scanning) { QRScannerView(onCode: model.scan) }
         .sheet(isPresented: $model.showingQR, onDismiss: model.dismissQR) {
             VStack(spacing: 16) {
-                Text("Quick Share with Phone").font(.title2.weight(.semibold))
-                Text("Scan this QR code with your phone’s Camera or Google Lens to connect directly via Quick Share.")
+                Text("Pair with QR Code").font(.title2.weight(.semibold))
+                Text("Scan with phone camera or Google Lens to connect directly.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -787,8 +792,8 @@ struct TransferView: View {
                 if model.devices.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 30)).foregroundStyle(.secondary)
-                        Text("Looking for devices").font(.headline)
-                        Text("Open Quick Share in Receive mode on your phone.").font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                        Text("Looking for Devices").font(.headline)
+                        Text("Turn on Quick Share on your nearby device.").font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
@@ -805,7 +810,7 @@ struct TransferView: View {
                                         Image(systemName: device.type == .computer ? "laptopcomputer" : "iphone").font(.title2).frame(width: 36)
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(device.name).font(.headline)
-                                            Text(model.urls.isEmpty ? "Click to choose files and send" : "Click to send").font(.caption).foregroundStyle(.secondary)
+                                            Text(model.urls.isEmpty ? "Ready to send" : "Send files").font(.caption).foregroundStyle(.secondary)
                                         }
                                         Spacer()
                                         Image(systemName: "arrow.up.right").foregroundStyle(.secondary)
@@ -916,9 +921,9 @@ struct TransferView: View {
                                 .font(.system(size: 46, weight: .light))
                                 .foregroundStyle(theme.currentAccent.color)
                                 .padding(.top, 28)
-                            Text("Send to this Mac")
+                            Text("Ready to Receive")
                                 .font(.title2.weight(.semibold))
-                            Text("Choose \"\(model.deviceName)\" in Quick Share or scan a code.")
+                            Text("Select \(model.deviceName) on your device to share files.")
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                             Button { model.scanning = true } label: {

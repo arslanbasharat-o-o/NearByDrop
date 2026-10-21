@@ -197,7 +197,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func popoverShouldClose(_ popover: NSPopover) -> Bool {
-        return true
+        return !model.isChoosingDirectory
     }
 
     @objc private func toggleMenu() {
@@ -388,7 +388,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             FeedbackManager.shared.vibrateTap()
 
             // Automatically open UI so incoming transfer is immediately visible
-            if self.model.menuBarOnly {
+            if self.popover.isShown || self.model.menuBarOnly {
                 self.showPopover()
             } else {
                 self.openApp(nil)
@@ -589,10 +589,6 @@ struct MenuView: View {
                     ))
                     Toggle("Show NearByDrop in Dock", isOn: $theme.showInDock)
                     Divider()
-                    Button("Change Download Location…") {
-                        model.chooseDownloadDirectory()
-                    }
-                    Divider()
                     Button("Quit NearByDrop") { NSApp.terminate(nil) }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -710,9 +706,9 @@ struct MenuView: View {
             if model.showingQR {
                 // Inline Quick Share QR View
                 VStack(spacing: 8) {
-                    Text("Quick Share with Phone")
+                    Text("Pair with QR Code")
                         .font(.headline)
-                    Text("Scan with phone’s Camera or Google Lens to connect directly.")
+                    Text("Scan with phone camera or Google Lens to connect directly.")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -798,9 +794,9 @@ struct MenuView: View {
                             Image(systemName: "dot.radiowaves.left.and.right")
                                 .font(.system(size: 26))
                                 .foregroundStyle(.secondary)
-                            Text("Looking for devices")
+                            Text("Looking for Devices")
                                 .font(.subheadline.weight(.medium))
-                            Text("Open Quick Share in Receive mode on your phone.")
+                            Text("Turn on Quick Share on your nearby device.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -827,7 +823,7 @@ struct MenuView: View {
                                                     .font(.subheadline.weight(.medium))
                                                     .foregroundStyle(.primary)
                                                     .lineLimit(1)
-                                                Text(model.urls.isEmpty ? "Click to choose files and send" : "Click to send")
+                                                Text(model.urls.isEmpty ? "Ready to send" : "Send files")
                                                     .font(.caption2)
                                                     .foregroundStyle(.secondary)
                                             }
@@ -990,9 +986,9 @@ struct MenuView: View {
                     Image(systemName: "arrow.down.circle")
                         .font(.system(size: 38))
                         .foregroundStyle(theme.currentAccent.color)
-                    Text("Send to this Mac")
+                    Text("Ready to Receive")
                         .font(.headline)
-                    Text("Choose \"\(model.deviceName)\" in Quick Share on your phone, or scan a QR code.")
+                    Text("Select \(model.deviceName) on your device to share files.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
