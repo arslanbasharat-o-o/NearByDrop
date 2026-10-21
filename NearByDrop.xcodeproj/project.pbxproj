@@ -26,6 +26,9 @@
 		69E000022E44000100000002 /* QRCodeScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000002 /* QRCodeScanner.swift */; };
 		69E000022E44000100000003 /* USBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000003 /* USBView.swift */; };
 		69E000022E44000100000004 /* NDUSBTransfer.m in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000005 /* NDUSBTransfer.m */; };
+		69E000022E44000100000010 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000010 /* ThemeManager.swift */; };
+		69E000022E44000100000011 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000011 /* SettingsView.swift */; };
+		69E000022E44000100000012 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000012 /* OnboardingView.swift */; };
 		69E000022E44000100000005 /* libmtp.9.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000006 /* libmtp.9.dylib */; };
 		69E000022E44000100000006 /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000007 /* libusb-1.0.0.dylib */; };
 		69E000022E44000100000007 /* libmtp.9.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000006 /* libmtp.9.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -150,6 +153,9 @@
 		69E000012E44000100000003 /* USBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBView.swift; sourceTree = "<group>"; };
 		69E000012E44000100000004 /* NDUSBTransfer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NDUSBTransfer.h; sourceTree = "<group>"; };
 		69E000012E44000100000005 /* NDUSBTransfer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = NDUSBTransfer.m; sourceTree = "<group>"; };
+		69E000012E44000100000010 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
+		69E000012E44000100000011 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		69E000012E44000100000012 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		69E000012E44000100000006 /* libmtp.9.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmtp.9.dylib; path = Vendor/USB/lib/libmtp.9.dylib; sourceTree = "<group>"; };
 		69E000012E44000100000007 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "Vendor/USB/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
 		69DA9A1329E0BF5200A442DA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -256,6 +262,9 @@
 				69E000012E44000100000003 /* USBView.swift */,
 				69E000012E44000100000004 /* NDUSBTransfer.h */,
 				69E000012E44000100000005 /* NDUSBTransfer.m */,
+				69E000012E44000100000010 /* ThemeManager.swift */,
+				69E000012E44000100000011 /* SettingsView.swift */,
+				69E000012E44000100000012 /* OnboardingView.swift */,
 				69DA9A1329E0BF5200A442DA /* Assets.xcassets */,
 				697DDF122E44AAFB00B4749C /* Localizable.xcstrings */,
 				69DA9A1829E0BF5200A442DA /* NearByDrop.entitlements */,
@@ -478,6 +487,9 @@
 				69E000022E44000100000002 /* QRCodeScanner.swift in Sources */,
 				69E000022E44000100000003 /* USBView.swift in Sources */,
 				69E000022E44000100000004 /* NDUSBTransfer.m in Sources */,
+				69E000022E44000100000010 /* ThemeManager.swift in Sources */,
+				69E000022E44000100000011 /* SettingsView.swift in Sources */,
+				69E000022E44000100000012 /* OnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -738,6 +750,7 @@
 				INFOPLIST_FILE = NearByDrop/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NearByDrop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "NearByDrop needs access to the camera to scan Quick Share QR codes.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "NearByDrop needs access to your local network to send and receive files.";
@@ -786,6 +799,7 @@
 				INFOPLIST_FILE = NearByDrop/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NearByDrop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "NearByDrop needs access to the camera to scan Quick Share QR codes.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "NearByDrop needs access to your local network to send and receive files.";

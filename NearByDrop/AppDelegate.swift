@@ -9,17 +9,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     private let popover = NSPopover()
     let model = TransferModel()
     private lazy var transferWindow = TransferWindowController(model: model)
+    private lazy var settingsWindow = SettingsWindowController(model: model)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         model.onConsent = { [weak self] id, accept in self?.consent(id, accept: accept) }
+        ThemeManager.shared.applyDockPolicy()
+        setupMainMenu()
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = NSImage(named: "MenuBarIcon")
+        statusItem.button?.image = ThemeManager.shared.menuBarImage()
         statusItem.button?.target = self
         statusItem.button?.action = #selector(toggleMenu)
         statusItem.button?.setAccessibilityLabel("NearByDrop")
-        popover.contentViewController = NSHostingController(rootView: MenuView(model: model, send: { [weak self] in self?.sendFiles(nil) }, scan: { [weak self] in self?.scanCode(nil) }, open: { [weak self] in self?.openApp(nil) }))
+        ThemeManager.shared.onMenuBarIconChanged = { [weak self] in
+            self?.statusItem.button?.image = ThemeManager.shared.menuBarImage()
+        }
+
+        popover.contentViewController = NSHostingController(rootView: MenuView(
+            model: model,
+            send: { [weak self] in self?.sendFiles(nil) },
+            scan: { [weak self] in self?.scanCode(nil) },
+            open: { [weak self] in self?.openApp(nil) },
+            settings: { [weak self] in self?.openSettings(nil) },
+            guide: { [weak self] in self?.openGuide(nil) },
+            privacy: { [weak self] in self?.openPrivacy(nil) }
+        ))
         popover.contentSize = NSSize(width: 320, height: 254)
         popover.behavior = .transient
+
         let nc = UNUserNotificationCenter.current()
         nc.delegate = self
         nc.setNotificationCategories([UNNotificationCategory(identifier: "INCOMING_TRANSFERS", actions: [
@@ -27,17 +44,125 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             UNNotificationAction(identifier: "DECLINE", title: "Decline")
         ], intentIdentifiers: [])])
         nc.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+
         NearbyConnectionManager.shared.mainAppDelegate = self
         NearbyConnectionManager.shared.becomeVisible()
+
+        if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
+            OnboardingWindowController.showOnboarding(onFinished: { [weak self] in
+                self?.openApp(nil)
+            })
+        }
+    }
+
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+
+        // App Menu
+        let appMenuItem = NSMenuItem()
+        let appMenu = NSMenu(title: "NearByDrop")
+        let aboutItem = NSMenuItem(title: "About NearByDrop", action: #selector(openAbout(_:)), keyEquivalent: "")
+        aboutItem.target = self
+        appMenu.addItem(aboutItem)
+        appMenu.addItem(NSMenuItem.separator())
+        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings(_:)), keyEquivalent: ",")
+        settingsItem.target = self
+        appMenu.addItem(settingsItem)
+        appMenu.addItem(NSMenuItem.separator())
+        let servicesItem = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
+        let servicesMenu = NSMenu(title: "Services")
+        servicesItem.submenu = servicesMenu
+        NSApp.servicesMenu = servicesMenu
+        appMenu.addItem(servicesItem)
+        appMenu.addItem(NSMenuItem.separator())
+        appMenu.addItem(withTitle: "Hide NearByDrop", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        let hideOthers = NSMenuItem(title: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        hideOthers.keyEquivalentModifierMask = [.command, .option]
+        appMenu.addItem(hideOthers)
+        appMenu.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        appMenu.addItem(NSMenuItem.separator())
+        appMenu.addItem(withTitle: "Quit NearByDrop", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenuItem.submenu = appMenu
+        mainMenu.addItem(appMenuItem)
+
+        // File Menu
+        let fileMenuItem = NSMenuItem()
         let fileMenu = NSMenu(title: "File")
-        for (title, action, key) in [("Open NearByDrop", #selector(openApp(_:)), "0"), ("Send Files…", #selector(sendFiles(_:)), "o"), ("Scan QR Code…", #selector(scanCode(_:)), "r"), ("Open Downloads", #selector(openDownloads(_:)), "d")] {
+        for (title, action, key) in [
+            ("Open NearByDrop", #selector(openApp(_:)), "0"),
+            ("Settings…", #selector(openSettings(_:)), ","),
+            ("Send Files…", #selector(sendFiles(_:)), "o"),
+            ("Scan QR Code…", #selector(scanCode(_:)), "r"),
+            ("Open Downloads", #selector(openDownloads(_:)), "d")
+        ] {
             let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
             item.target = self
             fileMenu.addItem(item)
         }
-        let item = NSMenuItem(title: "File", action: nil, keyEquivalent: "")
-        item.submenu = fileMenu
-        NSApp.mainMenu?.insertItem(item, at: min(1, NSApp.mainMenu?.items.count ?? 0))
+        fileMenu.addItem(NSMenuItem.separator())
+        fileMenu.addItem(withTitle: "Close Window", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        fileMenuItem.submenu = fileMenu
+        mainMenu.addItem(fileMenuItem)
+
+        // Edit Menu
+        let editMenuItem = NSMenuItem()
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        let redoItem = NSMenuItem(title: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+        redoItem.keyEquivalentModifierMask = [.command, .shift]
+        editMenu.addItem(redoItem)
+        editMenu.addItem(NSMenuItem.separator())
+        editMenu.addItem(withTitle: "Cut", action: Selector(("cut:")), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "Copy", action: Selector(("copy:")), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste", action: Selector(("paste:")), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All", action: Selector(("selectAll:")), keyEquivalent: "a")
+        editMenuItem.submenu = editMenu
+        mainMenu.addItem(editMenuItem)
+
+        // View Menu
+        let viewMenuItem = NSMenuItem()
+        let viewMenu = NSMenu(title: "View")
+        let sendTab = NSMenuItem(title: "Send", action: #selector(showSendTab(_:)), keyEquivalent: "1")
+        sendTab.target = self
+        viewMenu.addItem(sendTab)
+        let receiveTab = NSMenuItem(title: "Receive", action: #selector(showReceiveTab(_:)), keyEquivalent: "2")
+        receiveTab.target = self
+        viewMenu.addItem(receiveTab)
+        let usbTab = NSMenuItem(title: "USB Transfer", action: #selector(showUSBTab(_:)), keyEquivalent: "3")
+        usbTab.target = self
+        viewMenu.addItem(usbTab)
+        viewMenuItem.submenu = viewMenu
+        mainMenu.addItem(viewMenuItem)
+
+        // Window Menu
+        let windowMenuItem = NSMenuItem()
+        let windowMenu = NSMenu(title: "Window")
+        windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        windowMenu.addItem(withTitle: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: "")
+        windowMenu.addItem(NSMenuItem.separator())
+        windowMenu.addItem(withTitle: "Bring All to Front", action: #selector(NSApplication.arrangeInFront(_:)), keyEquivalent: "")
+        windowMenuItem.submenu = windowMenu
+        mainMenu.addItem(windowMenuItem)
+        NSApp.windowsMenu = windowMenu
+
+        // Help Menu
+        let helpMenuItem = NSMenuItem()
+        let helpMenu = NSMenu(title: "Help")
+        let guideItem = NSMenuItem(title: "NearByDrop Quick Start Guide", action: #selector(openGuide(_:)), keyEquivalent: "?")
+        guideItem.target = self
+        helpMenu.addItem(guideItem)
+        let privacyItem = NSMenuItem(title: "Privacy & Security Policy", action: #selector(openPrivacy(_:)), keyEquivalent: "")
+        privacyItem.target = self
+        helpMenu.addItem(privacyItem)
+        helpMenu.addItem(NSMenuItem.separator())
+        let githubItem = NSMenuItem(title: "NearByDrop on GitHub…", action: #selector(openGitHub(_:)), keyEquivalent: "")
+        githubItem.target = self
+        helpMenu.addItem(githubItem)
+        helpMenuItem.submenu = helpMenu
+        mainMenu.addItem(helpMenuItem)
+        NSApp.helpMenu = helpMenu
+
+        NSApp.mainMenu = mainMenu
     }
 
     @objc private func toggleMenu() {
@@ -56,6 +181,47 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         transferWindow.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
         transferWindow.window?.makeKeyAndOrderFront(nil)
+    }
+    @objc func openSettings(_ sender: Any?) {
+        popover.performClose(nil)
+        settingsWindow.show(tab: .general)
+    }
+    @objc func openAppearance(_ sender: Any?) {
+        popover.performClose(nil)
+        settingsWindow.show(tab: .appearance)
+    }
+    @objc func openTrustedDevices(_ sender: Any?) {
+        popover.performClose(nil)
+        settingsWindow.show(tab: .trusted)
+    }
+    @objc func openGuide(_ sender: Any?) {
+        popover.performClose(nil)
+        settingsWindow.show(tab: .guide)
+    }
+    @objc func openPrivacy(_ sender: Any?) {
+        popover.performClose(nil)
+        settingsWindow.show(tab: .privacy)
+    }
+    @objc func openAbout(_ sender: Any?) {
+        popover.performClose(nil)
+        settingsWindow.show(tab: .about)
+    }
+    @objc func openGitHub(_ sender: Any?) {
+        if let url = URL(string: "https://github.com/arslanbasharat/NearByDrop") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+    @objc func showSendTab(_ sender: Any?) {
+        openApp(nil)
+        model.tab = .send
+    }
+    @objc func showReceiveTab(_ sender: Any?) {
+        openApp(nil)
+        model.tab = .receive
+    }
+    @objc func showUSBTab(_ sender: Any?) {
+        openApp(nil)
+        model.tab = .usb
     }
     @objc func sendFiles(_ sender: Any?) {
         openApp(nil)
@@ -131,6 +297,10 @@ struct MenuView: View {
     let send: () -> Void
     let scan: () -> Void
     let open: () -> Void
+    var settings: (() -> Void)? = nil
+    var guide: (() -> Void)? = nil
+    var privacy: (() -> Void)? = nil
+    @ObservedObject private var theme = ThemeManager.shared
     @State private var isDragging = false
 
     var body: some View {
@@ -139,7 +309,7 @@ struct MenuView: View {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(model.advertisement == .failed ? Color.secondary.opacity(0.2) : Color.blue)
+                        .fill(model.advertisement == .failed ? Color.secondary.opacity(0.2) : theme.currentAccent.color)
                         .frame(width: 38, height: 38)
                     Image(systemName: "antenna.radiowaves.left.and.right")
                         .font(.system(size: 16, weight: .semibold))
@@ -173,7 +343,7 @@ struct MenuView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 8) {
                                 Image(systemName: item.device.type == .computer ? "laptopcomputer" : "iphone")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(theme.currentAccent.color)
                                 Text(item.device.name)
                                     .font(.headline)
                                     .foregroundStyle(.primary)
@@ -183,7 +353,7 @@ struct MenuView: View {
                                         .font(.system(.caption, design: .monospaced).weight(.semibold))
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
-                                        .background(Color.blue.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
+                                        .background(theme.currentAccent.color.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
                                 }
                             }
                             Text(item.transfer.textDescription ?? "\(item.transfer.files.count) \(item.transfer.files.count == 1 ? "item" : "items")")
@@ -208,7 +378,7 @@ struct MenuView: View {
                                         .controlSize(.small)
                                     Button("Accept") { model.onConsent?(id, true) }
                                         .buttonStyle(.borderedProminent)
-                                        .tint(.blue)
+                                        .tint(theme.currentAccent.color)
                                         .controlSize(.small)
                                 }
                             }
@@ -254,7 +424,7 @@ struct MenuView: View {
                 if !model.urls.isEmpty {
                     HStack {
                         Image(systemName: model.urls.count > 1 ? "doc.on.doc.fill" : "doc.fill")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(theme.currentAccent.color)
                         Text(model.urls.count == 1 ? (model.displayNames.first ?? model.urls[0].lastPathComponent) : "\(model.urls.count) items ready to send")
                             .font(.caption.weight(.medium))
                             .lineLimit(1)
@@ -268,7 +438,7 @@ struct MenuView: View {
                         .buttonStyle(.plain)
                     }
                     .padding(8)
-                    .background(Color.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                    .background(theme.currentAccent.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
                 }
 
                 HStack(spacing: 10) {
@@ -278,7 +448,7 @@ struct MenuView: View {
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.blue)
+                    .tint(theme.currentAccent.color)
 
                     Button(action: scan) {
                         Label("Scan QR", systemImage: "qrcode.viewfinder")
@@ -303,7 +473,7 @@ struct MenuView: View {
                                 } label: {
                                     HStack(spacing: 10) {
                                         Image(systemName: device.type == .computer ? "laptopcomputer" : "iphone")
-                                            .foregroundStyle(.blue)
+                                            .foregroundStyle(theme.currentAccent.color)
                                             .frame(width: 20)
                                         VStack(alignment: .leading, spacing: 1) {
                                             Text(device.name)
@@ -352,10 +522,21 @@ struct MenuView: View {
                 .accessibilityLabel("Open Downloads")
 
                 Menu {
+                    if let settings = settings {
+                        Button("Settings…", action: settings)
+                    }
+                    if let guide = guide {
+                        Button("How to Use NearByDrop", action: guide)
+                    }
+                    if let privacy = privacy {
+                        Button("Privacy & Security", action: privacy)
+                    }
+                    Divider()
                     Toggle("Launch at Login", isOn: Binding(
                         get: { model.launchAtLogin },
                         set: { model.toggleLaunchAtLogin(enabled: $0) }
                     ))
+                    Toggle("Show NearByDrop in Dock", isOn: $theme.showInDock)
                     Divider()
                     Button("Change Download Location…") {
                         model.chooseDownloadDirectory()
@@ -408,7 +589,7 @@ struct MenuView: View {
         }
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.blue, lineWidth: isDragging ? 2 : 0)
+                .stroke(theme.currentAccent.color, lineWidth: isDragging ? 2 : 0)
         )
     }
 
