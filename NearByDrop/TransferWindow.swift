@@ -528,18 +528,32 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         panel.canCreateDirectories = true
         panel.prompt = "Select"
         panel.message = "Choose a download folder for received files"
+        panel.directoryURL = downloadDirectory
+        panel.level = .floating
         let handler: (NSApplication.ModalResponse) -> Void = { [weak self] result in
             guard result == .OK, let url = panel.url, let self = self else { return }
             _ = url.startAccessingSecurityScopedResource()
             NearbyConnectionManager.downloadDirectory = url
-            self.downloadDirectory = url
+            DispatchQueue.main.async {
+                self.downloadDirectory = url
+            }
         }
         if let window = self.window, window.isVisible, window.attachedSheet == nil {
             panel.beginSheetModal(for: window, completionHandler: handler)
         } else {
             NSApp.activate(ignoringOtherApps: true)
-            let result = panel.runModal()
-            handler(result)
+            panel.makeKeyAndOrderFront(nil)
+            panel.begin(completionHandler: handler)
+        }
+    }
+
+    func resetDownloadDirectoryToDefault() {
+        if let defaultURL = try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: true) {
+            _ = defaultURL.startAccessingSecurityScopedResource()
+            NearbyConnectionManager.downloadDirectory = defaultURL
+            DispatchQueue.main.async {
+                self.downloadDirectory = defaultURL
+            }
         }
     }
 
@@ -942,13 +956,25 @@ struct TransferView: View {
 
                         // Custom download location card
                         HStack(spacing: 8) {
-                            Image(systemName: "folder")
-                                .foregroundStyle(.secondary)
-                            Text("Download folder: \(model.downloadDirectory.lastPathComponent)")
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+                            Button {
+                                TransferModel.openDownloads()
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "folder.fill")
+                                        .foregroundStyle(theme.currentAccent.color)
+                                        .font(.system(size: 14))
+                                    Text(model.downloadDirectory.lastPathComponent)
+                                        .font(.callout.weight(.medium))
+                                        .foregroundStyle(.primary)
+                                        .lineLimit(1)
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .help("Open \(model.downloadDirectory.path) in Finder")
+
                             Spacer()
+
                             Button("Change…") {
                                 model.chooseDownloadDirectory()
                             }
@@ -958,6 +984,17 @@ struct TransferView: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+                        .contextMenu {
+                            Button("Open in Finder") {
+                                TransferModel.openDownloads()
+                            }
+                            Button("Change Folder…") {
+                                model.chooseDownloadDirectory()
+                            }
+                            Button("Reset to Downloads") {
+                                model.resetDownloadDirectoryToDefault()
+                            }
+                        }
                     }.frame(maxWidth: .infinity).padding(.horizontal, 28).padding(.bottom, 24)
                 }
             }
