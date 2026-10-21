@@ -29,7 +29,7 @@ class OutboundNearbyConnection:NearbyConnection{
 	private var cancelled:Bool=false
 	private var textPayloadID:Int64=0
 	
-	public var qrCodePrivateKey:ECPrivateKey?
+	public var qrCodePrivateKey:P256.Signing.PrivateKey?
 	
 	enum State{
 		case initial, sentUkeyClientInit, sentUkeyClientFinish, sentPairedKeyEncryption, sentPairedKeyResult, sentIntroduction, sendingFiles
@@ -132,6 +132,7 @@ class OutboundNearbyConnection:NearbyConnection{
 	
 	override func handleConnectionClosure() {
 		super.handleConnectionClosure()
+		NSLog("[NearByDrop] Outbound connection closed in state: %@, lastError: %@", String(describing: currentState), String(describing: lastError))
 		if !cancelled && currentState != .sendingFiles {
 			let err = lastError ?? NearbyError.protocolError("Connection closed unexpectedly")
 			delegate?.outboundConnection(connection: self, failedWithError: err)
@@ -140,6 +141,7 @@ class OutboundNearbyConnection:NearbyConnection{
 
 	override func protocolError() {
 		super.protocolError()
+		NSLog("[NearByDrop] Outbound protocol error in state: %@, lastError: %@", String(describing: currentState), String(describing: lastError))
 		let err = lastError ?? NearbyError.protocolError("Protocol error occurred")
 		delegate?.outboundConnection(connection: self, failedWithError: err)
 	}
@@ -254,10 +256,9 @@ class OutboundNearbyConnection:NearbyConnection{
 		pairedEncryption.v1.pairedKeyEncryption.secretIDHash=Data.randomData(length: 6)
 		pairedEncryption.v1.pairedKeyEncryption.signedData=Data.randomData(length: 72)
 		if let qrKey=qrCodePrivateKey{
-			let signature=qrKey.sign(msg: authKey!.data())
-			var serializedSignature=Data(signature.r)
-			serializedSignature.append(Data(signature.s))
-			pairedEncryption.v1.pairedKeyEncryption.qrCodeHandshakeData=serializedSignature
+			if let authKeyData=authKey?.data(), let signature = try? qrKey.signature(for: authKeyData) {
+				pairedEncryption.v1.pairedKeyEncryption.qrCodeHandshakeData=signature.rawRepresentation
+			}
 		}
 		try sendTransferSetupFrame(pairedEncryption)
 		
