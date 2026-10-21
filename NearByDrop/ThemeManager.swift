@@ -155,3 +155,70 @@ final class ThemeManager: ObservableObject {
         }
     }
 }
+
+final class FeedbackManager: ObservableObject {
+    static let shared = FeedbackManager()
+
+    @Published var soundEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(soundEnabled, forKey: "soundEnabled")
+        }
+    }
+
+    @Published var hapticsEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(hapticsEnabled, forKey: "hapticsEnabled")
+        }
+    }
+
+    init() {
+        if UserDefaults.standard.object(forKey: "soundEnabled") == nil {
+            self.soundEnabled = true
+        } else {
+            self.soundEnabled = UserDefaults.standard.bool(forKey: "soundEnabled")
+        }
+
+        if UserDefaults.standard.object(forKey: "hapticsEnabled") == nil {
+            self.hapticsEnabled = true
+        } else {
+            self.hapticsEnabled = UserDefaults.standard.bool(forKey: "hapticsEnabled")
+        }
+    }
+
+    // MARK: - Audio Artifacts
+    func playSuccess() {
+        guard soundEnabled else { return }
+        NSSound(named: "Glass")?.play()
+    }
+
+    func playIncoming() {
+        guard soundEnabled else { return }
+        (NSSound(named: "Bottle") ?? NSSound(named: "Ping"))?.play()
+    }
+
+    func playStart() {
+        guard soundEnabled else { return }
+        NSSound(named: "Pop")?.play()
+    }
+
+    func playError() {
+        guard soundEnabled else { return }
+        NSSound(named: "Basso")?.play()
+    }
+
+    // MARK: - Trackpad Vibration / Haptics
+    func vibrateSuccess() {
+        guard hapticsEnabled else { return }
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+    }
+
+    func vibrateClick() {
+        guard hapticsEnabled else { return }
+        NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
+    }
+
+    func vibrateTap() {
+        guard hapticsEnabled else { return }
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+    }
+}

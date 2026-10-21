@@ -248,7 +248,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     private func consent(_ id: String, accept: Bool) {
         guard model.incoming[id] != nil, !model.accepted.contains(id) else { return }
-        if accept { model.accepted.insert(id) } else { model.incoming.removeValue(forKey: id) }
+        if accept {
+            model.accepted.insert(id)
+            FeedbackManager.shared.vibrateClick()
+        } else {
+            model.incoming.removeValue(forKey: id)
+            FeedbackManager.shared.vibrateTap()
+        }
         UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["transfer_" + id])
         NearbyConnectionManager.shared.submitUserConsent(transferID: id, accept: accept)
     }
@@ -275,6 +281,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             }
 
             self.openApp(nil)
+            FeedbackManager.shared.playIncoming()
+            FeedbackManager.shared.vibrateTap()
+
             let content = UNMutableNotificationContent()
             content.title = device.name
             content.body = "Wants to send \(transfer.files.count == 1 ? transfer.files[0].name : "\(transfer.files.count) items")"
@@ -289,7 +298,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         DispatchQueue.main.async {
             if error == nil, let info = self.model.incoming[id] {
                 self.model.recordIncoming(info: info)
-                NSSound(named: "Glass")?.play()
+                FeedbackManager.shared.playSuccess()
+                FeedbackManager.shared.vibrateSuccess()
+            } else if error != nil {
+                FeedbackManager.shared.playError()
+                FeedbackManager.shared.vibrateTap()
             }
             self.model.incoming.removeValue(forKey: id)
             self.model.accepted.remove(id)
@@ -595,6 +608,7 @@ struct MenuView: View {
             group.notify(queue: .main) {
                 if !loadedURLs.isEmpty {
                     model.setFiles(loadedURLs)
+                    FeedbackManager.shared.vibrateClick()
                 }
             }
             return true

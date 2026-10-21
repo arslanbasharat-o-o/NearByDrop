@@ -101,28 +101,61 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     private func setupQRDownloader() {
         qrDownloader.onMetadata = { [weak self] sender, desc in
             guard let self = self else { return }
+            if case .completed = self.qrStatus { return }
+            if case .failed = self.qrStatus { return }
+
+            let lower = desc.lowercased()
+            if lower.contains("saved") || lower.contains("downloaded") || lower.contains("complete") {
+                self.qrExpiry?.cancel()
+                self.qrStatus = .completed(filename: desc, count: 1)
+                self.receiveMessage = desc
+                FeedbackManager.shared.playSuccess()
+                FeedbackManager.shared.vibrateSuccess()
+                return
+            }
+
             let s = sender.isEmpty ? "Phone" : sender
             self.qrStatus = .downloading(sender: s, description: desc.isEmpty ? nil : desc)
         }
         qrDownloader.onProgress = { [weak self] message in
             guard let self = self else { return }
+            if case .completed = self.qrStatus { return }
+            if case .failed = self.qrStatus { return }
             if case .connecting(let s) = self.qrStatus {
                 self.qrStatus = .downloading(sender: s ?? "Phone", description: message)
             }
         }
+        qrDownloader.onCompleted = { [weak self] sender, desc in
+            guard let self = self else { return }
+            self.qrExpiry?.cancel()
+            if case .completed = self.qrStatus { return }
+            self.qrStatus = .completed(filename: desc, count: 1)
+            self.receiveMessage = desc
+            FeedbackManager.shared.playSuccess()
+            FeedbackManager.shared.vibrateSuccess()
+        }
         qrDownloader.onFileReceived = { [weak self] filename, url in
             guard let self = self else { return }
             self.qrExpiry?.cancel()
-            if case .completed(_, let count) = self.qrStatus {
-                self.qrStatus = .completed(filename: filename, count: count + 1)
+            let count: Int
+            if case .completed(_, let currentCount) = self.qrStatus {
+                count = currentCount + 1
             } else {
-                self.qrStatus = .completed(filename: filename, count: 1)
+                count = 1
             }
-            self.receiveMessage = "Saved \(filename) to Downloads"
+            self.qrStatus = .completed(filename: filename, count: count)
+            self.receiveMessage = "Saved \(filename) to \(self.downloadDirectory.lastPathComponent)"
+            let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value ?? 0
+            self.recordTransfer(fileName: filename, fileSize: size, direction: .incoming, peerName: "Quick Share Web", fileURL: url)
+            FeedbackManager.shared.playSuccess()
+            FeedbackManager.shared.vibrateSuccess()
         }
         qrDownloader.onError = { [weak self] error in
             guard let self = self else { return }
+            if case .completed = self.qrStatus { return }
             self.qrStatus = .failed(error: error)
+            FeedbackManager.shared.playError()
+            FeedbackManager.shared.vibrateTap()
         }
     }
 
@@ -192,6 +225,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         let handler: (NSApplication.ModalResponse) -> Void = { [weak self] result in
             guard result == .OK, let self else { return }
             self.setFiles(panel.urls)
+            FeedbackManager.shared.vibrateClick()
             self.window?.makeKeyAndOrderFront(nil)
             if let device = device {
                 self.send(to: device)
@@ -216,6 +250,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         progress = 0
         error = nil
         resetSpeedTracking()
+        FeedbackManager.shared.playStart()
+        FeedbackManager.shared.vibrateClick()
         sendMessage = "Connecting…"
         let expiry = DispatchWorkItem { [weak self] in
             guard let self, self.sending else { return }
@@ -297,8 +333,21 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
     func startTransferWithQrCode(device: RemoteDeviceInfo) { if showingQR { send(to: device) } }
     func connectionWasEstablished(pinCode: String) { sendMessage = "Confirm code \(pinCode) on \(recipient)" }
-    func connectionFailed(with error: Error) { timeout?.cancel(); sending = false; chosenID = nil; self.error = Self.errorMessage(error); sendMessage = ""; resetSpeedTracking() }
-    func transferAccepted() { timeout?.cancel(); sendMessage = "Sending to \(recipient)…" }
+    func connectionFailed(with error: Error) {
+        timeout?.cancel()
+        sending = false
+        chosenID = nil
+        self.error = Self.errorMessage(error)
+        sendMessage = ""
+        resetSpeedTracking()
+        FeedbackManager.shared.playError()
+        FeedbackManager.shared.vibrateTap()
+    }
+    func transferAccepted() {
+        timeout?.cancel()
+        sendMessage = "Sending to \(recipient)…"
+        FeedbackManager.shared.vibrateTap()
+    }
     func transferProgress(progress: Double) {
         self.progress = min(1, max(0, progress))
         let currentBytes = Int64(Double(totalBytes) * self.progress)
@@ -314,7 +363,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         let fileName = displayNames.first ?? urls.first?.lastPathComponent ?? "Files"
         let display = urls.count > 1 ? "\(fileName) (+\(urls.count - 1))" : fileName
         recordTransfer(fileName: display, fileSize: totalBytes, direction: .outgoing, peerName: peer, fileURL: urls.first)
-        NSSound(named: "Glass")?.play()
+        FeedbackManager.shared.playSuccess()
+        FeedbackManager.shared.vibrateSuccess()
         resetSpeedTracking()
     }
 
@@ -683,6 +733,7 @@ struct TransferView: View {
         .dropDestination(for: URL.self) { items, _ in
             guard !items.isEmpty else { return false }
             model.setFiles(items)
+            FeedbackManager.shared.vibrateClick()
             return true
         }
     }
@@ -735,7 +786,7 @@ struct TransferView: View {
                             .padding(.top, 28)
                         Text("Transfer Complete")
                             .font(.title2.weight(.semibold))
-                        Text(count > 1 ? "\(count) files saved to Downloads folder" : "\(filename) saved to Downloads folder")
+                        Text(count > 1 ? "\(count) files saved to Downloads folder" : (filename.lowercased().hasPrefix("saved") ? "\(filename) to Downloads folder" : "\(filename) saved to Downloads folder"))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                         HStack(spacing: 12) {
@@ -939,6 +990,7 @@ final class QuickShareDownloader: NSObject, WKNavigationDelegate, WKUIDelegate, 
     private var webView: WKWebView?
     var onMetadata: ((_ sender: String, _ description: String) -> Void)?
     var onProgress: ((_ message: String) -> Void)?
+    var onCompleted: ((_ sender: String, _ description: String) -> Void)?
     var onFileReceived: ((_ filename: String, _ url: URL) -> Void)?
     var onError: ((_ error: String) -> Void)?
     private var downloadedFiles: [URL] = []
@@ -1068,6 +1120,19 @@ final class QuickShareDownloader: NSObject, WKNavigationDelegate, WKUIDelegate, 
                 }
             }
             if (desc) latestMetaDesc = desc;
+
+            const isDone = (/saved|downloaded|transfer complete|all done/i.test(desc)) || 
+                           headers.some(h => (/saved [0-9]+|saved to|all files saved/i.test((h.innerText || ""))));
+            if (isDone) {
+                clearInterval(timer);
+                window.webkit.messageHandlers.nearbyDrop.postMessage({
+                    type: "completed",
+                    sender: sender,
+                    description: desc
+                });
+                return;
+            }
+
             if (sender || desc) {
                 window.webkit.messageHandlers.nearbyDrop.postMessage({
                     type: "meta",
@@ -1144,6 +1209,12 @@ final class QuickShareDownloader: NSObject, WKNavigationDelegate, WKUIDelegate, 
             let desc = dict["description"] as? String ?? ""
             DispatchQueue.main.async {
                 self.onMetadata?(sender, desc)
+            }
+        case "completed":
+            let sender = dict["sender"] as? String ?? ""
+            let desc = dict["description"] as? String ?? "Transfer complete"
+            DispatchQueue.main.async {
+                self.onCompleted?(sender, desc)
             }
         case "clicking":
             DispatchQueue.main.async {
