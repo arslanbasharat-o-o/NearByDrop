@@ -107,15 +107,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Edit Menu
         let editMenuItem = NSMenuItem()
         let editMenu = NSMenu(title: "Edit")
-        editMenu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
-        let redoItem = NSMenuItem(title: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+        editMenu.addItem(withTitle: "Undo", action: #selector(UndoManager.undo), keyEquivalent: "z")
+        let redoItem = NSMenuItem(title: "Redo", action: #selector(UndoManager.redo), keyEquivalent: "Z")
         redoItem.keyEquivalentModifierMask = [.command, .shift]
         editMenu.addItem(redoItem)
         editMenu.addItem(NSMenuItem.separator())
-        editMenu.addItem(withTitle: "Cut", action: Selector(("cut:")), keyEquivalent: "x")
-        editMenu.addItem(withTitle: "Copy", action: Selector(("copy:")), keyEquivalent: "c")
-        editMenu.addItem(withTitle: "Paste", action: Selector(("paste:")), keyEquivalent: "v")
-        editMenu.addItem(withTitle: "Select All", action: Selector(("selectAll:")), keyEquivalent: "a")
+        editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editMenuItem.submenu = editMenu
         mainMenu.addItem(editMenuItem)
 
@@ -128,7 +128,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let receiveTab = NSMenuItem(title: "Receive", action: #selector(showReceiveTab(_:)), keyEquivalent: "2")
         receiveTab.target = self
         viewMenu.addItem(receiveTab)
-        let usbTab = NSMenuItem(title: "USB Transfer", action: #selector(showUSBTab(_:)), keyEquivalent: "3")
+        let historyTab = NSMenuItem(title: "Transfers", action: #selector(showHistoryTab(_:)), keyEquivalent: "3")
+        historyTab.target = self
+        viewMenu.addItem(historyTab)
+        let usbTab = NSMenuItem(title: "USB Transfer", action: #selector(showUSBTab(_:)), keyEquivalent: "4")
         usbTab.target = self
         viewMenu.addItem(usbTab)
         viewMenuItem.submenu = viewMenu
@@ -192,15 +195,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
     @objc func openTrustedDevices(_ sender: Any?) {
         popover.performClose(nil)
-        settingsWindow.show(tab: .trusted)
+        settingsWindow.show(tab: .devices)
     }
     @objc func openGuide(_ sender: Any?) {
         popover.performClose(nil)
-        settingsWindow.show(tab: .guide)
+        OnboardingWindowController.showOnboarding()
     }
     @objc func openPrivacy(_ sender: Any?) {
         popover.performClose(nil)
-        settingsWindow.show(tab: .privacy)
+        if let url = URL(string: "https://github.com/arslanbasharat/NearByDrop#privacy--security") {
+            NSWorkspace.shared.open(url)
+        }
     }
     @objc func openAbout(_ sender: Any?) {
         popover.performClose(nil)
@@ -218,6 +223,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     @objc func showReceiveTab(_ sender: Any?) {
         openApp(nil)
         model.tab = .receive
+    }
+    @objc func showHistoryTab(_ sender: Any?) {
+        openApp(nil)
+        model.tab = .history
     }
     @objc func showUSBTab(_ sender: Any?) {
         openApp(nil)
@@ -278,7 +287,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
     func incomingTransfer(id: String, didFinishWith error: Error?) {
         DispatchQueue.main.async {
-            if error == nil, let info = self.model.incoming[id] { self.model.recordIncoming(info: info) }
+            if error == nil, let info = self.model.incoming[id] {
+                self.model.recordIncoming(info: info)
+                NSSound(named: "Glass")?.play()
+            }
             self.model.incoming.removeValue(forKey: id)
             self.model.accepted.remove(id)
             self.model.receiveMessage = error.map(TransferModel.errorMessage) ?? "Saved to \(self.model.downloadDirectory.lastPathComponent)"
@@ -526,10 +538,10 @@ struct MenuView: View {
                         Button("Settings…", action: settings)
                     }
                     if let guide = guide {
-                        Button("How to Use NearByDrop", action: guide)
+                        Button("Welcome Tour…", action: guide)
                     }
                     if let privacy = privacy {
-                        Button("Privacy & Security", action: privacy)
+                        Button("Privacy & Security Policy…", action: privacy)
                     }
                     Divider()
                     Toggle("Launch at Login", isOn: Binding(
