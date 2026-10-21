@@ -136,7 +136,7 @@ class OutboundNearbyConnection:NearbyConnection{
 	}
 	
 	private func sendConnectionRequest() throws {
-		let deviceName=Host.current().localizedName ?? ProcessInfo.processInfo.hostName
+		let deviceName=NearbyConnectionManager.currentDeviceName
 		var frame=Location_Nearby_Connections_OfflineFrame()
 		frame.version = .v1
 		frame.v1=Location_Nearby_Connections_V1Frame()
