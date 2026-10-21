@@ -9,6 +9,7 @@ import Network
 import System
 import CryptoKit
 import SwiftECC
+import CoreBluetooth
 
 public struct RemoteDeviceInfo{
 	public let name:String
@@ -184,7 +185,7 @@ public protocol ShareExtensionDelegate:AnyObject{
 	func transferFinished()
 }
 
-public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNearbyConnectionDelegate, OutboundNearbyConnectionDelegate{
+public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNearbyConnectionDelegate, OutboundNearbyConnectionDelegate, CBCentralManagerDelegate{
 	public enum AdvertisementState:Equatable{
 		case idle
 		case starting
@@ -204,6 +205,9 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	private var discoveryRefCount=0
 	
 	private var browser:NWBrowser?
+	private var centralManager:CBCentralManager?
+	private static let quickShareServiceUUID=CBUUID(string: "FE2C")
+	private var lastBLEDiscoveryTime:Date?
 	
 	private var qrCodePublicKey:ECPublicKey?
 	private var qrCodePrivateKey:ECPrivateKey?
@@ -238,6 +242,22 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 				UserDefaults.standard.set(bookmark, forKey: downloadBookmarkKey)
 			}
 		}
+	}
+
+	public static var customDeviceName: String? {
+		get { UserDefaults.standard.string(forKey: "customDeviceName") }
+		set {
+			if let val = newValue, !val.isEmpty {
+				UserDefaults.standard.set(val, forKey: "customDeviceName")
+			} else {
+				UserDefaults.standard.removeObject(forKey: "customDeviceName")
+			}
+			shared.refreshMDNS()
+		}
+	}
+
+	public static var currentDeviceName: String {
+		customDeviceName ?? Host.current().localizedName ?? ProcessInfo.processInfo.hostName
 	}
 
 	private static let trustedKey="trustedDevices"
@@ -275,7 +295,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		tcpOptions.enableKeepalive=true
 		tcpOptions.keepaliveIdle=2
 		let params=NWParameters(tls: .none, tcp: tcpOptions)
-		params.serviceClass = .responsiveData
+		params.serviceClass = .interactiveVideo
 		params.allowFastOpen=true
 		params.preferNoProxies=true
 		tcpListener=try! NWListener(using: params)
@@ -325,7 +345,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
     }
 
     private func advertisementRecord()->Data {
-        let info=EndpointInfo(name: Host.current().localizedName ?? ProcessInfo.processInfo.hostName,
+        let info=EndpointInfo(name: NearbyConnectionManager.currentDeviceName,
                               deviceType: .computer, qrCodeData: receivingCode?.advertisingToken)
         return NetService.data(fromTXTRecord: ["n": info.serialize().urlSafeBase64EncodedString().data(using: .utf8)!])
     }
@@ -335,6 +355,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	public func becomeVisible(){
 		updateAdvertisementState(.starting)
 		startTCPListener()
+		startBLEScanning()
 	}
 
     private func updateAdvertisementState(_ state:AdvertisementState){
@@ -605,9 +626,15 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	
 	public func startOutgoingTransfer(deviceID:String, delegate:ShareExtensionDelegate, urls:[URL], displayNames:[String]?=nil){
 		guard let info=foundServices[deviceID] else {return}
-		let tcp=NWProtocolTCP.Options.init()
+		let tcp=NWProtocolTCP.Options()
 		tcp.noDelay=true
-		let nwconn=NWConnection(to: info.service.endpoint, using: NWParameters(tls: .none, tcp: tcp))
+		tcp.enableKeepalive=true
+		tcp.keepaliveIdle=2
+		let params=NWParameters(tls: .none, tcp: tcp)
+		params.serviceClass = .interactiveVideo
+		params.allowFastOpen=true
+		params.preferNoProxies=true
+		let nwconn=NWConnection(to: info.service.endpoint, using: params)
 		let conn=OutboundNearbyConnection(connection: nwconn, id: deviceID, urlsToSend: urls, displayNames: displayNames)
 		conn.delegate=self
 		conn.qrCodePrivateKey=qrCodePrivateKey
@@ -651,6 +678,45 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			transfer.delegate.transferFinished()
 		}
 		outgoingTransfers.removeValue(forKey: connection.id)
+	}
+
+	// MARK: - BLE Discovery Scanner (0xFE2C)
+
+	public func startBLEScanning(){
+		if centralManager == nil {
+			centralManager = CBCentralManager(delegate: self, queue: .main)
+		} else if centralManager?.state == .poweredOn && !(centralManager?.isScanning ?? false) {
+			centralManager?.scanForPeripherals(withServices: [NearbyConnectionManager.quickShareServiceUUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
+		}
+	}
+
+	public func stopBLEScanning(){
+		if centralManager?.isScanning == true {
+			centralManager?.stopScan()
+		}
+	}
+
+	public func centralManagerDidUpdateState(_ central: CBCentralManager){
+		switch central.state {
+		case .poweredOn:
+			central.scanForPeripherals(withServices: [NearbyConnectionManager.quickShareServiceUUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey: true])
+		default:
+			break
+		}
+	}
+
+	public func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber){
+		let now = Date()
+		if let last = lastBLEDiscoveryTime, now.timeIntervalSince(last) < 2.0 {
+			return
+		}
+		lastBLEDiscoveryTime = now
+		#if DEBUG
+		print("Discovered Quick Share BLE beacon (0xFE2C), RSSI: \(RSSI). Triggering instant mDNS announce.")
+		#endif
+		if mdnsService != nil {
+			refreshMDNS()
+		}
 	}
 }
 

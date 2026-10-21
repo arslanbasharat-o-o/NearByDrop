@@ -179,23 +179,27 @@ class NearbyConnection{
 		d2dMsg.sequenceNumber=serverSeq
 		d2dMsg.message=try frame.serializedData()
 		
-		let serializedMsg=[UInt8](try d2dMsg.serializedData())
+		let serializedMsg=try d2dMsg.serializedData()
 		let iv=Data.randomData(length: 16)
 		var encryptedData=Data(count: serializedMsg.count+16)
 		var encryptedLength:size_t=0
 		var encryptionStatus=CCCryptorStatus(kCCSuccess)
-		encryptedData.withUnsafeMutableBytes({
-			encryptionStatus=CCCrypt(
-				CCOperation(kCCEncrypt),
-				CCAlgorithm(kCCAlgorithmAES128),
-				CCOptions(kCCOptionPKCS7Padding),
-				encryptKey, kCCKeySizeAES256,
-				[UInt8](iv),
-				serializedMsg, serializedMsg.count,
-				$0.baseAddress, $0.count,
-				&encryptedLength
-			)
-		})
+		iv.withUnsafeBytes { ivBytes in
+			serializedMsg.withUnsafeBytes { msgBytes in
+				encryptedData.withUnsafeMutableBytes { outBytes in
+					encryptionStatus=CCCrypt(
+						CCOperation(kCCEncrypt),
+						CCAlgorithm(kCCAlgorithmAES128),
+						CCOptions(kCCOptionPKCS7Padding),
+						encryptKey, kCCKeySizeAES256,
+						ivBytes.baseAddress,
+						msgBytes.baseAddress, serializedMsg.count,
+						outBytes.baseAddress, outBytes.count,
+						&encryptedLength
+					)
+				}
+			}
+		}
 		guard encryptionStatus==CCCryptorStatus(kCCSuccess) else { throw NearbyError.protocolError("CCCrypt error: \(encryptionStatus)") }
 		
 		var hb=Securemessage_HeaderAndBody()
@@ -253,18 +257,24 @@ class NearbyConnection{
 		
 		var decryptedLength:Int=0
 		var decryptionStatus=CCCryptorStatus(kCCSuccess)
-		decryptedData.withUnsafeMutableBytes({
-			decryptionStatus=CCCrypt(
-				CCOperation(kCCDecrypt),
-				CCAlgorithm(kCCAlgorithmAES128),
-				CCOptions(kCCOptionPKCS7Padding),
-				decryptKey, kCCKeySizeAES256,
-				[UInt8](headerAndBody.header.iv),
-				[UInt8](headerAndBody.body), headerAndBody.body.count,
-				$0.baseAddress, $0.count,
-				&decryptedLength
-			)
-		})
+		let iv=headerAndBody.header.iv
+		let body=headerAndBody.body
+		iv.withUnsafeBytes { ivBytes in
+			body.withUnsafeBytes { bodyBytes in
+				decryptedData.withUnsafeMutableBytes { outBytes in
+					decryptionStatus=CCCrypt(
+						CCOperation(kCCDecrypt),
+						CCAlgorithm(kCCAlgorithmAES128),
+						CCOptions(kCCOptionPKCS7Padding),
+						decryptKey, kCCKeySizeAES256,
+						ivBytes.baseAddress,
+						bodyBytes.baseAddress, body.count,
+						outBytes.baseAddress, outBytes.count,
+						&decryptedLength
+					)
+				}
+			}
+		}
 		guard decryptionStatus==CCCryptorStatus(kCCSuccess) else { throw NearbyError.protocolError("CCCrypt error: \(decryptionStatus)") }
 		decryptedData=decryptedData.prefix(decryptedLength)
 		let d2dMsg=try Securegcm_DeviceToDeviceMessage(serializedData: decryptedData)
