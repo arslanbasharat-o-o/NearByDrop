@@ -179,8 +179,15 @@ struct SettingsView: View {
             .padding(12)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
 
-            sectionHeader(title: "Options", subtitle: "System startup and Dock preferences.")
+            sectionHeader(title: "Options", subtitle: "System startup, menu bar, and Dock preferences.")
             VStack(alignment: .leading, spacing: 10) {
+                Toggle("Run as Menu Bar Only", isOn: $model.menuBarOnly)
+                    .toggleStyle(.checkbox)
+                Text("Operate NearByDrop directly from the menu bar without opening the main window.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 18)
+
                 Toggle("Launch at Login", isOn: Binding(
                     get: { model.launchAtLogin },
                     set: { model.toggleLaunchAtLogin(enabled: $0) }
@@ -194,13 +201,32 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
 
-            sectionHeader(title: "Feedback & Vibration", subtitle: "Audio artifacts and trackpad vibration.")
+            sectionHeader(title: "Feedback & Notifications", subtitle: "Audio artifacts, haptics, and transfer notifications.")
             VStack(alignment: .leading, spacing: 10) {
                 Toggle("Play Sound Effects", isOn: $feedback.soundEnabled)
                     .toggleStyle(.checkbox)
 
                 Toggle("Trackpad Vibration (Haptics)", isOn: $feedback.hapticsEnabled)
                     .toggleStyle(.checkbox)
+
+                Divider()
+
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Transfer Notifications")
+                            .font(.subheadline)
+                        Text("Preview incoming floating notification banner with animations.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Preview Notification") {
+                        FeedbackManager.shared.vibrateClick()
+                        TransferNotificationManager.shared.showPreview()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)

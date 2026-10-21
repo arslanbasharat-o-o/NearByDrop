@@ -116,6 +116,8 @@ struct USBView: View {
     @ObservedObject var usb: USBModel
     let files: [URL]
     let chooseFiles: () -> Void
+    var horizontalPadding: CGFloat = 28
+    var bottomPadding: CGFloat = 20
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -130,7 +132,13 @@ struct USBView: View {
                     VStack(spacing: 12) {
                         Image(systemName: "cable.connector").font(.system(size: 36)).foregroundStyle(.secondary)
                         Text("Connect your Android phone").font(.headline)
-                        Text("Unlock your phone and select File Transfer for USB.").font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                        Text("Unlock your phone and select File Transfer for USB.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 8)
                     }.frame(maxWidth: .infinity)
                     Spacer()
                 } else {
@@ -173,6 +181,6 @@ struct USBView: View {
             } else if usb.busy { ProgressView().controlSize(.small) }
             else if !usb.message.isEmpty { Text(usb.message).font(.callout).foregroundStyle(.secondary) }
             if let error = usb.error { Text(error).font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true) }
-        }.padding(.horizontal, 28).padding(.bottom, 20).onAppear { if usb.deviceName.isEmpty { usb.refresh() } }
+        }.padding(.horizontal, horizontalPadding).padding(.bottom, bottomPadding).onAppear { if usb.deviceName.isEmpty { usb.refresh() } }
     }
 }
