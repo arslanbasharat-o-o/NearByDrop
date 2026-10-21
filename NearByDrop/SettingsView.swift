@@ -10,7 +10,7 @@ final class SettingsWindowController: NSWindowController, ObservableObject {
     init(model: TransferModel) {
         self.model = model
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 620, height: 480),
+            contentRect: NSRect(x: 0, y: 0, width: 660, height: 500),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
@@ -75,12 +75,15 @@ struct SettingsView: View {
                                 .foregroundStyle(controller.selectedTab == tab ? theme.currentAccent.color : .secondary)
                             Text(tab.rawValue)
                                 .font(.system(size: 13, weight: controller.selectedTab == tab ? .semibold : .regular))
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
                             Spacer()
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 7)
+                        .contentShape(Rectangle())
                         .background(
-                            controller.selectedTab == tab ? theme.currentAccent.color.opacity(0.12) : Color.clear,
+                            controller.selectedTab == tab ? theme.currentAccent.color.opacity(0.14) : Color.clear,
                             in: RoundedRectangle(cornerRadius: 8)
                         )
                     }
@@ -88,8 +91,9 @@ struct SettingsView: View {
                 }
                 Spacer()
             }
-            .padding(14)
-            .frame(width: 170)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 14)
+            .frame(width: 195)
             .background(Color(nsColor: .windowBackgroundColor))
 
             Divider()
@@ -110,7 +114,7 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
         }
-        .frame(width: 620, height: 480)
+        .frame(width: 660, height: 500)
         .onAppear {
             customName = UserDefaults.standard.string(forKey: "customDeviceName") ?? model.deviceName
         }
@@ -220,14 +224,14 @@ struct SettingsView: View {
                             Text(t.rawValue)
                                 .font(.caption.weight(theme.currentTheme == t ? .bold : .regular))
                         }
-                        .frame(width: 80, height: 64)
+                        .frame(width: 86, height: 68)
                         .background(
-                            theme.currentTheme == t ? theme.currentAccent.color.opacity(0.12) : Color(nsColor: .controlBackgroundColor),
-                            in: RoundedRectangle(cornerRadius: 8)
+                            theme.currentTheme == t ? theme.currentAccent.color.opacity(0.14) : Color(nsColor: .controlBackgroundColor),
+                            in: RoundedRectangle(cornerRadius: 10)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(theme.currentTheme == t ? theme.currentAccent.color : Color.clear, lineWidth: 1.5)
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(theme.currentTheme == t ? theme.currentAccent.color : Color.primary.opacity(0.08), lineWidth: theme.currentTheme == t ? 1.5 : 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -271,15 +275,15 @@ struct SettingsView: View {
                             Text(style.rawValue)
                                 .font(.subheadline)
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(
-                            theme.menuBarIconStyle == style ? theme.currentAccent.color.opacity(0.12) : Color(nsColor: .controlBackgroundColor),
+                            theme.menuBarIconStyle == style ? theme.currentAccent.color.opacity(0.14) : Color(nsColor: .controlBackgroundColor),
                             in: RoundedRectangle(cornerRadius: 8)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(theme.menuBarIconStyle == style ? theme.currentAccent.color : Color.clear, lineWidth: 1.5)
+                                .stroke(theme.menuBarIconStyle == style ? theme.currentAccent.color : Color.primary.opacity(0.08), lineWidth: theme.menuBarIconStyle == style ? 1.5 : 1)
                         )
                     }
                     .buttonStyle(.plain)
@@ -312,10 +316,11 @@ struct SettingsView: View {
             } else {
                 VStack(spacing: 6) {
                     ForEach(list, id: \.self) { key in
+                        let displayName = key.contains("|") ? String(key.split(separator: "|", maxSplits: 1).last ?? "") : key
                         HStack {
                             Image(systemName: "iphone")
                                 .foregroundStyle(theme.currentAccent.color)
-                            Text(key)
+                            Text(displayName)
                                 .font(.subheadline)
                             Spacer()
                             Button("Remove") {
