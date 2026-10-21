@@ -388,7 +388,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             FeedbackManager.shared.vibrateTap()
 
             // Automatically open UI so incoming transfer is immediately visible
-            if self.popover.isShown || self.model.menuBarOnly {
+            if self.popover.isShown || self.model.menuBarOnly || self.transferWindow.window?.isVisible != true {
                 self.showPopover()
             } else {
                 self.openApp(nil)
@@ -420,7 +420,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     func incomingTransfer(id: String, didFinishWith error: Error?) {
         DispatchQueue.main.async {
             let info = self.model.incoming[id]
-            let fileURL = info?.transfer.files.first.map { self.model.downloadDirectory.appendingPathComponent($0.name) }
+            let fileURL = info?.transfer.files.first
+                .map { self.model.downloadDirectory.appendingPathComponent($0.name) }
+                .flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
             let fileName: String
             if let text = info?.transfer.textDescription {
                 fileName = text
@@ -449,8 +451,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 if self.model.qrStatus != .idle {
                     self.model.qrStatus = .completed(filename: fileName, count: info.transfer.files.count)
                 }
-            } else if error != nil {
-                NSLog("[NearByDrop] Inbound transfer %@ finished with error: %@", id, error!.localizedDescription)
+            } else if let error {
+                NSLog("[Nearby Drop] Inbound transfer %@ finished with error: %@", id, error.localizedDescription)
                 FeedbackManager.shared.playError()
                 FeedbackManager.shared.vibrateTap()
                 TransferNotificationManager.shared.transferDidFinish(id: id, error: error, fileURL: nil, fileName: fileName)

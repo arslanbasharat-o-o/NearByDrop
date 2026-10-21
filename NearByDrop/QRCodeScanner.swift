@@ -46,7 +46,22 @@ final class QRScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSampl
             self.session.startRunning()
         }
     }
-    func stop() { queue.async { self.active = false; self.session.stopRunning() } }
+    func stop() {
+        queue.async {
+            self.active = false
+            if self.session.isRunning {
+                self.session.stopRunning()
+            }
+            self.session.beginConfiguration()
+            for input in self.session.inputs {
+                self.session.removeInput(input)
+            }
+            for output in self.session.outputs {
+                self.session.removeOutput(output)
+            }
+            self.session.commitConfiguration()
+        }
+    }
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard active, Date().timeIntervalSince(lastFrame) > 0.4, let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         lastFrame = Date()
@@ -63,7 +78,7 @@ final class QRScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSampl
         } catch { DispatchQueue.main.async { self.message = "Could not read the code. Hold it steady and try again." } }
     }
     deinit {
-        session.stopRunning()
+        stop()
     }
 }
 private struct CameraPreview: NSViewRepresentable {
@@ -81,6 +96,12 @@ private struct CameraPreview: NSViewRepresentable {
         }
         required init?(coder: NSCoder) { fatalError() }
         override func layout() { super.layout(); preview.frame = bounds }
+        override func viewWillMove(toWindow newWindow: NSWindow?) {
+            super.viewWillMove(toWindow: newWindow)
+            if newWindow == nil {
+                preview.session = nil
+            }
+        }
     }
 }
 struct QRScannerView: View {
