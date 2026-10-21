@@ -212,8 +212,8 @@ class InboundNearbyConnection: NearbyConnection{
 		var pkey=Securemessage_GenericPublicKey()
 		pkey.type = .ecP256
 		pkey.ecP256PublicKey=Securemessage_EcP256PublicKey()
-		pkey.ecP256PublicKey.x=Data(pubKey.w.x.asSignedBytes())
-		pkey.ecP256PublicKey.y=Data(pubKey.w.y.asSignedBytes())
+		pkey.ecP256PublicKey.x=NearbyConnection.fixedCoordinate32Bytes(pubKey.w.x)
+		pkey.ecP256PublicKey.y=NearbyConnection.fixedCoordinate32Bytes(pubKey.w.y)
 		serverInit.publicKey=try pkey.serializedData()
 		
 		var serverInitMsg=Securegcm_Ukey2Message()

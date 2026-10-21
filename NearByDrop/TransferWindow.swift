@@ -252,8 +252,11 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             panel.beginSheetModal(for: window, completionHandler: handler)
         } else {
             NSApp.activate(ignoringOtherApps: true)
-            let result = panel.runModal()
-            handler(result)
+            panel.begin { result in
+                DispatchQueue.main.async {
+                    handler(result)
+                }
+            }
         }
     }
     func send(to device: RemoteDeviceInfo) {
