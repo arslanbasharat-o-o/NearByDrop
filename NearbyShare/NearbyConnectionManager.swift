@@ -225,16 +225,21 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 				var isStale = false
 				if let url = try? URL(resolvingBookmarkData: data, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &isStale) {
 					_ = url.startAccessingSecurityScopedResource()
+					let homeDownloads = (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false))?.path ?? (NSHomeDirectory() + "/Downloads")
+					if url.path == homeDownloads {
+						return defaultDownloadDirectory
+					}
 					return url
 				}
 			}
 			if let path = UserDefaults.standard.string(forKey: downloadDirKey), !path.isEmpty {
 				let url = path.hasPrefix("file://") ? (URL(string: path) ?? URL(fileURLWithPath: path)) : URL(fileURLWithPath: path)
-				if FileManager.default.fileExists(atPath: url.path) {
+				let homeDownloads = (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false))?.path ?? (NSHomeDirectory() + "/Downloads")
+				if url.path != homeDownloads && FileManager.default.fileExists(atPath: url.path) {
 					return url
 				}
 			}
-			return (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: true)) ?? URL(fileURLWithPath: NSHomeDirectory() + "/Downloads")
+			return defaultDownloadDirectory
 		}
 		set {
 			UserDefaults.standard.set(newValue.path, forKey: downloadDirKey)
@@ -242,6 +247,15 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 				UserDefaults.standard.set(bookmark, forKey: downloadBookmarkKey)
 			}
 		}
+	}
+
+	public static var defaultDownloadDirectory: URL {
+		let base = (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: true)) ?? URL(fileURLWithPath: NSHomeDirectory() + "/Downloads")
+		let folder = base.appendingPathComponent("NearByDrop", isDirectory: true)
+		if !FileManager.default.fileExists(atPath: folder.path) {
+			try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+		}
+		return folder
 	}
 
 	public static var customDeviceName: String? {
