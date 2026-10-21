@@ -4,7 +4,7 @@ import UserNotifications
 import NearbyShare
 
 @main
-class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, MainAppDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, NSPopoverDelegate, MainAppDelegate {
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
     let model = TransferModel()
@@ -36,6 +36,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         ))
         popover.contentSize = NSSize(width: 360, height: 505)
         popover.behavior = .transient
+        popover.delegate = self
 
         let nc = UNUserNotificationCenter.current()
         nc.delegate = self
@@ -178,25 +179,56 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         NSApp.mainMenu = mainMenu
     }
 
-    @objc private func toggleMenu() {
-        guard let button = statusItem.button else { return }
-        if popover.isShown { popover.performClose(nil) }
-        else {
-            if let controller = popover.contentViewController {
-                let size = controller.view.fittingSize
-                if size.width > 0 && size.height > 0 { popover.contentSize = size }
-            }
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+    // MARK: - NSPopoverDelegate
+    func popoverWillShow(_ notification: Notification) {
+        if let window = popover.contentViewController?.view.window {
+            window.level = .popUpMenu
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         }
     }
+
+    func popoverDidShow(_ notification: Notification) {
+        if let window = popover.contentViewController?.view.window {
+            window.level = .popUpMenu
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+            window.makeKeyAndOrderFront(nil)
+            window.orderFrontRegardless()
+        }
+    }
+
+    func popoverShouldClose(_ popover: NSPopover) -> Bool {
+        return true
+    }
+
+    @objc private func toggleMenu() {
+        guard let button = statusItem.button else { return }
+        if popover.isShown {
+            popover.performClose(nil)
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+            popover.contentSize = NSSize(width: 360, height: 505)
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            if let window = popover.contentViewController?.view.window {
+                window.level = .popUpMenu
+                window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+                window.makeKeyAndOrderFront(nil)
+                window.orderFrontRegardless()
+            }
+        }
+    }
+
     func showPopover() {
         guard let button = statusItem.button else { return }
         if !popover.isShown {
-            if let controller = popover.contentViewController {
-                let size = controller.view.fittingSize
-                if size.width > 0 && size.height > 0 { popover.contentSize = size }
-            }
+            NSApp.activate(ignoringOtherApps: true)
+            popover.contentSize = NSSize(width: 360, height: 505)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            if let window = popover.contentViewController?.view.window {
+                window.level = .popUpMenu
+                window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+                window.makeKeyAndOrderFront(nil)
+                window.orderFrontRegardless()
+            }
         }
     }
     @objc func openApp(_ sender: Any?) {
@@ -420,7 +452,7 @@ struct MenuView: View {
     @State private var isDragging = false
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 0) {
             // Header Platter
             HStack(spacing: 10) {
                 ZStack {
@@ -431,10 +463,10 @@ struct MenuView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(model.advertisement == .failed ? Color.secondary : Color.white)
                 }
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text("NearByDrop")
-                            .font(.headline)
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(.primary)
                         Circle()
                             .fill(statusColor)
@@ -447,8 +479,9 @@ struct MenuView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
+            .padding(.horizontal, 14)
+            .padding(.top, 16)
+            .padding(.bottom, 10)
 
             // Segmented Tab Picker
             Picker("Transfer method", selection: $model.tab) {
@@ -457,7 +490,8 @@ struct MenuView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 10)
 
             // Tab Content
             Group {
@@ -465,7 +499,7 @@ struct MenuView: View {
                 case .send: sendView
                 case .receive: receiveView
                 case .history: historyView
-                case .usb: USBView(usb: model.usb, files: model.urls, chooseFiles: model.chooseFiles, horizontalPadding: 8)
+                case .usb: USBView(usb: model.usb, files: model.urls, chooseFiles: model.chooseFiles, horizontalPadding: 8, bottomPadding: 4)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -476,7 +510,7 @@ struct MenuView: View {
             HStack {
                 Button(action: open) {
                     Label("Open NearByDrop", systemImage: "macwindow")
-                        .font(.subheadline.weight(.medium))
+                        .font(.system(size: 12, weight: .medium))
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.primary)
@@ -485,7 +519,7 @@ struct MenuView: View {
 
                 Button(action: TransferModel.openDownloads) {
                     Image(systemName: "folder")
-                        .font(.system(size: 14))
+                        .font(.system(size: 13))
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
@@ -495,7 +529,7 @@ struct MenuView: View {
                 if let settings = settings {
                     Button(action: settings) {
                         Image(systemName: "gearshape")
-                            .font(.system(size: 14))
+                            .font(.system(size: 13))
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
@@ -529,7 +563,7 @@ struct MenuView: View {
                     Button("Quit NearByDrop") { NSApp.terminate(nil) }
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .font(.system(size: 14))
+                        .font(.system(size: 13))
                 }
                 .menuStyle(.borderlessButton)
                 .foregroundStyle(.secondary)
@@ -537,9 +571,9 @@ struct MenuView: View {
                 .accessibilityLabel("More options")
             }
             .padding(.horizontal, 14)
-            .padding(.bottom, 10)
+            .padding(.vertical, 10)
         }
-        .frame(width: 350, height: 460)
+        .frame(width: 360, height: 505)
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
             let group = DispatchGroup()
             var loadedURLs: [URL] = []
@@ -919,17 +953,19 @@ struct MenuView: View {
                 }
             } else {
                 VStack(spacing: 12) {
-                    Spacer()
+                    Spacer(minLength: 6)
                     Image(systemName: "arrow.down.circle")
                         .font(.system(size: 38))
                         .foregroundStyle(theme.currentAccent.color)
                     Text("Send to this Mac")
                         .font(.headline)
                     Text("Choose \"\(model.deviceName)\" in Quick Share on your phone, or scan a QR code.")
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 16)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 8)
 
                     Button {
                         QRScannerWindowController.shared.show { [weak model] code in
@@ -941,7 +977,7 @@ struct MenuView: View {
                     .buttonStyle(.borderedProminent)
                     .tint(theme.currentAccent.color)
                     .controlSize(.regular)
-                    Spacer()
+                    Spacer(minLength: 6)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
