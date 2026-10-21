@@ -73,10 +73,18 @@ final class TransferNotificationManager: ObservableObject {
     @Published var currentItem: TransferNotificationItem?
     private var panel: TransferNotificationPanel?
     private var dismissTimer: Timer?
+    private var dismissalID = 0
+    private var transitionID = 0
     private let panelWidth: CGFloat = 360
     private let panelHeight: CGFloat = 190
 
     private init() {}
+
+    private func cancelScheduledDismissal() {
+        dismissalID &+= 1
+        dismissTimer?.invalidate()
+        dismissTimer = nil
+    }
 
     func showIncoming(
         transfer: TransferMetadata,
@@ -85,7 +93,7 @@ final class TransferNotificationManager: ObservableObject {
         onConsent: @escaping (Bool) -> Void,
         onTrust: @escaping (Bool) -> Void
     ) {
-        dismissTimer?.invalidate()
+        cancelScheduledDismissal()
         let summary: String
         if let text = transfer.textDescription {
             summary = text
@@ -116,7 +124,7 @@ final class TransferNotificationManager: ObservableObject {
     }
 
     func showAutoAccepted(transfer: TransferMetadata, device: RemoteDeviceInfo) {
-        dismissTimer?.invalidate()
+        cancelScheduledDismissal()
         let summary = transfer.files.first.map { f in
             transfer.files.count > 1 ? "\(transfer.files.count) files" : f.name
         } ?? "1 item"
@@ -134,6 +142,7 @@ final class TransferNotificationManager: ObservableObject {
 
     func transferDidConsent(id: String, accept: Bool) {
         guard let item = currentItem, item.id == id else { return }
+        guard case .incoming = item.state else { return }
         if accept {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 item.state = .receiving
@@ -163,7 +172,7 @@ final class TransferNotificationManager: ObservableObject {
     }
 
     func showPreview() {
-        dismissTimer?.invalidate()
+        cancelScheduledDismissal()
         let item = TransferNotificationItem(
             id: "preview_\(UUID().uuidString)",
             deviceName: "Google Pixel 8 Pro",
@@ -198,17 +207,22 @@ final class TransferNotificationManager: ObservableObject {
     }
 
     func dismiss(animated: Bool = true) {
-        dismissTimer?.invalidate()
-        dismissTimer = nil
-        guard let panel = panel else { return }
+        cancelScheduledDismissal()
+        transitionID &+= 1
+        let transitionID = transitionID
+        guard let panel = panel else {
+            currentItem = nil
+            return
+        }
         if animated {
             NSAnimationContext.runAnimationGroup({ context in
                 context.duration = 0.25
                 panel.animator().alphaValue = 0
             }, completionHandler: { [weak self] in
-                self?.panel?.orderOut(nil)
-                self?.panel = nil
-                self?.currentItem = nil
+                guard let self, self.transitionID == transitionID, self.panel === panel else { return }
+                self.panel?.orderOut(nil)
+                self.panel = nil
+                self.currentItem = nil
             })
         } else {
             panel.orderOut(nil)
@@ -218,13 +232,17 @@ final class TransferNotificationManager: ObservableObject {
     }
 
     private func scheduleDismiss(after seconds: TimeInterval) {
-        dismissTimer?.invalidate()
+        cancelScheduledDismissal()
+        let dismissalID = self.dismissalID
         dismissTimer = Timer.scheduledTimer(withTimeInterval: seconds, repeats: false) { [weak self] _ in
+            guard self?.dismissalID == dismissalID else { return }
             self?.dismiss(animated: true)
         }
     }
 
     private func presentItem(_ item: TransferNotificationItem) {
+        cancelScheduledDismissal()
+        transitionID &+= 1
         currentItem = item
         if panel == nil {
             let p = TransferNotificationPanel(contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight))
@@ -235,6 +253,13 @@ final class TransferNotificationManager: ObservableObject {
         positionPanel()
         panel?.alphaValue = 1.0
         panel?.orderFrontRegardless()
+    }
+
+    func setTrust(for item: TransferNotificationItem, trusted: Bool) {
+        guard let currentItem, currentItem.id == item.id else { return }
+        guard case .incoming = currentItem.state else { return }
+        item.isTrusted = trusted
+        item.onTrust?(trusted)
     }
 
     private func positionPanel() {
@@ -250,7 +275,6 @@ final class TransferNotificationManager: ObservableObject {
 struct TransferNotificationBannerView: View {
     @ObservedObject var manager: TransferNotificationManager
     @ObservedObject private var theme = ThemeManager.shared
-    @State private var isVisible: Bool = false
     @State private var isPulsing: Bool = false
     @State private var checkmarkPop: Bool = false
 
@@ -263,13 +287,6 @@ struct TransferNotificationBannerView: View {
             }
         }
         .frame(width: 360)
-        .offset(x: isVisible ? 0 : 380)
-        .opacity(isVisible ? 1 : 0)
-        .onAppear {
-            withAnimation(.spring(response: 0.42, dampingFraction: 0.78)) {
-                isVisible = true
-            }
-        }
     }
 
     @ViewBuilder
@@ -330,10 +347,7 @@ struct TransferNotificationBannerView: View {
                 HStack(alignment: .center) {
                     Toggle("Trust device", isOn: Binding(
                         get: { item.isTrusted },
-                        set: {
-                            item.isTrusted = $0
-                            item.onTrust?($0)
-                        }
+                        set: { manager.setTrust(for: item, trusted: $0) }
                     ))
                     .toggleStyle(.checkbox)
                     .font(.caption2)

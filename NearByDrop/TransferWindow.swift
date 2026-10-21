@@ -3,7 +3,6 @@ import SwiftUI
 import NearbyShare
 import CoreImage.CIFilterBuiltins
 import ServiceManagement
-import WebKit
 
 struct TransferHistoryItem: Codable, Identifiable, Hashable {
     enum Direction: String, Codable {
@@ -29,9 +28,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var qrImage: NSImage?
     @Published var showingQR = false
     @Published var waitingForQR = false
-    @Published var qrServerURLString: String = ""
-    @Published var qrTransferProgress: Double = 0
-    @Published var qrTransferSpeed: String = ""
     @Published var qrTransferStatus: String = "Waiting for phone to scan…"
     @Published var incoming: [String: TransferInfo] = [:]
     @Published var accepted: Set<String> = []
@@ -73,9 +69,19 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     var onConsent: ((String, Bool) -> Void)?
     private var chosenID: String?
     private var scopedURLs: [URL] = []
+    private var scopedDownloadDirectory: URL?
+    private var scopedDownloadDirectoryAccessed = false
     private var qrExpiry: DispatchWorkItem?
     private var timeout: DispatchWorkItem?
     private var adDebounce: DispatchWorkItem?
+
+    deinit {
+        scopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+        if scopedDownloadDirectoryAccessed {
+            scopedDownloadDirectory?.stopAccessingSecurityScopedResource()
+        }
+        NearbyConnectionManager.shared.removeShareExtensionDelegate(self)
+    }
 
     func setAdvertisementState(_ state: NearbyConnectionManager.AdvertisementState) {
         adDebounce?.cancel()
@@ -100,7 +106,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 
     @Published var lastScannedURL: URL?
     @Published var qrStatus: QRTransferStatus = .idle
-    private let qrDownloader = QuickShareDownloader()
 
     override init() {
         super.init()
@@ -108,71 +113,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         updateLaunchAtLoginStatus()
         NearbyConnectionManager.shared.startDeviceDiscovery()
         NearbyConnectionManager.shared.addShareExtensionDelegate(self)
-        setupQRDownloader()
-    }
-
-    private func setupQRDownloader() {
-        qrDownloader.onMetadata = { [weak self] sender, desc in
-            guard let self = self else { return }
-            if case .completed = self.qrStatus { return }
-            if case .failed = self.qrStatus { return }
-
-            let lower = desc.lowercased()
-            if lower.contains("can't receive") || lower.contains("cannot receive") || lower.contains("unsupported") {
-                return
-            }
-            if lower.contains("saved") || lower.contains("downloaded") || lower.contains("complete") {
-                self.qrExpiry?.cancel()
-                self.qrStatus = .completed(filename: desc, count: 1)
-                self.receiveMessage = desc
-                FeedbackManager.shared.playSuccess()
-                FeedbackManager.shared.vibrateSuccess()
-                return
-            }
-
-            let s = sender.isEmpty ? "Phone" : sender
-            self.qrStatus = .downloading(sender: s, description: desc.isEmpty ? nil : desc)
-        }
-        qrDownloader.onProgress = { [weak self] message in
-            guard let self = self else { return }
-            if case .completed = self.qrStatus { return }
-            if case .failed = self.qrStatus { return }
-            if case .connecting(let s) = self.qrStatus {
-                self.qrStatus = .downloading(sender: s ?? "Phone", description: message)
-            }
-        }
-        qrDownloader.onCompleted = { [weak self] sender, desc in
-            guard let self = self else { return }
-            self.qrExpiry?.cancel()
-            if case .completed = self.qrStatus { return }
-            self.qrStatus = .completed(filename: desc, count: 1)
-            self.receiveMessage = desc
-            FeedbackManager.shared.playSuccess()
-            FeedbackManager.shared.vibrateSuccess()
-        }
-        qrDownloader.onFileReceived = { [weak self] filename, url in
-            guard let self = self else { return }
-            self.qrExpiry?.cancel()
-            let count: Int
-            if case .completed(_, let currentCount) = self.qrStatus {
-                count = currentCount + 1
-            } else {
-                count = 1
-            }
-            self.qrStatus = .completed(filename: filename, count: count)
-            self.receiveMessage = "Saved \(filename) to \(self.downloadDirectory.lastPathComponent)"
-            let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value ?? 0
-            self.recordTransfer(fileName: filename, fileSize: size, direction: .incoming, peerName: "Quick Share Web", fileURL: url)
-            FeedbackManager.shared.playSuccess()
-            FeedbackManager.shared.vibrateSuccess()
-        }
-        qrDownloader.onError = { [weak self] error in
-            guard let self = self else { return }
-            if case .completed = self.qrStatus { return }
-            self.qrStatus = .failed(error: error)
-            FeedbackManager.shared.playError()
-            FeedbackManager.shared.vibrateTap()
-        }
     }
 
     private func expandFilesAndDirectories(_ inputURLs: [URL]) -> (urls: [URL], displayNames: [String]) {
@@ -291,13 +231,11 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     func showQR() {
         guard !urls.isEmpty, !sending else { return }
 
+        NearbyConnectionManager.shared.clearQrCodeKey()
         let qrKey = NearbyConnectionManager.shared.generateQrCodeKey()
         let quickShareURL = "https://quickshare.google/qrcode#key=\(qrKey)"
 
-        qrServerURLString = quickShareURL
         qrTransferStatus = "Waiting for phone to scan…"
-        qrTransferProgress = 0
-        qrTransferSpeed = ""
 
         let filter = CIFilter.qrCodeGenerator()
         filter.message = Data(quickShareURL.utf8)
@@ -305,6 +243,9 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         if let output = filter.outputImage, let cg = CIContext().createCGImage(output.transformed(by: .init(scaleX: 8, y: 8)), from: output.extent.applying(.init(scaleX: 8, y: 8))) {
             qrImage = NSImage(cgImage: cg, size: NSSize(width: 240, height: 240))
             showingQR = true
+        } else {
+            NearbyConnectionManager.shared.clearQrCodeKey()
+            error = "Could not generate a QR code."
         }
     }
 
@@ -312,9 +253,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         NearbyConnectionManager.shared.clearQrCodeKey()
         showingQR = false
         qrImage = nil
-        qrServerURLString = ""
-        qrTransferProgress = 0
-        qrTransferSpeed = ""
         qrTransferStatus = "Waiting for phone to scan…"
     }
     func scan(_ value: String) -> String? {
@@ -345,7 +283,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         qrExpiry?.cancel()
         qrExpiry = nil
         waitingForQR = false
-        qrDownloader.cancel()
+        lastScannedURL = nil
         NearbyConnectionManager.shared.stopReceivingQRCode()
     }
     func resetQRTransfer() {
@@ -491,16 +429,15 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             name = "Unknown file"
         }
         let total = info.transfer.files.reduce(0) { $0 + $1.size }
-        let url: URL? = info.transfer.files.first.map {
-            downloadDirectory.appendingPathComponent($0.name)
-        }
+        let url = info.transfer.files.first
+            .map { downloadDirectory.appendingPathComponent($0.name) }
+            .flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
         recordTransfer(fileName: name, fileSize: total, direction: .incoming, peerName: info.device.name, fileURL: url)
     }
 
     func isDeviceTrusted(_ device: RemoteDeviceInfo) -> Bool {
-        return NearbyConnectionManager.isTrusted(name: device.name, id: device.id) ||
-            trustedDevices.contains(device.name) ||
-            (device.id != nil && trustedDevices.contains(device.id!))
+        let key = NearbyConnectionManager.trustedDeviceKey(name: device.name, id: device.id)
+        return trustedDevices.contains(key) || NearbyConnectionManager.isTrusted(name: device.name, id: device.id)
     }
 
     func setDeviceTrusted(_ device: RemoteDeviceInfo, trusted: Bool) {
@@ -508,17 +445,25 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         var list = UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? []
         let key = NearbyConnectionManager.trustedDeviceKey(name: device.name, id: device.id)
         if trusted {
+            // Keep new entries keyed to the device identity; raw names and IDs
+            // make two devices with the same display name affect each other.
+            list.removeAll { $0 == device.name || (device.id != nil && $0 == device.id) }
             if !list.contains(key) { list.append(key) }
-            if !list.contains(device.name) { list.append(device.name) }
-            if let id = device.id, !list.contains(id) { list.append(id) }
-            trustedDevices.insert(device.name)
-            if let id = device.id { trustedDevices.insert(id) }
         } else {
             list.removeAll { $0 == key || $0 == device.name || (device.id != nil && $0 == device.id) }
-            trustedDevices.remove(device.name)
-            if let id = device.id { trustedDevices.remove(id) }
         }
         UserDefaults.standard.set(list, forKey: "trustedDevices")
+        trustedDevices = Set(list)
+    }
+
+    func setDownloadDirectory(_ url: URL) {
+        if scopedDownloadDirectoryAccessed {
+            scopedDownloadDirectory?.stopAccessingSecurityScopedResource()
+        }
+        scopedDownloadDirectoryAccessed = url.startAccessingSecurityScopedResource()
+        scopedDownloadDirectory = scopedDownloadDirectoryAccessed ? url : nil
+        NearbyConnectionManager.downloadDirectory = url
+        downloadDirectory = url
     }
 
     func chooseDownloadDirectory() {
@@ -537,11 +482,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
                 self?.isChoosingDirectory = false
             }
             guard result == .OK, let url = panel.url, let self = self else { return }
-            _ = url.startAccessingSecurityScopedResource()
-            NearbyConnectionManager.downloadDirectory = url
-            DispatchQueue.main.async {
-                self.downloadDirectory = url
-            }
+            self.setDownloadDirectory(url)
         }
         if let window = self.window, window.isVisible, window.attachedSheet == nil {
             panel.beginSheetModal(for: window, completionHandler: handler)
@@ -554,11 +495,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 
     func resetDownloadDirectoryToDefault() {
         let defaultURL = NearbyConnectionManager.defaultDownloadDirectory
-        _ = defaultURL.startAccessingSecurityScopedResource()
-        NearbyConnectionManager.downloadDirectory = defaultURL
-        DispatchQueue.main.async {
-            self.downloadDirectory = defaultURL
-        }
+        setDownloadDirectory(defaultURL)
     }
 
     func updateLaunchAtLoginStatus() {
@@ -618,7 +555,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 final class TransferWindowController: NSWindowController {
     init(model: TransferModel) {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 530), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
-        window.title = "NearByDrop"
+        window.title = "Nearby Drop"
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isReleasedWhenClosed = false
@@ -666,8 +603,8 @@ struct TransferView: View {
         VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("NearByDrop").font(.system(size: 22, weight: .semibold))
-                    Text("Created by Arslan Basharat").font(.caption).foregroundStyle(.secondary)
+                    Text("Nearby Drop").font(.system(size: 22, weight: .semibold))
+                    Text("Created by Arsalan Bisharat").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button(action: TransferModel.openDownloads) { Image(systemName: "folder").frame(width: 26, height: 26) }
@@ -1079,13 +1016,9 @@ struct TransferView: View {
 
                                 Spacer()
 
-                                if let url = item.fileURL {
+                                if let url = item.fileURL, FileManager.default.fileExists(atPath: url.path) {
                                     Button("Show in Finder") {
-                                        if FileManager.default.fileExists(atPath: url.path) {
-                                            NSWorkspace.shared.activateFileViewerSelecting([url])
-                                        } else {
-                                            TransferModel.openDownloads()
-                                        }
+                                        NSWorkspace.shared.activateFileViewerSelecting([url])
                                     }
                                     .buttonStyle(.bordered)
                                     .controlSize(.small)
@@ -1099,343 +1032,6 @@ struct TransferView: View {
                     .padding(.bottom, 20)
                 }
             }
-        }
-    }
-}
-
-final class QuickShareDownloader: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, WKScriptMessageHandler {
-    private var webView: WKWebView?
-    var onMetadata: ((_ sender: String, _ description: String) -> Void)?
-    var onProgress: ((_ message: String) -> Void)?
-    var onCompleted: ((_ sender: String, _ description: String) -> Void)?
-    var onFileReceived: ((_ filename: String, _ url: URL) -> Void)?
-    var onError: ((_ error: String) -> Void)?
-    private var downloadedFiles: [URL] = []
-    private var downloadDestinations: [WKDownload: URL] = [:]
-
-    func start(url: URL, inWindow: NSWindow? = nil) {
-        cancel()
-
-        let config = WKWebViewConfiguration()
-        let ucc = WKUserContentController()
-        ucc.add(self, name: "nearbyDrop")
-
-        let scriptSource = """
-        const origLog = console.log;
-        console.log = function(...args) {
-            try {
-                window.webkit.messageHandlers.nearbyDrop.postMessage({
-                    type: "log",
-                    msg: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
-                });
-            } catch(e) {}
-            origLog.apply(console, args);
-        };
-        const origErr = console.error;
-        console.error = function(...args) {
-            try {
-                window.webkit.messageHandlers.nearbyDrop.postMessage({
-                    type: "log",
-                    msg: "ERROR: " + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
-                });
-            } catch(e) {}
-            origErr.apply(console, args);
-        };
-
-        const capturedBlobs = new Map();
-        const origCreate = URL.createObjectURL;
-        URL.createObjectURL = function(obj) {
-            const u = origCreate.apply(URL, arguments);
-            if (obj instanceof Blob) {
-                capturedBlobs.set(u, obj);
-            }
-            return u;
-        };
-
-        const origRevoke = URL.revokeObjectURL;
-        URL.revokeObjectURL = function(u) {
-            setTimeout(() => {
-                capturedBlobs.delete(u);
-                origRevoke.call(URL, u);
-            }, 45000);
-        };
-
-        function sendBlob(blob, name) {
-            if (!blob) return;
-            const fname = name || "QuickShare_" + Date.now();
-            const reader = new FileReader();
-            reader.onload = function() {
-                const res = reader.result;
-                const base64 = (typeof res === "string" && res.includes(",")) ? res.split(",")[1] : "";
-                window.webkit.messageHandlers.nearbyDrop.postMessage({
-                    type: "file_data",
-                    filename: fname,
-                    base64: base64
-                });
-            };
-            reader.readAsDataURL(blob);
-        }
-
-        const customShare = async function(data) {
-            if (data && data.files && data.files.length > 0) {
-                for (let i = 0; i < data.files.length; i++) {
-                    const f = data.files[i];
-                    sendBlob(f, f.name);
-                }
-                return Promise.resolve();
-            }
-            return Promise.resolve();
-        };
-        try {
-            Object.defineProperty(navigator, "share", { get: () => customShare, set: () => {}, configurable: true });
-            Object.defineProperty(navigator, "canShare", { get: () => ((d) => true), set: () => {}, configurable: true });
-        } catch(e) {}
-
-        function handleAnchor(a) {
-            if (a && a.href && a.href.startsWith("blob:")) {
-                const fname = a.download || a.getAttribute("download") || "QuickShare_file";
-                const b = capturedBlobs.get(a.href);
-                if (b) {
-                    sendBlob(b, fname);
-                } else {
-                    fetch(a.href).then(r => r.blob()).then(blob => sendBlob(blob, fname)).catch(e => {});
-                }
-            }
-        }
-
-        const origClick = HTMLAnchorElement.prototype.click;
-        HTMLAnchorElement.prototype.click = function() {
-            handleAnchor(this);
-            return origClick.apply(this, arguments);
-        };
-
-        document.addEventListener("click", function(e) {
-            let t = e.target;
-            while (t && t.tagName !== "A") {
-                t = t.parentElement;
-            }
-            if (t && t.tagName === "A") {
-                handleAnchor(t);
-            }
-        }, true);
-
-        let clickedSaveOrShare = false;
-        let clickedDownload = false;
-        let latestMetaDesc = "";
-
-        function inspect() {
-            let sender = "";
-            let desc = "";
-            const headers = Array.from(document.querySelectorAll("h1, h2, h3, h4, div, span, p"));
-            for (const h of headers) {
-                const txt = (h.innerText || "").trim();
-                if ((txt.includes("Pixel") || txt.includes("Galaxy") || txt.includes("Phone") || txt.includes("’s") || txt.includes("'s")) && txt.length < 50 && !sender) {
-                    sender = txt;
-                }
-                if ((txt.includes("image") || txt.includes("file") || txt.includes("video") || txt.includes("MB") || txt.includes("KB")) && txt.length < 40 && !desc) {
-                    desc = txt;
-                }
-            }
-            if (desc) latestMetaDesc = desc;
-
-            const isDone = (/saved|downloaded|transfer complete|all done/i.test(desc)) || 
-                           headers.some(h => (/saved [0-9]+|saved to|all files saved/i.test((h.innerText || ""))));
-            if (isDone) {
-                clearInterval(timer);
-                window.webkit.messageHandlers.nearbyDrop.postMessage({
-                    type: "completed",
-                    sender: sender,
-                    description: desc
-                });
-                return;
-            }
-
-            if (sender || desc) {
-                window.webkit.messageHandlers.nearbyDrop.postMessage({
-                    type: "meta",
-                    sender: sender,
-                    description: desc
-                });
-            }
-
-            const buttons = Array.from(document.querySelectorAll("button, [role='button'], a.mat-button, a.mat-mdc-button, .mat-mdc-unelevated-button, .mat-mdc-raised-button"));
-            for (const b of buttons) {
-                const t = (b.innerText || b.textContent || "").trim().toLowerCase();
-                if ((t.includes("save or share") || t.includes("accept")) && !clickedSaveOrShare) {
-                    clickedSaveOrShare = true;
-                    window.webkit.messageHandlers.nearbyDrop.postMessage({ type: "clicking" });
-                    b.click();
-                    b.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
-                }
-                if ((t === "download" || t === "save" || t.includes("download file")) && !clickedDownload) {
-                    clickedDownload = true;
-                    window.webkit.messageHandlers.nearbyDrop.postMessage({ type: "clicking" });
-                    b.click();
-                    b.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
-                }
-            }
-
-            if (clickedSaveOrShare && capturedBlobs.size > 0 && !window._nearbyDropSentBlob) {
-                for (const [url, blob] of capturedBlobs.entries()) {
-                    if (blob.size > 50000) {
-                        window._nearbyDropSentBlob = true;
-                        sendBlob(blob, latestMetaDesc ? "QuickShare_" + Date.now() : "QuickShare_file");
-                        break;
-                    }
-                }
-            }
-        }
-
-        const timer = setInterval(inspect, 250);
-        setTimeout(() => clearInterval(timer), 120000);
-        """
-
-        let script = WKUserScript(source: scriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: false)
-        ucc.addUserScript(script)
-        config.userContentController = ucc
-        config.preferences.javaScriptCanOpenWindowsAutomatically = true
-        config.defaultWebpagePreferences.allowsContentJavaScript = true
-
-        let wv = WKWebView(frame: NSRect(x: 0, y: 0, width: 400, height: 300), configuration: config)
-        wv.navigationDelegate = self
-        wv.uiDelegate = self
-        self.webView = wv
-
-        if let contentView = inWindow?.contentView {
-            wv.frame = NSRect(x: 0, y: 0, width: 2, height: 2)
-            wv.alphaValue = 0.02
-            contentView.addSubview(wv)
-        }
-
-        wv.load(URLRequest(url: url))
-    }
-
-    func cancel() {
-        webView?.removeFromSuperview()
-        webView?.stopLoading()
-        webView = nil
-        downloadedFiles.removeAll()
-        downloadDestinations.removeAll()
-    }
-
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard let dict = message.body as? [String: Any], let type = dict["type"] as? String else { return }
-        switch type {
-        case "meta":
-            let sender = dict["sender"] as? String ?? ""
-            let desc = dict["description"] as? String ?? ""
-            DispatchQueue.main.async {
-                self.onMetadata?(sender, desc)
-            }
-        case "completed":
-            let sender = dict["sender"] as? String ?? ""
-            let desc = dict["description"] as? String ?? "Transfer complete"
-            DispatchQueue.main.async {
-                self.onCompleted?(sender, desc)
-            }
-        case "clicking":
-            DispatchQueue.main.async {
-                self.onProgress?("Downloading files…")
-            }
-        case "file_data":
-            guard let filename = dict["filename"] as? String,
-                  let base64 = dict["base64"] as? String,
-                  let data = Data(base64Encoded: base64) else { return }
-            saveData(data, filename: filename)
-        case "log":
-            #if DEBUG
-            if let msg = dict["msg"] as? String {
-                print("[QuickShareWeb] \(msg)")
-            }
-            #endif
-        default:
-            break
-        }
-    }
-
-    private func saveData(_ data: Data, filename: String) {
-        DispatchQueue.global(qos: .userInitiated).async {
-            let downloadsDir = NearbyConnectionManager.downloadDirectory
-            var target = downloadsDir.appendingPathComponent(filename)
-            var count = 1
-            let base = (filename as NSString).deletingPathExtension
-            let ext = (filename as NSString).pathExtension
-            while FileManager.default.fileExists(atPath: target.path) {
-                let name = ext.isEmpty ? "\(base) (\(count))" : "\(base) (\(count)).\(ext)"
-                target = downloadsDir.appendingPathComponent(name)
-                count += 1
-            }
-            do {
-                try data.write(to: target)
-                DispatchQueue.main.async {
-                    self.downloadedFiles.append(target)
-                    self.onFileReceived?(target.lastPathComponent, target)
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.onError?("Failed to save file: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-
-    func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin, initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType, decisionHandler: @escaping (WKPermissionDecision) -> Void) {
-        decisionHandler(.grant)
-    }
-
-    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences, decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
-        if navigationAction.shouldPerformDownload {
-            decisionHandler(.download, preferences)
-        } else {
-            decisionHandler(.allow, preferences)
-        }
-    }
-
-    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-        if navigationResponse.canShowMIMEType {
-            decisionHandler(.allow)
-        } else {
-            decisionHandler(.download)
-        }
-    }
-
-    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
-        download.delegate = self
-    }
-
-    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
-        download.delegate = self
-    }
-
-    func download(_ download: WKDownload, decideDestinationUsing response: URLResponse, suggestedFilename: String, completionHandler: @escaping @MainActor @Sendable (URL?) -> Void) {
-        let downloadsDir = NearbyConnectionManager.downloadDirectory
-        var target = downloadsDir.appendingPathComponent(suggestedFilename)
-        var count = 1
-        let base = (suggestedFilename as NSString).deletingPathExtension
-        let ext = (suggestedFilename as NSString).pathExtension
-        while FileManager.default.fileExists(atPath: target.path) {
-            let name = ext.isEmpty ? "\(base) (\(count))" : "\(base) (\(count)).\(ext)"
-            target = downloadsDir.appendingPathComponent(name)
-            count += 1
-        }
-        DispatchQueue.main.async {
-            self.downloadDestinations[download] = target
-        }
-        completionHandler(target)
-    }
-
-    func downloadDidFinish(_ download: WKDownload) {
-        DispatchQueue.main.async {
-            if let dest = self.downloadDestinations[download] {
-                self.downloadedFiles.append(dest)
-                self.onFileReceived?(dest.lastPathComponent, dest)
-            }
-        }
-    }
-
-    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
-        DispatchQueue.main.async {
-            self.onError?(error.localizedDescription)
         }
     }
 }
