@@ -57,6 +57,7 @@ struct SettingsView: View {
     @ObservedObject var model: TransferModel
     @ObservedObject var controller: SettingsWindowController
     @ObservedObject private var theme = ThemeManager.shared
+    @ObservedObject private var feedback = FeedbackManager.shared
     @State private var customName: String = ""
 
     var body: some View {
@@ -183,6 +184,18 @@ struct SettingsView: View {
                 .toggleStyle(.checkbox)
 
                 Toggle("Show NearByDrop in Dock", isOn: $theme.showInDock)
+                    .toggleStyle(.checkbox)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+
+            sectionHeader(title: "Feedback & Vibration", subtitle: "Audio artifacts and trackpad vibration.")
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle("Play Sound Effects", isOn: $feedback.soundEnabled)
+                    .toggleStyle(.checkbox)
+
+                Toggle("Trackpad Vibration (Haptics)", isOn: $feedback.hapticsEnabled)
                     .toggleStyle(.checkbox)
             }
             .padding(12)
