@@ -1,0 +1,28 @@
+# Build products
+DerivedData/
+build/
+*.hmap
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+NearByDrop.xcodeproj/xcuserdata/
+project.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
+
+# Local release artifacts
+*.zip
+
+# Internal AI/agent directories
+hooks/
+.opencode/
+.agents/
+skills/
+skills-lock.json
+AGENTS.md
+

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_FC9F5ED42C8A._tcp</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>NearByDrop needs camera access to scan Quick Share QR codes.</string>
+</dict>
+</plist>
