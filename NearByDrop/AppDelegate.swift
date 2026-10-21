@@ -481,6 +481,7 @@ struct MenuView: View {
     var privacy: (() -> Void)? = nil
     @ObservedObject private var theme = ThemeManager.shared
     @State private var isDragging = false
+    @State private var isFolderTargeted = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1016,13 +1017,25 @@ struct MenuView: View {
 
             // Download Directory card
             HStack(spacing: 8) {
-                Image(systemName: "folder")
-                    .foregroundStyle(.secondary)
-                Text("Folder: \(model.downloadDirectory.lastPathComponent)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                Button {
+                    TransferModel.openDownloads()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "folder.fill")
+                            .foregroundStyle(theme.currentAccent.color)
+                            .font(.system(size: 14))
+                        Text(model.downloadDirectory.lastPathComponent)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Open \(model.downloadDirectory.path) in Finder")
+
                 Spacer()
+
                 Button("Change…") {
                     model.chooseDownloadDirectory()
                 }
@@ -1030,8 +1043,41 @@ struct MenuView: View {
                 .controlSize(.mini)
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isFolderTargeted ? theme.currentAccent.color : Color.clear, lineWidth: 1.5)
+                    )
+            )
+            .contextMenu {
+                Button("Open in Finder") {
+                    TransferModel.openDownloads()
+                }
+                Button("Change Folder…") {
+                    model.chooseDownloadDirectory()
+                }
+                Button("Reset to Downloads") {
+                    model.resetDownloadDirectoryToDefault()
+                }
+            }
+            .onDrop(of: [.fileURL], isTargeted: $isFolderTargeted) { providers in
+                guard let provider = providers.first else { return false }
+                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                    guard let url = url else { return }
+                    var isDir: ObjCBool = false
+                    if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
+                        DispatchQueue.main.async {
+                            _ = url.startAccessingSecurityScopedResource()
+                            NearbyConnectionManager.downloadDirectory = url
+                            model.downloadDirectory = url
+                        }
+                    }
+                }
+                return true
+            }
         }
         .padding(.horizontal, 14)
     }
