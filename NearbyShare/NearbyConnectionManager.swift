@@ -208,9 +208,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	private var centralManager:CBCentralManager?
 	private static let quickShareServiceUUID=CBUUID(string: "FE2C")
 	private var lastBLEDiscoveryTime:Date?
-	
-	private var qrCodePublicKey:ECPublicKey?
-	private var qrCodePrivateKey:ECPrivateKey?
+	private var qrCodePrivateKey:P256.Signing.PrivateKey?
 	private var qrCodeAdvertisingToken:Data?
 	private var qrCodeNameEncryptionKey:SymmetricKey?
 	private var qrCodeData:Data?
@@ -310,7 +308,6 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		tcpOptions.keepaliveIdle=2
 		let params=NWParameters(tls: .none, tcp: tcpOptions)
 		params.serviceClass = .responsiveData
-		params.allowFastOpen=true
 		params.preferNoProxies=true
 		tcpListener=try! NWListener(using: params)
 		super.init()
@@ -400,6 +397,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		}
 		tcpListener.newConnectionHandler={(connection:NWConnection) in
 			let id=UUID().uuidString
+			NSLog("[NearByDrop] Inbound TCP connection accepted from %@ (id: %@)", String(describing: connection.endpoint), id)
 			let conn=InboundNearbyConnection(connection: connection, id: id)
             conn.qrSenderPublicKey=self.receivingCode?.publicKey
 			self.activeConnections[id]=conn
@@ -462,6 +460,9 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	
 	func connectionWasTerminated(connection:InboundNearbyConnection, error:Error?){
 		guard let delegate=mainAppDelegate else {return}
+		if self.receivingCode != nil {
+			self.stopReceivingQRCode()
+		}
 		delegate.incomingTransfer(id: connection.id, didFinishWith: error)
 		activeConnections.removeValue(forKey: connection.id)
 	}
@@ -609,17 +610,10 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	}
 	
 	public func generateQrCodeKey() -> String{
-		let domain=Domain.instance(curve: .EC256r1)
-		let (pubKey, privKey)=domain.makeKeyPair()
-		qrCodePublicKey=pubKey
+		let privKey=P256.Signing.PrivateKey()
 		qrCodePrivateKey=privKey
-		var keyData=Data()
-		keyData.append(contentsOf: [0, 0, 2 + (pubKey.w.y.asSignedBytes().last! & 1)])
-		let keyBytes=Data(pubKey.w.x.asSignedBytes())
-		// Sometimes, for some keys, there will be a leading zero byte. Strip that, Android really hates it (it breaks the endpoint info)
-		let x=keyBytes.suffixOfAtMost(numBytes: 32)
-        keyData.append(Data(repeating: 0, count: 32-x.count))
-        keyData.append(x)
+		var keyData=Data([0, 0])
+		keyData.append(privKey.publicKey.compressedRepresentation)
 		
 		let ikm=SymmetricKey(data: keyData)
 		qrCodeAdvertisingToken=NearbyConnection.hkdf(inputKeyMaterial: ikm, salt: Data(), info: "advertisingContext".data(using: .utf8)!, outputByteCount: 16).data()
@@ -630,7 +624,6 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	}
 	
 	public func clearQrCodeKey(){
-		qrCodePublicKey=nil
 		qrCodePrivateKey=nil
 		qrCodeAdvertisingToken=nil
 		qrCodeNameEncryptionKey=nil
@@ -728,10 +721,10 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		}
 		lastBLEDiscoveryTime = now
 		#if DEBUG
-		print("Discovered Quick Share BLE beacon (0xFE2C), RSSI: \(RSSI). Triggering instant mDNS announce.")
+		print("Discovered Quick Share BLE beacon (0xFE2C), RSSI: \(RSSI).")
 		#endif
-		if mdnsService != nil {
-			refreshMDNS()
+		if mdnsService == nil {
+			initMDNS()
 		}
 	}
 }
