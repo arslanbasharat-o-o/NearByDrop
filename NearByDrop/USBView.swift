@@ -52,7 +52,12 @@ final class USBModel: ObservableObject {
 
     private let bridge = NDUSBTransfer()
     private let queue = DispatchQueue(label: "NearByDrop.USB", qos: .userInitiated)
+    private var scopedUploadURLs: [URL] = []
     var parent: UInt32 { path.last?.id ?? UInt32.max }
+
+    deinit {
+        scopedUploadURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+    }
 
     func toggleSelection(_ id: UInt32) {
         if selectedItemIds.contains(id) {
@@ -74,6 +79,7 @@ final class USBModel: ObservableObject {
         guard !busy else { return }
         busy = true; error = nil; message = "Looking for USB devices…"
         selectedItemIds.removeAll()
+        lastDownloadedURL = nil
         queue.async {
             self.bridge.close()
             do {
@@ -90,6 +96,7 @@ final class USBModel: ObservableObject {
         guard !busy else { return }
         busy = true; error = nil; message = "Opening \(name)…"
         selectedItemIds.removeAll()
+        lastDownloadedURL = nil
         queue.async {
             do {
                 let values = try self.bridge.openDevice(id)
@@ -109,6 +116,7 @@ final class USBModel: ObservableObject {
         guard !busy, storage != 0 else { return }
         busy = true; error = nil
         selectedItemIds.removeAll()
+        lastDownloadedURL = nil
         let storage = storage, parent = parent
         queue.async {
             do {
@@ -156,11 +164,20 @@ final class USBModel: ObservableObject {
         bridge.progress = { [weak self] progress in DispatchQueue.main.async { self?.progress = progress } }
     }
 
-    func upload(_ urls: [URL]) {
+    func upload(_ urls: [URL], to targetParent: UInt32? = nil) {
         guard !busy, storage != 0, !urls.isEmpty else { return }
-        let storage = storage, parent = parent
+        let storage = storage
+        let parent = targetParent ?? self.parent
+        scopedUploadURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+        scopedUploadURLs = urls.filter { $0.startAccessingSecurityScopedResource() }
         prepareTransfer("Sending \(urls.count) file\(urls.count == 1 ? "" : "s")…")
         queue.async {
+            defer {
+                DispatchQueue.main.async {
+                    self.scopedUploadURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+                    self.scopedUploadURLs.removeAll()
+                }
+            }
             var sent = 0
             do {
                 for url in urls {
@@ -173,7 +190,7 @@ final class USBModel: ObservableObject {
         }
     }
 
-    func chooseAndUploadFiles() {
+    func chooseAndUploadFiles(to folder: USBItem? = nil) {
         guard !busy, storage != 0 else { return }
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
@@ -186,7 +203,7 @@ final class USBModel: ObservableObject {
         panel.makeKeyAndOrderFront(nil)
         panel.begin { [weak self] response in
             guard response == .OK, !panel.urls.isEmpty else { return }
-            self?.upload(panel.urls)
+            self?.upload(panel.urls, to: folder?.id)
         }
     }
 
@@ -329,12 +346,14 @@ final class USBModel: ObservableObject {
             self.prepareTransfer("Receiving \(item.name)…")
             self.queue.async {
                 do {
-                    _ = try self.bridge.download(item.id, name: targetURL.lastPathComponent, directory: dir)
+                    guard let savedURL = try self.bridge.download(item.id, name: targetURL.lastPathComponent, directory: dir) else {
+                        throw NSError(domain: "USB", code: 2, userInfo: [NSLocalizedDescriptionKey: "The file could not be saved."])
+                    }
                     DispatchQueue.main.async {
                         self.busy = false
                         self.transferring = false
-                        self.message = "Saved \(item.name)"
-                        self.lastDownloadedURL = targetURL
+                        self.message = "Saved to \(savedURL.path)"
+                        self.lastDownloadedURL = savedURL
                     }
                 } catch {
                     self.fail(error)
@@ -622,11 +641,13 @@ struct USBView: View {
                                 if item.folder {
                                     Button("Open Folder") { usb.enter(item) }
                                     Button("Download Folder to Mac") { usb.downloadFolder(item) }
-                                    Button("Upload Files to this Folder…") { usb.chooseAndUploadFiles() }
+                                     Button("Upload Files to this Folder…") { usb.chooseAndUploadFiles(to: item) }
                                 } else {
                                     Button("Download to NearByDrop") { usb.download(item) }
                                     Button("Save As…") { usb.saveItemAs(item) }
-                                    if let url = usb.lastDownloadedURL, url.lastPathComponent == item.name {
+                                    if let url = usb.lastDownloadedURL,
+                                       url.lastPathComponent == item.name,
+                                       FileManager.default.fileExists(atPath: url.path) {
                                         Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
                                     }
                                 }
@@ -779,7 +800,7 @@ struct USBView: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                     Spacer()
-                    if let url = usb.lastDownloadedURL {
+                    if let url = usb.lastDownloadedURL, FileManager.default.fileExists(atPath: url.path) {
                         Button("Show in Finder") {
                             NSWorkspace.shared.activateFileViewerSelecting([url])
                         }
