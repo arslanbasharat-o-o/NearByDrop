@@ -29,7 +29,6 @@
 		69E000022E44000100000010 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000010 /* ThemeManager.swift */; };
 		69E000022E44000100000011 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000011 /* SettingsView.swift */; };
 		69E000022E44000100000012 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000012 /* OnboardingView.swift */; };
-		69E000022E44000100000013 /* LocalFileShareServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000013 /* LocalFileShareServer.swift */; };
 		69E000022E44000100000014 /* TransferNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000014 /* TransferNotification.swift */; };
 		69E000022E44000100000005 /* libmtp.9.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000006 /* libmtp.9.dylib */; };
 		69E000022E44000100000006 /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000007 /* libusb-1.0.0.dylib */; };
@@ -158,7 +157,6 @@
 		69E000012E44000100000010 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		69E000012E44000100000011 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		69E000012E44000100000012 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		69E000012E44000100000013 /* LocalFileShareServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFileShareServer.swift; sourceTree = "<group>"; };
 		69E000012E44000100000014 /* TransferNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferNotification.swift; sourceTree = "<group>"; };
 		69E000012E44000100000006 /* libmtp.9.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmtp.9.dylib; path = Vendor/USB/lib/libmtp.9.dylib; sourceTree = "<group>"; };
 		69E000012E44000100000007 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "Vendor/USB/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
@@ -269,7 +267,6 @@
 				69E000012E44000100000010 /* ThemeManager.swift */,
 				69E000012E44000100000011 /* SettingsView.swift */,
 				69E000012E44000100000012 /* OnboardingView.swift */,
-				69E000012E44000100000013 /* LocalFileShareServer.swift */,
 				69E000012E44000100000014 /* TransferNotification.swift */,
 				69DA9A1329E0BF5200A442DA /* Assets.xcassets */,
 				697DDF122E44AAFB00B4749C /* Localizable.xcstrings */,
@@ -496,7 +493,6 @@
 				69E000022E44000100000010 /* ThemeManager.swift in Sources */,
 				69E000022E44000100000011 /* SettingsView.swift in Sources */,
 				69E000022E44000100000012 /* OnboardingView.swift in Sources */,
-				69E000022E44000100000013 /* LocalFileShareServer.swift in Sources */,
 				69E000022E44000100000014 /* TransferNotification.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

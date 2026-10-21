@@ -136,17 +136,24 @@ struct QRScannerView: View {
                 .overlay { Image(systemName: "viewfinder").font(.system(size: 120, weight: .ultraLight)).foregroundStyle(.white.opacity(0.8)).accessibilityHidden(true) }
             Text(scanner.message).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).frame(minHeight: 34)
             if scanner.denied {
-                Button("Open Camera Settings") { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera")!) }
+                Button("Open Camera Settings") {
+                    guard let settingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") else { return }
+                    NSWorkspace.shared.open(settingsURL)
+                }
             }
         }.padding(24).frame(width: 440)
             .onAppear { scanner.onCode = onCode; scanner.start() }
-            .onDisappear { scanner.stop() }
+            .onDisappear {
+                scanner.onCode = nil
+                scanner.stop()
+            }
     }
 }
 
 final class QRScannerWindowController: NSWindowController, NSWindowDelegate {
     static let shared = QRScannerWindowController()
     private var currentScanner: QRScanner?
+    private var scannerToken: UUID?
 
     private init() {
         let window = NSWindow(
@@ -164,22 +171,27 @@ final class QRScannerWindowController: NSWindowController, NSWindowDelegate {
         window.delegate = self
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    required init?(coder: NSCoder) { return nil }
 
     func show(onCode: @escaping (String) -> String?) {
         currentScanner?.stop()
         let scanner = QRScanner()
+        let token = UUID()
         currentScanner = scanner
+        scannerToken = token
         window?.contentView = NSHostingView(rootView: QRScannerView(scanner: scanner, onCode: { [weak self] code in
+            guard let self, self.scannerToken == token else { return "Scanner is no longer active." }
             let res = onCode(code)
             if res == nil {
                 DispatchQueue.main.async {
-                    self?.close()
+                    guard self.scannerToken == token else { return }
+                    self.close()
                 }
             }
             return res
         }, onCancel: { [weak self] in
-            self?.close()
+            guard let self, self.scannerToken == token else { return }
+            self.close()
         }))
         showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -190,6 +202,7 @@ final class QRScannerWindowController: NSWindowController, NSWindowDelegate {
     override func close() {
         currentScanner?.stop()
         currentScanner = nil
+        scannerToken = nil
         window?.contentView = nil
         super.close()
     }
@@ -197,6 +210,7 @@ final class QRScannerWindowController: NSWindowController, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         currentScanner?.stop()
         currentScanner = nil
+        scannerToken = nil
         window?.contentView = nil
     }
 }

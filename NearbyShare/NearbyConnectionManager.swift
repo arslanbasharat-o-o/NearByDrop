@@ -281,20 +281,24 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	private static let trustedKey="trustedDevices"
 
 	public static func trustedDeviceKey(name:String, id:String?) -> String{
-		guard let id=id, id.hasPrefix("qr:") else { return "" }
+		guard let id=id, id.hasPrefix("qr:") else {
+			// Unauthenticated endpoint IDs and names must never become stable trust keys.
+			return "untrusted:\(UUID().uuidString)"
+		}
 		return "authenticated:\(id)"
 	}
 
 	public static func isTrusted(name:String, id:String?) -> Bool{
 		guard let list = UserDefaults.standard.stringArray(forKey: trustedKey) else { return false }
+		guard let id=id, id.hasPrefix("qr:") else { return false }
 		let key = trustedDeviceKey(name: name, id: id)
-		return !key.isEmpty && list.contains(key)
+		return list.contains(key)
 	}
 
 	public static func setTrusted(name:String, id:String?, trusted:Bool){
 		var list = UserDefaults.standard.stringArray(forKey: trustedKey) ?? []
+		guard let id=id, id.hasPrefix("qr:") else { return }
 		let key = trustedDeviceKey(name: name, id: id)
-		guard !key.isEmpty else { return }
 		if trusted{
 			if !list.contains(key){ list.append(key) }
 		}else{
@@ -605,11 +609,11 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			deviceInfo=addFoundDevice(foundService: &foundService, endpointInfo: endpointInfo, endpointID: endpointID)
 		}
 		
-		if let qrData=endpointInfo.qrCodeData, let _=qrCodeAdvertisingToken{
+		if let qrData=endpointInfo.qrCodeData, let qrCodeAdvertisingToken=qrCodeAdvertisingToken{
 #if DEBUG
-			print("Device has QR data: \(qrData.base64EncodedString()), our advertising token is \(qrCodeAdvertisingToken!.base64EncodedString())")
+			print("Device has QR data: \(qrData.base64EncodedString()), our advertising token is \(qrCodeAdvertisingToken.base64EncodedString())")
 #endif
-			if qrData==qrCodeAdvertisingToken!{
+			if qrData==qrCodeAdvertisingToken{
 				let targetDevice = deviceInfo ?? addFoundDevice(foundService: &foundService, endpointInfo: endpointInfo, endpointID: endpointID)
 				for delegate in shareExtensionDelegates{
 					DispatchQueue.main.async { delegate.startTransferWithQrCode(device: targetDevice) }
@@ -617,7 +621,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			}else if qrData.count>28{
 				do{
 					let box=try AES.GCM.SealedBox(combined: qrData)
-					guard let qrCodeNameEncryptionKey=qrCodeNameEncryptionKey, let qrCodeAdvertisingToken=qrCodeAdvertisingToken else { return }
+					guard let qrCodeNameEncryptionKey=qrCodeNameEncryptionKey else { return }
 					let decryptedName=try AES.GCM.open(box, using: qrCodeNameEncryptionKey, authenticating: qrCodeAdvertisingToken)
 					guard let name=String.init(data: decryptedName, encoding: .utf8) else {return}
 					endpointInfo.name=name
