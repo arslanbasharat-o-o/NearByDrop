@@ -553,12 +553,11 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
 
     func resetDownloadDirectoryToDefault() {
-        if let defaultURL = try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: true) {
-            _ = defaultURL.startAccessingSecurityScopedResource()
-            NearbyConnectionManager.downloadDirectory = defaultURL
-            DispatchQueue.main.async {
-                self.downloadDirectory = defaultURL
-            }
+        let defaultURL = NearbyConnectionManager.defaultDownloadDirectory
+        _ = defaultURL.startAccessingSecurityScopedResource()
+        NearbyConnectionManager.downloadDirectory = defaultURL
+        DispatchQueue.main.async {
+            self.downloadDirectory = defaultURL
         }
     }
 
