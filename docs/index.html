@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nearby Drop — Android Quick Share for Mac</title>
-  <meta name="description" content="Transfer files between Android and Mac with Nearby Drop, an independent macOS menu bar app for Quick Share, QR pairing, and USB MTP. Free download for macOS 14+.">
+  <title>Android Quick Share for Mac | Nearby Drop</title>
+  <meta name="description" content="Nearby Drop is a free macOS menu bar app for Android Quick Share transfers, USB MTP file browsing and Finder sharing. See supported workflows and test status.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/">
@@ -12,14 +12,15 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/">
-  <meta property="og:title" content="Nearby Drop — Android Quick Share for Mac">
-  <meta property="og:description" content="An independent macOS menu bar app for Android-to-Mac file transfers over local Wi-Fi, with QR pairing and USB MTP.">
+  <meta property="og:site_name" content="Nearby Drop">
+  <meta property="og:title" content="Android Quick Share for Mac | Nearby Drop">
+  <meta property="og:description" content="Transfer files between Android and Mac with Quick Share, USB MTP and Finder sharing. Check verified QR and Windows workflow status.">
   <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/icon.png">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Nearby Drop — Android Quick Share for Mac">
-  <meta name="twitter:description" content="Send and receive files between Android and Mac with Quick Share, QR pairing, or USB MTP.">
+  <meta name="twitter:title" content="Android Quick Share for Mac | Nearby Drop">
+  <meta name="twitter:description" content="Send and receive files between Android and Mac with Quick Share, USB MTP and Finder sharing. Check QR and Windows workflow status.">
   <meta name="twitter:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/icon.png">
 
   <link rel="icon" type="image/png" href="assets/icon.png">
@@ -103,7 +104,12 @@
     "operatingSystem": "macOS 14 or later",
     "applicationCategory": "UtilitiesApplication",
     "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
-    "description": "Independent macOS menu bar app for Android Quick Share transfers, QR pairing, and USB MTP file browsing.",
+    "description": "Independent macOS menu bar app for Android Quick Share transfers, USB MTP file browsing, and Finder sharing.",
+    "featureList": [
+      "Wireless file transfers between Mac and compatible Android devices using Quick Share",
+      "USB MTP browsing and file copies for Android devices",
+      "macOS Finder Share Extension"
+    ],
     "softwareVersion": "2.3.0",
     "url": "https://arslanbasharat-o-o.github.io/NearByDrop/",
     "downloadUrl": "https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/Nearbydrop-2.3.0.dmg",
@@ -173,7 +179,7 @@
   </header>
 
   <!-- Hero Section -->
-  <section id="hero-section" class="relative pt-16 pb-20 md:pt-28 md:pb-28 border-b border-theme-border overflow-hidden z-10 select-none">
+  <section id="hero-section" class="relative pt-8 pb-16 md:pt-12 md:pb-20 border-b border-theme-border overflow-hidden z-10 select-none">
     <!-- Halftone Wordmark Interactive Canvas (21st.dev Component in Hero) -->
     <canvas id="hwf-canvas" class="absolute inset-0 w-full h-full block pointer-events-auto z-0" aria-hidden="true"></canvas>
 
@@ -195,7 +201,7 @@
 
       <!-- Contextual SEO Subheading -->
       <div class="max-w-3xl text-neutral-300 font-sans text-base sm:text-lg leading-relaxed mb-10">
-        Need to move files between an Android phone and a Mac? <strong>Nearby Drop</strong> is an independent macOS menu bar app for Android Quick Share. Send or receive files over a shared local network, scan a pairing QR code inside the menu bar app, or browse phone storage over USB MTP. It is free to download and distributed under a proprietary license; it is not affiliated with Google or Apple.
+        Need to move files between an Android phone and a Mac? <strong>Nearby Drop</strong> is an independent macOS menu bar app for Android Quick Share. Send or receive files over a shared local network, browse phone storage over USB MTP, or share from Finder. The transfer table below shows which QR and Windows workflows have passed testing and which are still in development. It is free to download and distributed under a proprietary license; it is not affiliated with Google or Apple.
       </div>
 
       <!-- CTA Buttons -->
@@ -263,7 +269,7 @@
             <li>Open Nearby Drop from the Mac menu bar and allow local network access if macOS asks.</li>
             <li>Select files on Android and open <strong>Share → Quick Share</strong>.</li>
             <li>If Nearby Drop appears in the device list, select it and confirm the matching PIN on your Mac.</li>
-            <li>If discovery fails, check the network notes below or try QR pairing in the menu bar app.</li>
+            <li>If discovery fails, check the network notes below or use USB MTP. QR workflow status is listed below.</li>
           </ol>
         </div>
       </div>
@@ -394,7 +400,7 @@
       <div class="mb-8 border-b border-theme-border pb-6">
         <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 04 FILE-TRANSFER OPTIONS</span>
         <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
-          Android and Mac file-transfer options
+          Android, Mac and Windows transfer status
         </h2>
       </div>
 
@@ -404,7 +410,7 @@
           <div>
             <span class="text-white font-bold block mb-1">PICK THE TRANSFER METHOD THAT FITS YOUR SETUP</span>
             <p class="text-neutral-400 font-sans text-xs leading-relaxed max-w-3xl">
-              Nearby Drop is useful when you want to use Android Quick Share with a Mac. Wireless discovery depends on both devices being reachable on the local network; USB MTP is a wired option.
+              The current public release is built for Mac and Android workflows. Windows Quick Share interoperability has passed both directions with one PC in a development build, but is not included in public release 2.3.0.
             </p>
           </div>
         </div>
@@ -417,30 +423,60 @@
         <table class="w-full text-left font-mono text-xs">
           <thead>
             <tr class="border-b border-theme-border bg-theme-surface text-neutral-400">
-              <th class="p-4 uppercase">METHOD</th>
-              <th class="p-4 uppercase text-white bg-theme-elevated border-x border-theme-border">GOOD FOR</th>
-              <th class="p-4 uppercase">INTERNET</th>
-              <th class="p-4 uppercase">WHAT TO CHECK</th>
+              <th class="p-4 uppercase">TRANSFER</th>
+              <th class="p-4 uppercase text-white bg-theme-elevated border-x border-theme-border">DIRECTION</th>
+              <th class="p-4 uppercase">STATUS</th>
+              <th class="p-4 uppercase">REQUIREMENTS</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-theme-border bg-theme-black text-neutral-300">
             <tr>
-              <td class="p-4 font-sans text-xs">Nearby Drop over Quick Share</td>
-              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">Wireless Android-to-Mac transfers</td>
-              <td class="p-4 text-neutral-300">No cloud relay for the file transfer</td>
-              <td class="p-4 text-neutral-400">Devices need a reachable local network; speed varies</td>
+              <td class="p-4 font-sans text-xs">Quick Share over Wi-Fi</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">Android → Mac</td>
+              <td class="p-4 text-neutral-300">Available in the public Mac app</td>
+              <td class="p-4 text-neutral-400">Compatible Android device and reachable local network</td>
             </tr>
             <tr>
-              <td class="p-4 font-sans text-xs">Nearby Drop over USB MTP</td>
-              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">Wired phone storage browsing and copies</td>
-              <td class="p-4 text-neutral-300">No internet required for the cable transfer</td>
-              <td class="p-4 text-neutral-400">Unlock the phone and select File Transfer / MTP</td>
+              <td class="p-4 font-sans text-xs">Quick Share over Wi-Fi</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">Mac → Android</td>
+              <td class="p-4 text-neutral-300">Available in the public Mac app</td>
+              <td class="p-4 text-neutral-400">Compatible Android device and reachable local network</td>
             </tr>
             <tr>
-              <td class="p-4 font-sans text-xs">Apple AirDrop</td>
-              <td class="p-4 text-neutral-300 bg-theme-surface border-x border-theme-border">Transfers between supported Apple devices</td>
-              <td class="p-4 text-neutral-300">No internet required for nearby transfers</td>
-              <td class="p-4 text-neutral-400">Does not directly transfer to Android</td>
+              <td class="p-4 font-sans text-xs">Mac-generated Quick Share QR code</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">Mac → Android</td>
+              <td class="p-4 text-neutral-300">Passed with a Pixel 8 Pro in a development build</td>
+              <td class="p-4 text-neutral-400">Scan the code with Quick Share on Android</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-sans text-xs">Android-generated Quick Share QR code</td>
+              <td class="p-4 font-bold text-amber-300 bg-theme-surface border-x border-theme-border">Android → Mac</td>
+              <td class="p-4 text-neutral-300">Not verified; physical QR receive did not complete</td>
+              <td class="p-4 text-neutral-400">Use the Quick Share device list or USB MTP instead</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-sans text-xs">USB MTP file browser</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">Android ↔ Mac</td>
+              <td class="p-4 text-neutral-300">Available in the public Mac app</td>
+              <td class="p-4 text-neutral-400">Use a data cable, unlock the phone and choose File Transfer / MTP</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-sans text-xs">Finder Share Extension</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">Mac → Android</td>
+              <td class="p-4 text-neutral-300">Included in the public Mac app</td>
+              <td class="p-4 text-neutral-400">Share files, folders or links from Finder</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-sans text-xs">Windows Quick Share interoperability</td>
+              <td class="p-4 font-bold text-amber-300 bg-theme-surface border-x border-theme-border">Mac ↔ Windows</td>
+              <td class="p-4 text-neutral-300">Development build only; both directions passed with one PC</td>
+              <td class="p-4 text-neutral-400">Not included in the current public v2.3.0 download</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-sans text-xs">Google Quick Share ↔ Apple AirDrop</td>
+              <td class="p-4 text-neutral-300 bg-theme-surface border-x border-theme-border">Supported Android phones ↔ Mac</td>
+              <td class="p-4 text-neutral-300">Native transfer on compatible Android devices</td>
+              <td class="p-4 text-neutral-400">Availability varies by model and software; <a class="underline hover:text-white" href="https://support.google.com/pixelphone/answer/9286773?hl=en" target="_blank" rel="noopener">check Google's current compatibility guide</a></td>
             </tr>
             <tr>
               <td class="p-4 font-sans text-xs">Cloud storage</td>
@@ -475,7 +511,7 @@
             <span id="faqArrow1" class="text-neutral-500 text-sm">−</span>
           </button>
           <div id="faqContent1" class="px-5 pb-5 font-sans text-xs text-neutral-400 leading-relaxed">
-            <strong>Nearby Drop</strong> is an independent macOS menu bar app that works with Android Quick Share (formerly Nearby Share). It supports wireless transfers on a reachable local network, QR pairing, and USB MTP file browsing. The app is free to download and distributed under a proprietary license; it is not affiliated with Google or Apple.
+            <strong>Nearby Drop</strong> is an independent macOS menu bar app for Android Quick Share (formerly Nearby Share), USB MTP file browsing, and Finder sharing. Android-to-Mac and Mac-to-Android wireless transfers use a reachable local network. QR receiving and Windows workflows are shown with their current test status below.
           </div>
         </div>
 
@@ -486,7 +522,7 @@
             <span id="faqArrow2" class="text-neutral-500 text-sm">+</span>
           </button>
           <div id="faqContent2" class="px-5 pb-5 font-sans text-xs text-neutral-400 leading-relaxed hidden">
-            AirDrop does not directly support Android. With Nearby Drop running, select files on an Android phone, open Quick Share, and select the Mac if it appears in the device list. Confirm the matching PIN on the Mac. Both devices need a reachable local network, and discovery can vary by device and router.
+            Some Android phones can now send to a Mac through Google's native Quick Share and Apple's AirDrop interoperability. Check <a href="https://support.google.com/pixelphone/answer/9286773?hl=en" target="_blank" rel="noopener" class="underline hover:text-white">Google's current compatible-device guide</a>. Nearby Drop is an independent Mac menu bar option for Android Quick Share; on compatible devices, select files on Android, open Quick Share, and choose the Mac if it appears. Device support and local-network discovery vary.
           </div>
         </div>
 
@@ -520,6 +556,26 @@
           </button>
           <div id="faqContent5" class="px-5 pb-5 font-sans text-xs text-neutral-400 leading-relaxed hidden">
             It is designed for Android devices that provide Quick Share, but compatibility can vary by phone, Android version, and network. A Pixel 8 Pro has been tested on a local network; every model and network combination has not been verified. LTE-only phone-hotspot discovery is a known unverified case.
+          </div>
+        </div>
+
+        <div class="border border-theme-border bg-theme-black">
+          <button onclick="toggleFaq(6)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
+            <span>[ Q6 ] DOES NEARBY DROP WORK WITH WINDOWS QUICK SHARE?</span>
+            <span id="faqArrow6" class="text-neutral-500 text-sm">+</span>
+          </button>
+          <div id="faqContent6" class="px-5 pb-5 font-sans text-xs text-neutral-400 leading-relaxed hidden">
+            Mac-to-Windows and Windows-to-Mac transfers passed with one PC in a development build. That work is not included in the current public v2.3.0 download; broader device testing and a public release are still needed.
+          </div>
+        </div>
+
+        <div class="border border-theme-border bg-theme-black">
+          <button onclick="toggleFaq(7)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
+            <span>[ Q7 ] CAN I SCAN AN ANDROID QR CODE TO RECEIVE ON MY MAC?</span>
+            <span id="faqArrow7" class="text-neutral-500 text-sm">+</span>
+          </button>
+          <div id="faqContent7" class="px-5 pb-5 font-sans text-xs text-neutral-400 leading-relaxed hidden">
+            Android-generated QR receiving did not complete in a physical Pixel 8 Pro test. Use the Quick Share device list over a reachable local network or connect by USB and use MTP. Mac-generated QR sending to Android is a separate direction and has passed in a development build.
           </div>
         </div>
 
@@ -565,7 +621,7 @@
         <ul class="space-y-2 text-neutral-400">
           <li><span>Universal Mach-O</span></li>
           <li><span>Apple Silicon &amp; Intel</span></li>
-          <li><span>macOS 14+ Sonoma / Sequoia</span></li>
+          <li><span>macOS 14 or later</span></li>
         </ul>
       </div>
     </div>
@@ -631,7 +687,7 @@
         '<li>Open Nearby Drop in the Mac menu bar and allow local network access if asked.</li>',
         '<li>Select files on Android, tap <strong>Share → Quick Share</strong>, and choose Nearby Drop if it appears.</li>',
         '<li>Confirm the matching PIN on the Mac to accept the transfer.</li>',
-        '<li>If discovery fails, try QR pairing in the menu bar app or use USB MTP. LTE-only phone-hotspot discovery is not verified.</li>'
+        '<li>If discovery fails, check network restrictions or use USB MTP. QR behavior depends on transfer direction; see the status table below. LTE-only phone-hotspot discovery is not verified.</li>'
       ].join('');
     }
 
@@ -646,7 +702,7 @@
           <li><strong>Same local network:</strong> Ensure both devices can reach one another; guest Wi-Fi and client isolation can prevent discovery.</li>
           <li><strong>macOS Local Network Permission:</strong> Open macOS <em>System Settings → Privacy &amp; Security → Local Network</em> and ensure Nearby Drop is allowed.</li>
           <li><strong>Check the network:</strong> Guest Wi-Fi, client isolation, and some hotspot configurations can block discovery. LTE-only phone-hotspot discovery has not been verified for this release.</li>
-          <li><strong>Try another pairing path:</strong> Use Quick Share QR pairing from the menu bar when available, or connect by USB and use MTP.</li>
+          <li><strong>Choose a supported transfer path:</strong> For Android-to-Mac, use the Quick Share device list or USB MTP. QR behavior depends on transfer direction; see the status table below.</li>
         </ul>
       `,
       'blocked-wifi': `
@@ -774,7 +830,7 @@
         const c = Math.max(0, Math.min(0.6, crop));
         m.fillStyle = '#000';
         m.textBaseline = 'alphabetic';
-        m.fillText(wordmark, (w - box.width) / 2, h + cap * c);
+        m.fillText(wordmark, (w - box.width) / 2, h * 0.72 + cap * c);
 
         const img = m.getImageData(0, 0, w, h).data;
         const gap = Math.max(3, dotGap);
