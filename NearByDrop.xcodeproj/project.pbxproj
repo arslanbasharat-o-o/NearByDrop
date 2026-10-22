@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        AB0000000000000000000002 /* QRCodeScanner.swift in Tests */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000002; };
+        AB0000000000000000000003 /* ThemeManager.swift in Tests */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000010; };
+        AB0000000000000000000001 /* AppSupport.swift in Tests */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000014; };
+		AA0000000000000000000001 /* NearbyShareSafetyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* NearbyShareSafetyTests.swift */; };
+		AA0000000000000000000003 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000004 /* XCTest.framework */; };
+		AA0000000000000000000005 /* libNearbyShare.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69DCF4812AB70D0600CBE2CC /* libNearbyShare.dylib */; };
 		691F53BC2ABB70840089FD92 /* DeviceListCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 691F53BA2ABB70840089FD92 /* DeviceListCell.xib */; };
 		691F53BE2ABF03820089FD92 /* OutboundNearbyConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691F53BD2ABF03820089FD92 /* OutboundNearbyConnection.swift */; };
 		693D8DC92E41325300E8E7F4 /* sharing_enums.pb.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693D8DC82E41325300E8E7F4 /* sharing_enums.pb.swift */; };
@@ -29,7 +35,7 @@
 		69E000022E44000100000010 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000010 /* ThemeManager.swift */; };
 		69E000022E44000100000011 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000011 /* SettingsView.swift */; };
 		69E000022E44000100000012 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000012 /* OnboardingView.swift */; };
-		69E000022E44000100000014 /* TransferNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000014 /* TransferNotification.swift */; };
+		69E000022E44000100000014 /* AppSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000014 /* AppSupport.swift */; };
 		69E000022E44000100000005 /* libmtp.9.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000006 /* libmtp.9.dylib */; };
 		69E000022E44000100000006 /* libusb-1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000007 /* libusb-1.0.0.dylib */; };
 		69E000022E44000100000007 /* libmtp.9.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000006 /* libmtp.9.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -54,6 +60,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		AA0000000000000000000006 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 69DA9A0629E0BF5100A442DA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 69DCF4802AB70D0600CBE2CC;
+			remoteInfo = NearbyShare;
+		};
 		699DEBAC2AB0573200115D22 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 69DA9A0629E0BF5100A442DA /* Project object */;
@@ -126,6 +139,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AA0000000000000000000002 /* NearbyShareSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyShareSafetyTests.swift; sourceTree = "<group>"; };
+		AA0000000000000000000004 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		AA0000000000000000000007 /* NearbyShareTests.xctest */ = {isa = PBXFileReference; explicitFileType = "wrapper.cfbundle.xctest"; includeInIndex = 0; path = NearbyShareTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		691F53BA2ABB70840089FD92 /* DeviceListCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = DeviceListCell.xib; sourceTree = "<group>"; };
 		691F53BD2ABF03820089FD92 /* OutboundNearbyConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutboundNearbyConnection.swift; sourceTree = "<group>"; };
 		693D8DC82E41325300E8E7F4 /* sharing_enums.pb.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sharing_enums.pb.swift; sourceTree = "<group>"; };
@@ -147,7 +163,7 @@
 		699DEBAB2AB0573200115D22 /* ShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareExtension.entitlements; sourceTree = "<group>"; };
 		69B5994C30598C1300449F58 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		69D2C32E29E7898C00EC7E30 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
-		69DA9A0E29E0BF5100A442DA /* NearByDrop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "NearByDrop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		69DA9A0E29E0BF5100A442DA /* Nearby Drop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Nearby Drop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		69DA9A1129E0BF5100A442DA /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		69E000012E44000100000001 /* TransferWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferWindow.swift; sourceTree = "<group>"; };
 		69E000012E44000100000002 /* QRCodeScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeScanner.swift; sourceTree = "<group>"; };
@@ -157,7 +173,7 @@
 		69E000012E44000100000010 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		69E000012E44000100000011 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		69E000012E44000100000012 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		69E000012E44000100000014 /* TransferNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferNotification.swift; sourceTree = "<group>"; };
+		69E000012E44000100000014 /* AppSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSupport.swift; sourceTree = "<group>"; };
 		69E000012E44000100000006 /* libmtp.9.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libmtp.9.dylib; path = Vendor/USB/lib/libmtp.9.dylib; sourceTree = "<group>"; };
 		69E000012E44000100000007 /* libusb-1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.0.dylib"; path = "Vendor/USB/lib/libusb-1.0.0.dylib"; sourceTree = "<group>"; };
 		69DA9A1329E0BF5200A442DA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -175,6 +191,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AA0000000000000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000000000000000000003 /* XCTest.framework in Frameworks */,
+				AA0000000000000000000005 /* libNearbyShare.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		699DEB9E2AB0573200115D22 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -206,6 +231,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		AA0000000000000000000009 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				AA0000000000000000000002 /* NearbyShareSafetyTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
 		698DFAEC29E353220064F247 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -239,6 +272,7 @@
 				69DA9A1029E0BF5100A442DA /* NearByDrop */,
 				699DEBA22AB0573200115D22 /* ShareExtension */,
 				69DCF4822AB70D0600CBE2CC /* NearbyShare */,
+				AA0000000000000000000009 /* Tests */,
 				698DFAEC29E353220064F247 /* Frameworks */,
 				69DA9A0F29E0BF5100A442DA /* Products */,
 			);
@@ -247,9 +281,10 @@
 		69DA9A0F29E0BF5100A442DA /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				69DA9A0E29E0BF5100A442DA /* NearByDrop.app */,
+				69DA9A0E29E0BF5100A442DA /* Nearby Drop.app */,
 				699DEBA12AB0573200115D22 /* ShareExtension.appex */,
 				69DCF4812AB70D0600CBE2CC /* libNearbyShare.dylib */,
+				AA0000000000000000000007 /* NearbyShareTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -267,7 +302,7 @@
 				69E000012E44000100000010 /* ThemeManager.swift */,
 				69E000012E44000100000011 /* SettingsView.swift */,
 				69E000012E44000100000012 /* OnboardingView.swift */,
-				69E000012E44000100000014 /* TransferNotification.swift */,
+				69E000012E44000100000014 /* AppSupport.swift */,
 				69DA9A1329E0BF5200A442DA /* Assets.xcassets */,
 				697DDF122E44AAFB00B4749C /* Localizable.xcstrings */,
 				69DA9A1829E0BF5200A442DA /* NearByDrop.entitlements */,
@@ -318,6 +353,23 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		AA000000000000000000000A /* NearbyShareTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA0000000000000000000014 /* Build configuration list for PBXNativeTarget "NearbyShareTests" */;
+			buildPhases = (
+				AA000000000000000000000B /* Sources */,
+				AA0000000000000000000008 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AA0000000000000000000015 /* PBXTargetDependency */,
+			);
+			name = NearbyShareTests;
+			productName = NearbyShareTests;
+			productReference = AA0000000000000000000007 /* NearbyShareTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		699DEBA02AB0573200115D22 /* ShareExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 699DEBB12AB0573200115D22 /* Build configuration list for PBXNativeTarget "ShareExtension" */;
@@ -358,7 +410,7 @@
 			packageProductDependencies = (
 			);
 			productName = "NearByDrop";
-			productReference = 69DA9A0E29E0BF5100A442DA /* NearByDrop.app */;
+			productReference = 69DA9A0E29E0BF5100A442DA /* Nearby Drop.app */;
 			productType = "com.apple.product-type.application";
 		};
 		69DCF4802AB70D0600CBE2CC /* NearbyShare */ = {
@@ -402,6 +454,9 @@
 					69DCF4802AB70D0600CBE2CC = {
 						CreatedOnToolsVersion = 14.3.1;
 					};
+					AA000000000000000000000A = {
+						CreatedOnToolsVersion = 15.0;
+					};
 				};
 			};
 			buildConfigurationList = 69DA9A0929E0BF5100A442DA /* Build configuration list for PBXProject "NearByDrop" */;
@@ -442,6 +497,7 @@
 				69DA9A0D29E0BF5100A442DA /* NearByDrop */,
 				699DEBA02AB0573200115D22 /* ShareExtension */,
 				69DCF4802AB70D0600CBE2CC /* NearbyShare */,
+				AA000000000000000000000A /* NearbyShareTests */,
 			);
 		};
 /* End PBXProject section */
@@ -472,6 +528,17 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AA000000000000000000000B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA0000000000000000000001 /* NearbyShareSafetyTests.swift in Sources */,
+                AB0000000000000000000001 /* AppSupport.swift in Tests */,
+                AB0000000000000000000002 /* QRCodeScanner.swift in Tests */,
+                AB0000000000000000000003 /* ThemeManager.swift in Tests */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		699DEB9D2AB0573200115D22 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -493,7 +560,7 @@
 				69E000022E44000100000010 /* ThemeManager.swift in Sources */,
 				69E000022E44000100000011 /* SettingsView.swift in Sources */,
 				69E000022E44000100000012 /* OnboardingView.swift in Sources */,
-				69E000022E44000100000014 /* TransferNotification.swift in Sources */,
+				69E000022E44000100000014 /* AppSupport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -520,6 +587,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		AA0000000000000000000015 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 69DCF4802AB70D0600CBE2CC /* NearbyShare */;
+			targetProxy = AA0000000000000000000006 /* PBXContainerItemProxy */;
+		};
 		699DEBAD2AB0573200115D22 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 699DEBA02AB0573200115D22 /* ShareExtension */;
@@ -550,25 +622,67 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		AA0000000000000000000010 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@loader_path/../Frameworks",
+					"@loader_path/../../..",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.NearbyShareTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000011 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@loader_path/../Frameworks",
+					"@loader_path/../../..",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.NearbyShareTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 		699DEBAF2AB0573200115D22 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 14;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "NearByDrop";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_CFBundleDisplayName = "Nearby Drop";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Created by Arslan Basharat";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				MARKETING_VERSION = 2.2.2;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -583,19 +697,19 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 14;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "NearByDrop";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_CFBundleDisplayName = "Nearby Drop";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Created by Arslan Basharat";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				MARKETING_VERSION = 2.2.2;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -659,7 +773,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -720,7 +834,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -742,7 +856,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 14;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -754,10 +868,10 @@
 				INFOPLIST_FILE = NearByDrop/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NearByDrop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "NearByDrop needs access to the camera to scan Quick Share QR codes.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "NearByDrop needs access to your local network to send and receive files.";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Nearby Drop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Nearby Drop needs access to the camera to scan Quick Share QR codes.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Created by Arslan Basharat";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Nearby Drop needs access to your local network to send and receive files.";
 				INFOPLIST_KEY_NSMainNibFile = MainMenu;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -768,10 +882,11 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/USB/lib",
 				);
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				MARKETING_VERSION = 2.2.2;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop;
-				PRODUCT_NAME = "NearByDrop";
+				PRODUCT_MODULE_NAME = NearByDrop;
+				PRODUCT_NAME = "Nearby Drop";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "NearByDrop/NearByDrop-Bridging-Header.h";
@@ -791,7 +906,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 14;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -803,10 +918,10 @@
 				INFOPLIST_FILE = NearByDrop/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NearByDrop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "NearByDrop needs access to the camera to scan Quick Share QR codes.";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "NearByDrop needs access to your local network to send and receive files.";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Nearby Drop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Nearby Drop needs access to the camera to scan Quick Share QR codes.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Created by Arslan Basharat";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Nearby Drop needs access to your local network to send and receive files.";
 				INFOPLIST_KEY_NSMainNibFile = MainMenu;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -817,10 +932,11 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/USB/lib",
 				);
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
-				MARKETING_VERSION = 2.2.2;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 2.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop;
-				PRODUCT_NAME = "NearByDrop";
+				PRODUCT_MODULE_NAME = NearByDrop;
+				PRODUCT_NAME = "Nearby Drop";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "NearByDrop/NearByDrop-Bridging-Header.h";
@@ -838,7 +954,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@executable_path/../Frameworks";
 				EXECUTABLE_PREFIX = lib;
 				LD_DYLIB_INSTALL_NAME = "$(DYLIB_INSTALL_NAME_BASE:standardizepath)/$(EXECUTABLE_PATH)";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -855,7 +971,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@executable_path/../Frameworks";
 				EXECUTABLE_PREFIX = lib;
 				LD_DYLIB_INSTALL_NAME = "$(DYLIB_INSTALL_NAME_BASE:standardizepath)/$(EXECUTABLE_PATH)";
-				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -865,6 +981,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		AA0000000000000000000014 /* Build configuration list for PBXNativeTarget "NearbyShareTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000010 /* Debug */,
+				AA0000000000000000000011 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		699DEBB12AB0573200115D22 /* Build configuration list for PBXNativeTarget "ShareExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

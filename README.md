@@ -1,70 +1,78 @@
-# NearByDrop
+# Nearby Drop
 
-NearByDrop is a Menu bar app for macOS that implements Google's [Nearby Share / Quick Share](https://blog.google/products/android/nearby-share/) protocol. Drop a file to your Android phone, receive files from it, or hand files over a USB cable when Wi-Fi is locked down.
+[![Build](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg)](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml)
 
-Created by Arslan Basharat.
+Move files between your Mac and Android without a cloud account. Nearby Drop brings Quick Share transfers, QR pairing, and Android USB storage into one macOS menu bar app.
 
-![Protocol documentation](/PROTOCOL.md "How the protocol works")
+Maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-o), building practical interfaces and dependable automation. Based on [NearDrop by grishka](https://github.com/grishka/NearDrop) and its reverse-engineered Nearby Share protocol.
 
-## Features
+## What it does
 
-- **Two-way transfers.** Send files (and links) from your Mac to any Quick Share device, and receive files, links and plain text from Android, Windows or another Mac on the same Wi-Fi network. Everything is end-to-end encrypted with UKEY2/AES-256 — no cloud, no Google account.
-- **Control Center–style popover.** The menu bar popover follows the AirDrop module layout: live transfer cards with PIN confirmation, a nearby-devices tray, and drag-and-drop onto the menu bar icon to start sending.
-- **QR code pairing.** Display a Quick Share QR code to receive from devices that can't see the Mac via mDNS, and use the built-in Vision-based camera scanner to receive from a QR code shown on a phone.
-- **USB MTP mode.** Wired transfers to/from Android storage over libmtp — browse the phone's files, upload, and save to Downloads when Wi-Fi is restricted.
-- **Share extension.** Share to NearByDrop directly from Finder and the system Share menu, with a device picker and QR fallback baked into the extension UI.
+- Send and receive files and links over your local network using Quick Share.
+- Scan a sender’s QR code with a camera preview inside the menu bar dropdown, or display a code for selected files.
+- Browse Android storage and copy files over USB using MTP.
+- Track transfers in the dropdown and send files from Finder’s Share menu.
 
-## Installation
+Wireless transfers use the UKEY2 handshake and encrypted transport. File contents stay on the local network or USB cable. No Google account or cloud relay is required.
 
-Grab the latest zip from the [Releases](https://github.com/your-org/NearByDrop/releases) page, unzip, and move `NearByDrop.app` to `/Applications`. The first launch is Gatekeeper-blocked: right-click the app in Finder and choose **Open**, or approve it in System Settings → Privacy & Security.
+## Download
 
-## Building from source
+**macOS 14 Sonoma or newer · Apple silicon and Intel**
 
-Requirements: Xcode 15 or newer. Dependencies (SwiftECC, swift-protobuf, QRCode) are resolved automatically by Swift Package Manager.
+Download the universal ZIP from [Releases](https://github.com/arslanbasharat-o-o/NearByDrop/releases), extract it, and move **Nearby Drop.app** into Applications. The same download contains native `arm64` and `x86_64` code, including the share extension and USB libraries.
 
-```shell
-xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop -configuration Release -derivedDataPath build
+Current community builds are **ad hoc signed and not notarized**. macOS may block the first launch. After attempting to open the app, use System Settings → Privacy & Security → Open Anyway if you trust this release. Do not disable Gatekeeper globally. SHA-256 checksums are provided with each release.
+
+Settings → About shows the version and provides a manual update check. Updates are downloaded and installed manually.
+
+## Use it
+
+1. Connect the Mac and phone to the same local network. Allow local network access when macOS asks.
+2. Open Nearby Drop from the menu bar. Use **Send** to choose files and a nearby device, or **Receive** to scan a sender’s Quick Share QR code.
+3. Accept incoming requests in the dropdown. Compare the pairing code when prompted.
+
+For USB, unlock the phone, select **File transfer / Android Auto** in its USB settings, then open the **USB** tab. Close other MTP apps if they are holding the connection.
+
+## Network and device limits
+
+- Wireless speed depends on the network. A slow 2.4 GHz router cannot deliver 40–50 MB/s. QR pairing uses the same network transport and does not increase its speed.
+- A phone hotspot can carry transfers when local discovery works. LTE-only hotspot discovery remains an open device verification item; do not rely on that setup yet.
+- Automatic Wi-Fi Direct and hotspot negotiation are not implemented. Both devices need a reachable local network; guest networks and client isolation can prevent discovery.
+- The Mac advertises itself while the app runs. Google account/contact-restricted visibility and Bluetooth discovery are not supported.
+- Physical QR interoperability, USB devices, and older macOS versions need broader testing. See [release verification](RELEASE-VERIFICATION.md) for the exact checks and limits.
+
+## Build and test
+
+Use Xcode 26 or newer with the macOS SDK. Swift packages are pinned in `Package.resolved`; USB libraries are vendored as universal dynamic libraries.
+
+```sh
+xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop \
+  -configuration Release -derivedDataPath build \
+  CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO build
+
+xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop \
+  -configuration Debug -destination 'platform=macOS' \
+  -derivedDataPath build-tests CODE_SIGNING_ALLOWED=NO test
 ```
 
-The product is `build/Build/Products/Release/NearByDrop.app`. The Bundle ID and code-signing settings in the project are placeholders: set your own development team in Xcode's Signing & Capabilities before distributing a signed build.
+The app is written to `build/Build/Products/Release/Nearby Drop.app`. Use `scripts/package-release.sh` to package and verify an ad hoc signed universal build. Distribution with Apple notarization requires your own Developer ID certificate and notarization credentials.
 
-The protocol `.pb.swift` files under `NearbyShare/Protobuf/` are pre-generated. Only if you edit the protos in `NearbyShare/ProtobufSource/`, run `NearbyShare/GenerateProtobuf.sh` (requires `brew install protobuf`).
+Generated protocol files are checked in. If you change the `.proto` files, install `protobuf` and run `NearbyShare/GenerateProtobuf.sh`. Read [PROTOCOL.md](PROTOCOL.md) for the wire protocol.
 
-## USB Acknowledgements & LGPL Compliance
+## Privacy and security
 
-The USB transfer component bundles dynamic libraries under LGPL v2.1/v3:
+Camera access is used for QR scanning. Transfer history and preferences are stored locally. System notification permission is not required. The manual update check contacts GitHub’s release API and does not send file contents.
 
-- **[libmtp](https://github.com/libmtp/libmtp)** — LGPL v2.1+
-- **[libusb](https://github.com/libusb/libusb)** — LGPL v2.1+
+A trusted device may skip the consent prompt. Device trust is a convenience based on local device identification, not Google account authentication; only enable it on networks and devices you trust. Scanning a QR code authorizes the sender whose signing key matches that code.
 
-Both libraries are dynamically linked from `Vendor/USB/lib/` with headers in `Vendor/USB/include/`. The corresponding license texts are available in `Vendor/USB/licenses/libmtp-LGPL.txt` and `Vendor/USB/licenses/libusb-LGPL.txt`. In compliance with LGPL requirements, users may inspect or replace these dynamic libraries with custom builds.
+For a security concern, use [GitHub’s private vulnerability reporting](https://github.com/arslanbasharat-o-o/NearByDrop/security/advisories/new). For reproducible bugs, open an [issue](https://github.com/arslanbasharat-o-o/NearByDrop/issues/new). Remove personal file names, device identifiers, and pairing codes from logs before sharing them.
 
-### Rebuilding Vendored USB Libraries
-To rebuild and update the bundled dynamic libraries from source:
-1. Clone the upstream repositories:
-   ```shell
-   git clone https://github.com/libusb/libusb.git
-   git clone https://github.com/libmtp/libmtp.git
-   ```
-2. Build `libusb`:
-   ```shell
-   cd libusb && ./autogen.sh && ./configure --enable-shared --disable-static && make
-   cp libusb/.libs/libusb-1.0.0.dylib Vendor/USB/lib/
-   ```
-3. Build `libmtp` against `libusb`:
-   ```shell
-   cd libmtp && ./autogen.sh && PKG_CONFIG_PATH=/path/to/libusb ./configure --enable-shared --disable-static && make
-   cp src/.libs/libmtp.9.dylib Vendor/USB/lib/
-   ```
+## Credits and licenses
 
-## Upstream Attribution & Credits
+The app and protocol implementation build on [grishka/NearDrop](https://github.com/grishka/NearDrop), released into the public domain. This project retains the [Unlicense](UNLICENSE).
 
-- **Upstream Foundation**: *Built upon the foundational reverse-engineered Nearby Share protocol from Grishka's open-source NearDrop project.* See [PROTOCOL.md](/PROTOCOL.md) for protocol details.
-- **Dependencies**: [SwiftECC](https://github.com/leif-ibsen/SwiftECC), [swift-protobuf](https://github.com/apple/swift-protobuf), [QRCode](https://github.com/dagronf/qrcode).
+Dependencies include [SwiftECC](https://github.com/leif-ibsen/SwiftECC), [BigInt](https://github.com/leif-ibsen/BigInt), [ASN1](https://github.com/leif-ibsen/ASN1), [SwiftProtobuf](https://github.com/apple/swift-protobuf), [QRCode](https://github.com/dagronf/qrcode), [SwiftImageReadWrite](https://github.com/dagronf/SwiftImageReadWrite), and [swift-qrcode-generator](https://github.com/dagronf/swift-qrcode-generator). Their own licenses apply.
 
+USB support dynamically links [libmtp](https://github.com/libmtp/libmtp) and [libusb](https://github.com/libusb/libusb) under LGPL 2.1 or later. License texts, exact source versions, and replacement instructions are in [Vendor/USB](Vendor/USB/README.md). Release archives include third-party notices and corresponding USB source archives.
 
-## Limitations
-
-- **Wi-Fi LAN only.** Mac and phone must be on the same local network. Wi-Fi Direct/Hotspot/multi-device mediums are not supported on macOS.
-- **Always visible** to other devices on the network while the app runs. Contact-restricted visibility requires Google's servers, which an unofficial client does not use; QR codes cover the "hidden" use case.
-- Bluetooth-based discovery ("device nearby is sharing" notification) cannot be implemented on macOS: the OS does not expose the BLE service-data API Google's implementation relies on.
+Nearby Drop is an independent project and is not affiliated with Google or Apple. Quick Share and other product names belong to their respective owners.

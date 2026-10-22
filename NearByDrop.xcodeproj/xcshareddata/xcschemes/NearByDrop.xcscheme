@@ -15,20 +15,46 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "69DA9A0D29E0BF5100A442DA"
-               BuildableName = "NearByDrop.app"
+               BuildableName = "Nearby Drop.app"
                 BlueprintName = "NearByDrop"
                ReferencedContainer = "container:NearByDrop.xcodeproj">
             </BuildableReference>
-         </BuildActionEntry>
-      </BuildActionEntries>
+          </BuildActionEntry>
+          <BuildActionEntry
+             buildForTesting = "YES"
+             buildForRunning = "NO"
+             buildForProfiling = "NO"
+             buildForArchiving = "NO"
+             buildForAnalyzing = "NO">
+             <BuildableReference
+                BuildableIdentifier = "primary"
+                BlueprintIdentifier = "AA000000000000000000000A"
+                BuildableName = "NearbyShareTests.xctest"
+                BlueprintName = "NearbyShareTests"
+                ReferencedContainer = "container:NearByDrop.xcodeproj">
+             </BuildableReference>
+          </BuildActionEntry>
+       </BuildActionEntries>
    </BuildAction>
    <TestAction
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
-      shouldAutocreateTestPlan = "YES">
-   </TestAction>
+       shouldAutocreateTestPlan = "YES">
+       <Testables>
+          <TestableReference
+             skipped = "NO">
+             <BuildableReference
+                BuildableIdentifier = "primary"
+                BlueprintIdentifier = "AA000000000000000000000A"
+                BuildableName = "NearbyShareTests.xctest"
+                BlueprintName = "NearbyShareTests"
+                ReferencedContainer = "container:NearByDrop.xcodeproj">
+             </BuildableReference>
+          </TestableReference>
+       </Testables>
+    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
@@ -44,7 +70,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "69DA9A0D29E0BF5100A442DA"
-            BuildableName = "NearByDrop.app"
+             BuildableName = "Nearby Drop.app"
              BlueprintName = "NearByDrop"
              ReferencedContainer = "container:NearByDrop.xcodeproj">
          </BuildableReference>
@@ -61,7 +87,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "69DA9A0D29E0BF5100A442DA"
-            BuildableName = "NearByDrop.app"
+             BuildableName = "Nearby Drop.app"
              BlueprintName = "NearByDrop"
              ReferencedContainer = "container:NearByDrop.xcodeproj">
          </BuildableReference>

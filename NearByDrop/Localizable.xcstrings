@@ -1023,109 +1023,109 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يحتاج NearByDrop Created by Arslan Basharat إلى القدرة على عرض الإشعارات لنقل الملفات الواردة. يرجى السماح بالإشعارات في إعدادات النظام."
+            "value" : "يحتاج Nearby Drop إلى القدرة على عرض الإشعارات لنقل الملفات الواردة. يرجى السماح بالإشعارات في إعدادات النظام."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat benötigt die Erlaubnis Mitteilungen für eingehende Datenransfers anzuzeigen. Bitte erlaube Mitteilungen in den Systemeinstellungen."
+            "value" : "Nearby Drop benötigt die Erlaubnis Mitteilungen für eingehende Datenransfers anzuzeigen. Bitte erlaube Mitteilungen in den Systemeinstellungen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "NearByDrop Created by Arslan Basharat needs to be able to display notifications for incoming file transfers. Please allow notifications in System Settings."
+            "value" : "Nearby Drop needs to be able to display notifications for incoming file transfers. Please allow notifications in System Settings."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat necesita poder mostrar notificaciones para las transferencias de archivos entrantes. Permita las notificaciones en la configuración del sistema."
+            "value" : "Nearby Drop necesita poder mostrar notificaciones para las transferencias de archivos entrantes. Permita las notificaciones en la configuración del sistema."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat doit pouvoir afficher des notifications pour les transferts de fichiers entrants. Veuillez autoriser les notifications dans les paramètres système."
+            "value" : "Nearby Drop doit pouvoir afficher des notifications pour les transferts de fichiers entrants. Veuillez autoriser les notifications dans les paramètres système."
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A NearByDrop Created by Arslan Basharat-nak szüksége van értesítéseket küldeni a bejövő fájlok fogadásához. Kérlek engedélyezd az értesítésekhez való hozzáférést a Rendszerbeállításokban."
+            "value" : "A Nearby Drop-nak szüksége van értesítéseket küldeni a bejövő fájlok fogadásához. Kérlek engedélyezd az értesítésekhez való hozzáférést a Rendszerbeállításokban."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat deve essere in grado di visualizzare le notifiche per i trasferimenti di file in entrata. Consenti le notifiche nelle Impostazioni di sistema."
+            "value" : "Nearby Drop deve essere in grado di visualizzare le notifiche per i trasferimenti di file in entrata. Consenti le notifiche nelle Impostazioni di sistema."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharatでファイル受信の通知を表示できる必要があります。システム設定で通知を許可してください。"
+            "value" : "Nearby Dropでファイル受信の通知を表示できる必要があります。システム設定で通知を許可してください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat에서 파일 수신에 대한 알림을 표시할 수 있어야 합니다. 시스템 설정에서 알림을 허용하세요."
+            "value" : "Nearby Drop에서 파일 수신에 대한 알림을 표시할 수 있어야 합니다. 시스템 설정에서 알림을 허용하세요."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat moet meldingen kunnen weergeven voor inkomende bestandsoverdrachten. Sta meldingen toe in de systeeminstellingen."
+            "value" : "Nearby Drop moet meldingen kunnen weergeven voor inkomende bestandsoverdrachten. Sta meldingen toe in de systeeminstellingen."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O NearByDrop Created by Arslan Basharat precisa ser capaz de exibir notificações para o recebimento de arquivos. Por favor, habilite as notificações em Ajustes do Sistema."
+            "value" : "O Nearby Drop precisa ser capaz de exibir notificações para o recebimento de arquivos. Por favor, habilite as notificações em Ajustes do Sistema."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O NearByDrop Created by Arslan Basharat precisa ser capaz de mostrar notificações para receber ficheiros. Por favor, active as notificações em Definições do Sistema."
+            "value" : "O Nearby Drop precisa ser capaz de mostrar notificações para receber ficheiros. Por favor, active as notificações em Definições do Sistema."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat trebuie să poată afișa notificări pentru transferurile de fișiere primite. Vă rugăm să permiteți notificările în Setările Sistemului."
+            "value" : "Nearby Drop trebuie să poată afișa notificări pentru transferurile de fișiere primite. Vă rugăm să permiteți notificările în Setările Sistemului."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat необходима возможность показывать уведомления о входящих файлах. Пожалуйста, разрешите уведомления в Системных настройках."
+            "value" : "Nearby Drop необходима возможность показывать уведомления о входящих файлах. Пожалуйста, разрешите уведомления в Системных настройках."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat ไม่สามารถแสดงการแจ้งเตือนไฟล์ที่เข้ามาได้ โปรดให้สิทธิ์การแจ้งเตือน ในการตั้งค่าระบบ"
+            "value" : "Nearby Drop ไม่สามารถแสดงการแจ้งเตือนไฟล์ที่เข้ามาได้ โปรดให้สิทธิ์การแจ้งเตือน ในการตั้งค่าระบบ"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat потрібна можливість показувати сповіщення про вхідні файли. Будь ласка, дозвольте сповіщення у Системних налаштуваннях."
+            "value" : "Nearby Drop потрібна можливість показувати сповіщення про вхідні файли. Будь ласка, дозвольте сповіщення у Системних налаштуваннях."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat 需显示是否接收文件传输的通知。请在 系统设置 中允许通知。"
+            "value" : "Nearby Drop 需显示是否接收文件传输的通知。请在 系统设置 中允许通知。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat 需要顯示檔案傳入的通知，請在系統設定中允許通知。"
+            "value" : "Nearby Drop 需要顯示檔案傳入的通知，請在系統設定中允許通知。"
           }
         }
       }
@@ -1475,109 +1475,109 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "إنهاء NearByDrop Created by Arslan Basharat"
+            "value" : "إنهاء Nearby Drop"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat Beenden"
+            "value" : "Nearby Drop Beenden"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Quit NearByDrop Created by Arslan Basharat"
+            "value" : "Quit Nearby Drop"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Salir de NearByDrop Created by Arslan Basharat"
+            "value" : "Salir de Nearby Drop"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quitter NearByDrop Created by Arslan Basharat"
+            "value" : "Quitter Nearby Drop"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat bezárása"
+            "value" : "Nearby Drop bezárása"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esci da NearByDrop Created by Arslan Basharat"
+            "value" : "Esci da Nearby Drop"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharatを終了"
+            "value" : "Nearby Dropを終了"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat 종료"
+            "value" : "Nearby Drop 종료"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat afsluiten"
+            "value" : "Nearby Drop afsluiten"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sair do NearByDrop Created by Arslan Basharat"
+            "value" : "Sair do Nearby Drop"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sair do NearByDrop Created by Arslan Basharat"
+            "value" : "Sair do Nearby Drop"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Închide NearByDrop Created by Arslan Basharat"
+            "value" : "Închide Nearby Drop"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Завершить NearByDrop Created by Arslan Basharat"
+            "value" : "Завершить Nearby Drop"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ออก NearByDrop Created by Arslan Basharat"
+            "value" : "ออก Nearby Drop"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Завершити NearByDrop Created by Arslan Basharat"
+            "value" : "Завершити Nearby Drop"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "退出 NearByDrop Created by Arslan Basharat"
+            "value" : "退出 Nearby Drop"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "退出 NearByDrop Created by Arslan Basharat"
+            "value" : "退出 Nearby Drop"
           }
         }
       }

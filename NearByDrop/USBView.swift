@@ -49,10 +49,12 @@ final class USBModel: ObservableObject {
     @Published var error: String?
     @Published var lastDownloadedURL: URL? = nil
     @Published var selectedItemIds: Set<UInt32> = []
+    @Published var isChoosingFiles = false
 
     private let bridge = NDUSBTransfer()
     private let queue = DispatchQueue(label: "NearByDrop.USB", qos: .userInitiated)
     private var scopedUploadURLs: [URL] = []
+    private var visitedFolders: Set<UInt32> = []
     var parent: UInt32 { path.last?.id ?? UInt32.max }
 
     deinit {
@@ -77,6 +79,7 @@ final class USBModel: ObservableObject {
 
     func refresh() {
         guard !busy else { return }
+        if !deviceName.isEmpty { load(); return }
         busy = true; error = nil; message = "Looking for USB devices…"
         selectedItemIds.removeAll()
         lastDownloadedURL = nil
@@ -87,13 +90,14 @@ final class USBModel: ObservableObject {
                 let devices = values.compactMap { value -> (id: String, name: String)? in
                     guard let id = value["id"] as? String, let name = value["name"] as? String else { return nil }; return (id, name)
                 }
-                DispatchQueue.main.async { self.devices = devices; self.deviceName = ""; self.items = []; self.storages = []; self.path = []; self.busy = false; self.message = "" }
+                DispatchQueue.main.async { self.devices = devices; self.deviceName = ""; self.items = []; self.storages = []; self.storage = 0; self.path = []; self.busy = false; self.message = "" }
             } catch { self.fail(error) }
         }
     }
 
     func connect(_ id: String, name: String) {
         guard !busy else { return }
+        deviceName = ""; storages = []; storage = 0; items = []; path = []
         busy = true; error = nil; message = "Opening \(name)…"
         selectedItemIds.removeAll()
         lastDownloadedURL = nil
@@ -160,8 +164,15 @@ final class USBModel: ObservableObject {
 
     private func prepareTransfer(_ message: String) {
         busy = true; transferring = true; error = nil; progress = 0; self.message = message
+        visitedFolders.removeAll()
         bridge.cancelRequested = false
-        bridge.progress = { [weak self] progress in DispatchQueue.main.async { self?.progress = progress } }
+        var lastUpdate = DispatchTime.now()
+        bridge.progress = { [weak self] progress in
+            let now = DispatchTime.now()
+            guard progress >= 1 || now > lastUpdate + .milliseconds(100) else { return }
+            lastUpdate = now
+            DispatchQueue.main.async { self?.progress = progress }
+        }
     }
 
     func upload(_ urls: [URL], to targetParent: UInt32? = nil) {
@@ -192,16 +203,18 @@ final class USBModel: ObservableObject {
 
     func chooseAndUploadFiles(to folder: USBItem? = nil) {
         guard !busy, storage != 0 else { return }
+        isChoosingFiles = true
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.prompt = "Upload"
         panel.message = "Choose files to send to your phone"
-        panel.level = .floating
-        NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
-        panel.begin { [weak self] response in
+        panel.presentForInteraction { [weak self] response in
+            DispatchQueue.main.async {
+                self?.isChoosingFiles = false
+                NotificationCenter.default.post(name: .didFinishChoosingFiles, object: nil)
+            }
             guard response == .OK, !panel.urls.isEmpty else { return }
             self?.upload(panel.urls, to: folder?.id)
         }
@@ -227,11 +240,10 @@ final class USBModel: ObservableObject {
     func downloadFolder(_ item: USBItem) {
         guard !busy, item.folder else { return }
         let downloads = NearbyConnectionManager.downloadDirectory
-        let folderTarget = downloads.appendingPathComponent(item.name, isDirectory: true)
         prepareTransfer("Receiving folder \(item.name)…")
         queue.async {
             do {
-                try FileManager.default.createDirectory(at: folderTarget, withIntermediateDirectories: true)
+                let folderTarget = try ReceivedFolder.create(in: downloads, name: item.name)
                 let count = try self.downloadFolderContents(folderId: item.id, targetDir: folderTarget)
                 DispatchQueue.main.async {
                     self.busy = false
@@ -249,17 +261,16 @@ final class USBModel: ObservableObject {
         guard !busy, !items.isEmpty else { return }
         let downloads = NearbyConnectionManager.downloadDirectory
         let currentName = path.last?.name ?? "Folder"
-        let folderTarget = downloads.appendingPathComponent(currentName, isDirectory: true)
+        let currentItems = items
         prepareTransfer("Receiving \(currentName)…")
         queue.async {
             var fileCount = 0
             do {
-                try FileManager.default.createDirectory(at: folderTarget, withIntermediateDirectories: true)
-                for item in self.items {
+                let folderTarget = try ReceivedFolder.create(in: downloads, name: currentName)
+                for item in currentItems {
                     if self.bridge.cancelRequested { throw NSError(domain: "USB", code: 1, userInfo: [NSLocalizedDescriptionKey: "Canceled"]) }
                     if item.folder {
-                        let subURL = folderTarget.appendingPathComponent(item.name, isDirectory: true)
-                        try FileManager.default.createDirectory(at: subURL, withIntermediateDirectories: true)
+                        let subURL = try ReceivedFolder.create(in: folderTarget, name: item.name)
                         fileCount += try self.downloadFolderContents(folderId: item.id, targetDir: subURL)
                     } else {
                         _ = try self.bridge.download(item.id, name: item.name, directory: folderTarget)
@@ -289,8 +300,7 @@ final class USBModel: ObservableObject {
                 for item in selected {
                     if self.bridge.cancelRequested { throw NSError(domain: "USB", code: 1, userInfo: [NSLocalizedDescriptionKey: "Canceled"]) }
                     if item.folder {
-                        let subURL = downloads.appendingPathComponent(item.name, isDirectory: true)
-                        try FileManager.default.createDirectory(at: subURL, withIntermediateDirectories: true)
+                        let subURL = try ReceivedFolder.create(in: downloads, name: item.name)
                         fileCount += try self.downloadFolderContents(folderId: item.id, targetDir: subURL)
                     } else {
                         _ = try self.bridge.download(item.id, name: item.name, directory: downloads)
@@ -310,7 +320,10 @@ final class USBModel: ObservableObject {
         }
     }
 
-    private func downloadFolderContents(folderId: UInt32, targetDir: URL) throws -> Int {
+    private func downloadFolderContents(folderId: UInt32, targetDir: URL, depth: Int = 0) throws -> Int {
+        guard depth < 128, visitedFolders.insert(folderId).inserted else {
+            throw NSError(domain: "USB", code: 2, userInfo: [NSLocalizedDescriptionKey: "The phone returned a repeated folder or a folder hierarchy that is too deep."])
+        }
         if self.bridge.cancelRequested { throw NSError(domain: "USB", code: 1, userInfo: [NSLocalizedDescriptionKey: "Canceled"]) }
         let list = try self.bridge.files(inStorage: self.storage, parent: folderId)
         var count = 0
@@ -320,9 +333,8 @@ final class USBModel: ObservableObject {
                   let name = dict["name"] as? String,
                   let isFolder = (dict["folder"] as? NSNumber)?.boolValue else { continue }
             if isFolder {
-                let subURL = targetDir.appendingPathComponent(name, isDirectory: true)
-                try FileManager.default.createDirectory(at: subURL, withIntermediateDirectories: true)
-                count += try self.downloadFolderContents(folderId: id, targetDir: subURL)
+                let subURL = try ReceivedFolder.create(in: targetDir, name: name)
+                count += try self.downloadFolderContents(folderId: id, targetDir: subURL, depth: depth + 1)
             } else {
                 _ = try self.bridge.download(id, name: name, directory: targetDir)
                 count += 1
@@ -333,14 +345,16 @@ final class USBModel: ObservableObject {
 
     func saveItemAs(_ item: USBItem) {
         guard !busy, !item.folder else { return }
+        isChoosingFiles = true
         let panel = NSSavePanel()
         panel.nameFieldStringValue = item.name
         panel.prompt = "Save"
         panel.message = "Choose where to save this file on your Mac"
-        panel.level = .floating
-        NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
-        panel.begin { [weak self] response in
+        panel.presentForInteraction { [weak self] response in
+            DispatchQueue.main.async {
+                self?.isChoosingFiles = false
+                NotificationCenter.default.post(name: .didFinishChoosingFiles, object: nil)
+            }
             guard response == .OK, let targetURL = panel.url, let self = self else { return }
             let dir = targetURL.deletingLastPathComponent()
             self.prepareTransfer("Receiving \(item.name)…")
@@ -364,7 +378,7 @@ final class USBModel: ObservableObject {
     func disconnect() {
         guard !busy else { return }
         queue.async { self.bridge.close() }
-        deviceName = ""; storages = []; items = []; path = []; message = ""; selectedItemIds.removeAll()
+        deviceName = ""; storage = 0; storages = []; items = []; path = []; message = ""; error = nil; selectedItemIds.removeAll()
     }
     private func fail(_ error: Error, prefix: String = "") { DispatchQueue.main.async { self.busy = false; self.transferring = false; self.message = ""; self.error = prefix + error.localizedDescription } }
 }
@@ -641,7 +655,7 @@ struct USBView: View {
                                     Button("Download Folder to Mac") { usb.downloadFolder(item) }
                                      Button("Upload Files to this Folder…") { usb.chooseAndUploadFiles(to: item) }
                                 } else {
-                                    Button("Download to NearByDrop") { usb.download(item) }
+                                    Button("Download to Nearby Drop") { usb.download(item) }
                                     Button("Save As…") { usb.saveItemAs(item) }
                                     if let url = usb.lastDownloadedURL,
                                        url.lastPathComponent == item.name,
