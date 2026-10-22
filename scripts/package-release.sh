@@ -8,16 +8,16 @@ product="$derived/Build/Products/Release/Nearby Drop.app"
 test -d "$product"
 mkdir -p "$output"
 output="$(cd "$output" && pwd)"
-staging="$(mktemp -d "${TMPDIR:-/tmp}/nearbydrop-package.XXXXXX")"
+staging="$(mktemp -d "${TMPDIR:-/tmp}/nearby-drop-package.XXXXXX")"
 trap 'rm -rf "$staging"' EXIT
 app="$staging/Nearby Drop.app"
 ditto "$product" "$app"
 notices="$app/Contents/Resources/ThirdPartyLicenses"
 mkdir -p "$notices"
-cp LICENSE "$notices/Nearbydrop-LICENSE.txt"
+cp LICENSE "$notices/Nearby-Drop-LICENSE.txt"
 cp Vendor/USB/licenses/*.txt "$notices/"
 cp Vendor/USB/README.md "$notices/USB.md"
-cp README.md "$notices/Nearbydrop-README.md"
+cp README.md "$notices/Nearby-Drop-README.md"
 for dependency in ASN1 BigInt SwiftECC swift-qrcode-generator QRCode swift-protobuf SwiftImageReadWrite; do
     checkout="$derived/SourcePackages/checkouts/$dependency"
     if [ ! -d "$checkout" ] && [ "$dependency" = QRCode ]; then
@@ -45,16 +45,16 @@ codesign --verify --deep --strict --verbose=2 "$app"
 version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$app/Contents/Info.plist")
 minimum=$(/usr/libexec/PlistBuddy -c 'Print LSMinimumSystemVersion' "$app/Contents/Info.plist")
 test "$minimum" = 14.0
-archive="$output/NearbyDrop-$version-universal.zip"
+archive="$output/Nearby-Drop-$version-universal.zip"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
 
 # Build installer DMG with Applications shortcut
-dmg_staging="$(mktemp -d "${TMPDIR:-/tmp}/nearbydrop-dmg.XXXXXX")"
+dmg_staging="$(mktemp -d "${TMPDIR:-/tmp}/nearby-drop-dmg.XXXXXX")"
 ditto "$app" "$dmg_staging/Nearby Drop.app"
 ln -s /Applications "$dmg_staging/Applications"
-dmg="$output/Nearbydrop-$version.dmg"
+dmg="$output/Nearby-Drop-$version.dmg"
 rm -f "$dmg"
-hdiutil create -volname "Nearbydrop" -srcfolder "$dmg_staging" -ov -format UDZO "$dmg"
+hdiutil create -volname "Nearby Drop" -srcfolder "$dmg_staging" -ov -format UDZO "$dmg"
 rm -rf "$dmg_staging"
 
 (cd "$output" && shasum -a 256 "$(basename "$dmg")" "$(basename "$archive")" > SHA256SUMS.txt)

@@ -1,10 +1,10 @@
 # Contributing & Support
 
-Nearbydrop is created and maintained by **[Arslan Basharat](https://github.com/arslanbasharat-o-o)**. Contributions, bug reports, and feedback are welcome.
+Nearby Drop is created and maintained by **[Arslan Basharat](https://github.com/arslanbasharat-o-o)**. Contributions, bug reports, and feedback are welcome.
 
 ## Feedback and Issue Reports
 Reproducible bug reports and feature requests are welcome via [GitHub Issues](https://github.com/arslanbasharat-o-o/NearByDrop/issues). Please provide:
-- Nearbydrop client version and build
+- Nearby Drop client version and build
 - macOS version and hardware architecture (Apple silicon / Intel)
 - Connected Android device model and OS version
 - Connection environment (Wi-Fi, phone hotspot, or USB)
@@ -30,4 +30,4 @@ Before submitting a pull request:
      -derivedDataPath build-tests CODE_SIGNING_ALLOWED=NO test
    ```
 4. **Code style & safety**: Match existing Swift conventions, preserve third-party attributions and licenses, and add regression tests for protocol, security, or lifecycle modifications.
-5. **Contributor agreement**: By submitting a pull request, you agree that your contributions may be included, distributed, and licensed under Nearbydrop's project terms.
+5. **Contributor agreement**: By submitting a pull request, you agree that your contributions may be included, distributed, and licensed under Nearby Drop's project terms.

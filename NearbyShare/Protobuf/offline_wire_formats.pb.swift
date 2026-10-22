@@ -349,8 +349,8 @@ struct Location_Nearby_Connections_ConnectionRequestFrame {
   /// Clears the value of `endpointID`. Subsequent reads from it will return its default value.
   mutating func clearEndpointID() {_uniqueStorage()._endpointID = nil}
 
-  var endpointName: String {
-    get {return _storage._endpointName ?? String()}
+  var endpointName: Data {
+    get {return _storage._endpointName ?? Data()}
     set {_uniqueStorage()._endpointName = newValue}
   }
   /// Returns true if `endpointName` has been explicitly set.
@@ -3220,7 +3220,7 @@ extension Location_Nearby_Connections_ConnectionRequestFrame: SwiftProtobuf.Mess
 
   fileprivate class _StorageClass {
     var _endpointID: String? = nil
-    var _endpointName: String? = nil
+    var _endpointName: Data? = nil
     var _handshakeData: Data? = nil
     var _nonce: Int32? = nil
     var _mediums: [Location_Nearby_Connections_ConnectionRequestFrame.Medium] = []
@@ -3272,7 +3272,7 @@ extension Location_Nearby_Connections_ConnectionRequestFrame: SwiftProtobuf.Mess
         // enabled. https://github.com/apple/swift-protobuf/issues/1034
         switch fieldNumber {
         case 1: try { try decoder.decodeSingularStringField(value: &_storage._endpointID) }()
-        case 2: try { try decoder.decodeSingularStringField(value: &_storage._endpointName) }()
+        case 2: try { try decoder.decodeSingularBytesField(value: &_storage._endpointName) }()
         case 3: try { try decoder.decodeSingularBytesField(value: &_storage._handshakeData) }()
         case 4: try { try decoder.decodeSingularInt32Field(value: &_storage._nonce) }()
         case 5: try { try decoder.decodeRepeatedEnumField(value: &_storage._mediums) }()
@@ -3326,7 +3326,7 @@ extension Location_Nearby_Connections_ConnectionRequestFrame: SwiftProtobuf.Mess
         try visitor.visitSingularStringField(value: v, fieldNumber: 1)
       } }()
       try { if let v = _storage._endpointName {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+        try visitor.visitSingularBytesField(value: v, fieldNumber: 2)
       } }()
       try { if let v = _storage._handshakeData {
         try visitor.visitSingularBytesField(value: v, fieldNumber: 3)
