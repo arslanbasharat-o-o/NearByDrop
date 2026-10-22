@@ -1,6 +1,6 @@
 # Release verification
 
-Target: Nearby Drop 2.3.0 (14), universal `arm64` and `x86_64`, macOS 14+.
+Target: Nearbydrop 2.3.0 (14), universal `arm64` and `x86_64`, macOS 14+.
 
 This is a community prerelease. Passing automated checks does not establish compatibility with every phone, router, USB device, or supported macOS version.
 

@@ -367,7 +367,7 @@ struct SettingsView: View {
             }
 
             VStack(spacing: 2) {
-                Text("Nearby Drop")
+                Text("Nearbydrop")
                     .font(.title2.weight(.bold))
                 Text(AppRelease.versionDescription)
                     .font(.caption)
