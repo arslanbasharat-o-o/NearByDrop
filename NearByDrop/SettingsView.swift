@@ -431,7 +431,7 @@ struct SettingsView: View {
                 .tint(theme.currentAccent.color)
 
                 if releaseAvailable {
-                    Button("Releases…") { NSWorkspace.shared.open(AppRelease.releasesURL) }
+                    Button("Product Page…") { NSWorkspace.shared.open(AppRelease.releasesURL) }
                         .buttonStyle(.bordered)
                 }
 

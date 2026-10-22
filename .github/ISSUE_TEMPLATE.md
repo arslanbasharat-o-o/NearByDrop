@@ -10,7 +10,7 @@ Describe the problem and what you expected.
 
 ## Setup
 
-- Nearby Drop version/build:
+- Nearbydrop version/build:
 - macOS version and Mac chip (Apple silicon / Intel):
 - Phone model and Android version:
 - Connection (router Wi-Fi / phone hotspot / USB):

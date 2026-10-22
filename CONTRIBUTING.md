@@ -1,7 +1,18 @@
-# Contributing
+# Inquiries & Support
 
-Small, reproducible fixes are welcome. For a bug, include the app version, macOS version, Mac architecture, Android version, and network or USB setup. Explain what happened and how to repeat it.
+Nearbydrop is a proprietary commercial product and Software as a Service (SaaS) platform created and maintained by **[Arslan Basharat](https://github.com/arslanbasharat-o-o)**.
 
-Before opening a pull request, run the build and tests in the README. Add a focused regression test for protocol, file safety, or lifecycle changes. For hardware behavior, say which real devices were tested and which checks remain pending. Keep changes focused and preserve upstream attribution and dependency licenses.
+## Commercial Inquiries & Early Access
+Nearbydrop is distributed exclusively through licensed subscriptions and customer channels. To inquire about team/enterprise licenses, request early access, or schedule an enterprise pilot, contact [Arslan Basharat](https://github.com/arslanbasharat-o-o).
 
-Never include personal files, credentials, raw pairing data, or unredacted logs in a report or commit.
+## Bug Reports & Feature Requests
+Subscriber feedback and issue reports can be submitted through [GitHub Issues](https://github.com/arslanbasharat-o-o/NearByDrop/issues). Please include:
+- Nearbydrop client version and build
+- macOS version and architecture (Apple silicon / Intel)
+- Connected Android device model and OS version
+- Network environment or USB connection setup
+
+Do not include sensitive credentials, proprietary customer files, or live pairing tokens in public reports.
+
+## Code Contributions
+Because Nearbydrop is commercial proprietary software, external pull requests and public code contributions are not accepted.
