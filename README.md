@@ -1,10 +1,10 @@
-# Nearby Drop
+# NearbyDrop
 
 [![Build](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg)](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml)
 
 Move files between your Mac and Android without a cloud account. Nearby Drop brings Quick Share transfers, QR pairing, and Android USB storage into one macOS menu bar app.
 
-Maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-o), building practical interfaces and dependable automation. Based on [NearDrop by grishka](https://github.com/grishka/NearDrop) and its reverse-engineered Nearby Share protocol.
+Maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-o), building practical interfaces and dependable automation.
 
 ## What it does
 
