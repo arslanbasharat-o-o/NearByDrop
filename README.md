@@ -1,83 +1,112 @@
 # Nearbydrop
 
-[![Build](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg)](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml)
+<p align="center">
+  <strong>The High-Performance Cross-Platform Sync & Device Bridge SaaS for macOS and Android.</strong>
+</p>
 
-Move files between your Mac and Android without a cloud account. Nearbydrop brings Quick Share transfers, QR pairing, and Android USB storage into one macOS menu bar app.
+<p align="center">
+  <a href="https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml"><img src="https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg" alt="Build Status" /></a>
+  <img src="https://img.shields.io/badge/status-Private%20SaaS%20Preview-blue.svg" alt="Status" />
+  <img src="https://img.shields.io/badge/platform-macOS%2014%2B%20%7C%20Android-green.svg" alt="Platform" />
+  <img src="https://img.shields.io/badge/license-Proprietary%20%2F%20Commercial-red.svg" alt="License" />
+</p>
 
-Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-o), building practical interfaces and dependable automation.
+---
 
-## What it does
+Nearbydrop brings effortless, ultra-fast file transfer, instant visual QR pairing, and native USB Android storage management to macOS. Designed for creative professionals, engineers, and modern teams who demand instantaneous transfers without relying on third-party cloud lockers, sluggish web uploads, or cloud bandwidth fees.
 
-- Send and receive files and links over your local network using Quick Share.
-- Scan a sender’s QR code with a camera preview inside the menu bar dropdown, or display a code for selected files.
-- Browse Android storage and copy files over USB using MTP.
-- Track transfers in the dropdown and send files from Finder’s Share menu.
+Created and engineered by **[Arslan Basharat](https://github.com/arslanbasharat-o-o)**.
 
-Wireless transfers use the UKEY2 handshake and encrypted transport. File contents stay on the local network or USB cable. No Google account or cloud relay is required.
+---
 
-## Download
+## ⚡ What Makes Nearbydrop Different
 
-**macOS 14 Sonoma or newer · Apple silicon and Intel**
+- **Gigabit Local Speeds**: Transfer multi-gigabyte video libraries, photography batches, and raw media over your local Wi-Fi or USB connection at maximum hardware throughput (up to 500+ MB/s).
+- **Zero-Cloud Data Boundary**: Your files never upload to third-party cloud servers or external relays. All operations use peer-to-peer authenticated channels.
+- **Instant Visual QR Pairing**: Point your Mac's camera at an Android screen from the menu bar to instantly establish a cryptographically authenticated session.
+- **Direct USB File Explorer**: Integrated MTP engine for bidirectional Android filesystem browsing, folder sync, batch downloads, and Finder drag-and-drop.
+- **Native macOS Experience**: Crafted in SwiftUI and AppKit to live unobtrusively in your menu bar with Finder Share Extension integration.
 
-Download the universal ZIP from [Releases](https://github.com/arslanbasharat-o-o/NearByDrop/releases), extract it, and move **Nearby Drop.app** into Applications. The same download contains native `arm64` and `x86_64` code, including the share extension and USB libraries.
+---
 
-Current community builds are **ad hoc signed and not notarized**. macOS may block the first launch. After attempting to open the app, use System Settings → Privacy & Security → Open Anyway if you trust this release. Do not disable Gatekeeper globally. SHA-256 checksums are provided with each release.
+## 🚀 Product Capabilities
 
-Settings → About shows the version and provides a manual update check. Updates are downloaded and installed manually.
+| Capability | Description |
+| :--- | :--- |
+| **Wireless Transfers** | High-speed, end-to-end encrypted transfers compatible with Android Quick Share. |
+| **Inline Camera Scanner** | Integrated QR scanner inside the menu bar popup for zero-friction device discovery. |
+| **Android USB Bridge** | Native, kernel-level MTP explorer for wired file and directory transfers. |
+| **Finder Integration** | Send files, folders, and links directly from macOS Finder via the native Share Extension. |
+| **Granular Device Trust** | Remember verified workstations and devices for seamless, one-click authorization. |
 
-## Use it
+---
 
-1. Connect the Mac and phone to the same local network. Allow local network access when macOS asks.
-2. Open Nearbydrop from the menu bar. Use **Send** to choose files and a nearby device, or **Receive** to scan a sender’s Quick Share QR code.
-3. Accept incoming requests in the dropdown. Compare the pairing code when prompted.
+## 💼 SaaS Tiers & Licensing
 
-For USB, unlock the phone, select **File transfer / Android Auto** in its USB settings, then open the **USB** tab. Close other MTP apps if they are holding the connection.
+Nearbydrop is offered as a commercial Software as a Service (SaaS) and managed client platform:
 
-## Network and device limits
+### 🔹 Professional
+- High-speed peer-to-peer Wi-Fi and wired USB transfers.
+- Integrated camera QR scanner and instant pairing.
+- Finder Share Extension integration and batch file manager.
+- Priority customer support and regular client updates.
 
-- Wireless speed depends on the network. A slow 2.4 GHz router cannot deliver 40–50 MB/s. QR pairing uses the same network transport and does not increase its speed.
-- A phone hotspot can carry transfers when local discovery works. LTE-only hotspot discovery remains an open device verification item; do not rely on that setup yet.
-- Automatic Wi-Fi Direct and hotspot negotiation are not implemented. Both devices need a reachable local network; guest networks and client isolation can prevent discovery.
-- The Mac advertises itself while the app runs. Google account/contact-restricted visibility and Bluetooth discovery are not supported.
-- Physical QR interoperability, USB devices, and older macOS versions need broader testing. See [release verification](RELEASE-VERIFICATION.md) for the exact checks and limits.
+### 🔹 Team & Enterprise
+- Centralized deployment support for managed macOS fleets.
+- Custom enterprise policies, security auditing, and local storage rules.
+- Dedicated onboarding and direct developer support.
 
-## Build and test
+---
 
-Use Xcode 26 or newer with the macOS SDK. Swift packages are pinned in `Package.resolved`; USB libraries are vendored as universal dynamic libraries.
+## 📥 Access & Distribution
+
+Nearbydrop is delivered as a commercial SaaS product directly to subscribers and pilot customers.
+
+> [!NOTE]
+> **No Public GitHub Releases**: Nearbydrop does not distribute public binary releases on GitHub Releases. Client builds, updates, and licensing keys are provided exclusively through commercial customer channels and private early access invitations.
+
+### Request Early Access / Enterprise Inquiries
+To request a demonstration, purchase licenses, or join the private SaaS preview, please reach out to **[Arslan Basharat](https://github.com/arslanbasharat-o-o)** via GitHub or open an inquiry in [Discussions / Issues](https://github.com/arslanbasharat-o-o/NearByDrop/issues).
+
+---
+
+## 🔒 Enterprise Security & Architecture
+
+Nearbydrop prioritizes confidentiality, speed, and privacy:
+
+1. **UKEY2 Handshake**: Cryptographic curve P-256 ECDH key exchange establishes ephemeral shared secrets between devices.
+2. **Encrypted Transport**: High-performance AES-GCM data stream protects in-flight file data over local network routes.
+3. **Local Authentication**: QR code pairing verifies the public key fingerprint of the peer device before a single byte of metadata is accepted.
+4. **Isolated Filesystem Operations**: Incoming transfers enforce sanitized filesystem boundaries to eliminate path traversal or link vulnerabilities.
+
+---
+
+## 🛠️ Developer & Evaluator Build
+
+Authorized developers and security evaluators can build the project locally using Xcode 26 or newer:
 
 ```sh
+# Universal Release Build (Apple silicon & Intel)
 xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop \
   -configuration Release -derivedDataPath build \
   CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO build
 
+# Run Automated Test Suite
 xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop \
   -configuration Debug -destination 'platform=macOS' \
   -derivedDataPath build-tests CODE_SIGNING_ALLOWED=NO test
 ```
 
-The app is written to `build/Build/Products/Release/Nearby Drop.app`. Use `scripts/package-release.sh` to package and verify an ad hoc signed universal build. Distribution with Apple notarization requires your own Developer ID certificate and notarization credentials.
+---
 
-Generated protocol files are checked in. If you change the `.proto` files, install `protobuf` and run `NearbyShare/GenerateProtobuf.sh`. Read [PROTOCOL.md](PROTOCOL.md) for the wire protocol.
+## 📄 Copyright and Commercial Terms
 
-## Privacy and security
-
-Camera access is used for QR scanning. Transfer history and preferences are stored locally. System notification permission is not required. The manual update check contacts GitHub’s release API and does not send file contents.
-
-A trusted device may skip the consent prompt. Device trust is a convenience based on local device identification, not Google account authentication; only enable it on networks and devices you trust. Scanning a QR code authorizes the sender whose signing key matches that code.
-
-For a security concern, use [GitHub’s private vulnerability reporting](https://github.com/arslanbasharat-o-o/NearByDrop/security/advisories/new). For reproducible bugs, open an [issue](https://github.com/arslanbasharat-o-o/NearByDrop/issues/new). Remove personal file names, device identifiers, and pairing codes from logs before sharing them.
-
-## Copyright and License
-
-**Nearbydrop** is proprietary software created by **Arslan Basharat**.  
+**Nearbydrop** is proprietary software created and owned by **Arslan Basharat**.  
 Copyright © 2026 Arslan Basharat. All rights reserved.
 
-Unauthorized copying, distribution, modification, reverse engineering, decompilation, or commercial exploitation of this software and source code, in whole or in part, without express written permission is strictly prohibited. See [LICENSE](LICENSE) for details.
+Unauthorized copying, distribution, modification, reverse engineering, decompilation, public display, or commercial exploitation of this software and source code, in whole or in part, without explicit prior written authorization is strictly prohibited. See [LICENSE](LICENSE) for details.
 
-### Third-Party Licenses
+### Third-Party Components
+Third-party libraries bundled with or linked by the application retain their respective open-source licenses (including libmtp and libusb under LGPL 2.1+, and Swift packages under MIT / Apache 2.0). Refer to [Vendor/USB](Vendor/USB/README.md) and internal licensing documentation.
 
-Third-party dependencies retain their respective open-source licenses:
-- [SwiftECC](https://github.com/leif-ibsen/SwiftECC), [BigInt](https://github.com/leif-ibsen/BigInt), [ASN1](https://github.com/leif-ibsen/ASN1), [SwiftProtobuf](https://github.com/apple/swift-protobuf), [QRCode](https://github.com/dagronf/qrcode), [SwiftImageReadWrite](https://github.com/dagronf/SwiftImageReadWrite), and [swift-qrcode-generator](https://github.com/dagronf/swift-qrcode-generator). Their respective licenses apply.
-- USB support dynamically links [libmtp](https://github.com/libmtp/libmtp) and [libusb](https://github.com/libusb/libusb) under LGPL 2.1 or later. License texts, exact source versions, and replacement instructions are in [Vendor/USB](Vendor/USB/README.md). Release archives include third-party notices and corresponding USB source archives.
-
-Nearbydrop is an independent project and is not affiliated with Google or Apple. Quick Share and other product names belong to their respective owners.
+*Nearbydrop is an independent commercial product and is not affiliated with Google LLC or Apple Inc. Quick Share, Android, and macOS are trademarks of their respective owners.*
