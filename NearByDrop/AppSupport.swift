@@ -29,7 +29,7 @@ extension Notification.Name {
 }
 
 enum AppRelease {
-    static let releasesURL = URL(string: "https://github.com/arslanbasharat-o-o/NearByDrop/releases")!
+    static let releasesURL = URL(string: "https://github.com/arslanbasharat-o-o/NearByDrop")!
     static var versionDescription: String {
         let info = Bundle.main.infoDictionary ?? [:]
         return "Version \(info["CFBundleShortVersionString"] as? String ?? "—") (\(info["CFBundleVersion"] as? String ?? "—"))"
