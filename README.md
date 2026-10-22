@@ -81,6 +81,10 @@ xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop \
 
 Universal packages can be generated using `scripts/package-release.sh build dist`. Protocol definitions are documented in [PROTOCOL.md](PROTOCOL.md).
 
+## Contributing
+
+Contributions, bug fixes, and feature suggestions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, build instructions, and automated testing requirements.
+
 ## Privacy and Security
 
 - Camera access is used solely for optical Quick Share QR code scanning.
