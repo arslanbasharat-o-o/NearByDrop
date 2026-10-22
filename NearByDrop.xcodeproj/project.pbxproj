@@ -674,7 +674,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Nearby Drop";
+				INFOPLIST_KEY_CFBundleDisplayName = "Nearbydrop";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Created by Arslan Basharat";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -701,7 +701,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Nearby Drop";
+				INFOPLIST_KEY_CFBundleDisplayName = "Nearbydrop";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Created by Arslan Basharat";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -866,12 +866,13 @@
 					"$(PROJECT_DIR)/Vendor/USB/include",
 				);
 				INFOPLIST_FILE = NearByDrop/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Nearbydrop";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Nearby Drop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Nearby Drop needs access to the camera to scan Quick Share QR codes.";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Nearbydrop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Nearbydrop needs access to the camera to scan Quick Share QR codes.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Created by Arslan Basharat";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Nearby Drop needs access to your local network to send and receive files.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Nearbydrop needs access to your local network to send and receive files.";
 				INFOPLIST_KEY_NSMainNibFile = MainMenu;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -916,12 +917,13 @@
 					"$(PROJECT_DIR)/Vendor/USB/include",
 				);
 				INFOPLIST_FILE = NearByDrop/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Nearbydrop";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
-				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Nearby Drop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Nearby Drop needs access to the camera to scan Quick Share QR codes.";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Nearbydrop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Nearbydrop needs access to the camera to scan Quick Share QR codes.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Created by Arslan Basharat";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Nearby Drop needs access to your local network to send and receive files.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Nearbydrop needs access to your local network to send and receive files.";
 				INFOPLIST_KEY_NSMainNibFile = MainMenu;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (

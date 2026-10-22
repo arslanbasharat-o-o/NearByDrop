@@ -20,7 +20,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         statusItem.button?.image = ThemeManager.shared.menuBarImage()
         statusItem.button?.target = self
         statusItem.button?.action = #selector(toggleMenu)
-        statusItem.button?.setAccessibilityLabel("Nearby Drop")
+        statusItem.button?.setAccessibilityLabel("Nearbydrop")
         ThemeManager.shared.onMenuBarIconChanged = { [weak self] in
             self?.statusItem.button?.image = ThemeManager.shared.menuBarImage()
         }
@@ -62,8 +62,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
 
         // App Menu
         let appMenuItem = NSMenuItem()
-        let appMenu = NSMenu(title: "Nearby Drop")
-        let aboutItem = NSMenuItem(title: "About Nearby Drop", action: #selector(openAbout(_:)), keyEquivalent: "")
+        let appMenu = NSMenu(title: "Nearbydrop")
+        let aboutItem = NSMenuItem(title: "About Nearbydrop", action: #selector(openAbout(_:)), keyEquivalent: "")
         aboutItem.target = self
         appMenu.addItem(aboutItem)
         let updates = NSMenuItem(title: "Check for Updates…", action: #selector(openUpdates(_:)), keyEquivalent: "")
@@ -80,13 +80,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         NSApp.servicesMenu = servicesMenu
         appMenu.addItem(servicesItem)
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Hide Nearby Drop", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: "Hide Nearbydrop", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         let hideOthers = NSMenuItem(title: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         hideOthers.keyEquivalentModifierMask = [.command, .option]
         appMenu.addItem(hideOthers)
         appMenu.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Quit Nearby Drop", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit Nearbydrop", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appMenuItem.submenu = appMenu
         mainMenu.addItem(appMenuItem)
 
@@ -94,7 +94,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         let fileMenuItem = NSMenuItem()
         let fileMenu = NSMenu(title: "File")
         for (title, action, key) in [
-            ("Show Nearby Drop", #selector(showMenu(_:)), "0"),
+            ("Show Nearbydrop", #selector(showMenu(_:)), "0"),
             ("Send Files…", #selector(sendFiles(_:)), "o"),
             ("Scan QR Code…", #selector(scanCode(_:)), "r"),
             ("Open Downloads", #selector(openDownloads(_:)), "d")
@@ -155,14 +155,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         // Help Menu
         let helpMenuItem = NSMenuItem()
         let helpMenu = NSMenu(title: "Help")
-        let guideItem = NSMenuItem(title: "Nearby Drop Quick Start Guide", action: #selector(openGuide(_:)), keyEquivalent: "?")
+        let guideItem = NSMenuItem(title: "Nearbydrop Quick Start Guide", action: #selector(openGuide(_:)), keyEquivalent: "?")
         guideItem.target = self
         helpMenu.addItem(guideItem)
         let privacyItem = NSMenuItem(title: "Privacy & Security Policy", action: #selector(openPrivacy(_:)), keyEquivalent: "")
         privacyItem.target = self
         helpMenu.addItem(privacyItem)
         helpMenu.addItem(NSMenuItem.separator())
-        let githubItem = NSMenuItem(title: "Nearby Drop on GitHub…", action: #selector(openGitHub(_:)), keyEquivalent: "")
+        let githubItem = NSMenuItem(title: "Nearbydrop on GitHub…", action: #selector(openGitHub(_:)), keyEquivalent: "")
         githubItem.target = self
         helpMenu.addItem(githubItem)
         helpMenuItem.submenu = helpMenu
@@ -573,7 +573,7 @@ struct MenuView: View {
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text("Nearby Drop")
+                        Text("Nearbydrop")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(.primary)
                         Circle()
@@ -658,9 +658,9 @@ struct MenuView: View {
                         Button("Privacy & Security Policy…", action: privacy)
                     }
                     Divider()
-                    Button("About Nearby Drop") { (NSApp.delegate as? AppDelegate)?.openAbout(nil) }
+                    Button("About Nearbydrop") { (NSApp.delegate as? AppDelegate)?.openAbout(nil) }
                     Divider()
-                    Button("Quit Nearby Drop") { NSApp.terminate(nil) }
+                    Button("Quit Nearbydrop") { NSApp.terminate(nil) }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .font(.system(size: 13))
