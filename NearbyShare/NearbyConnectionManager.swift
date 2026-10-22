@@ -553,6 +553,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 					NearbyLogger.log("[NearByDrop] Inbound TCP connection accepted from \(connection.endpoint) (id: \(id))")
 					let conn=InboundNearbyConnection(connection: connection, id: id)
 					conn.qrSenderPublicKey=self.receivingCode?.publicKey
+                    conn.qrReceiverCode=self.receivingCode
 					self.activeConnections[id]=conn
 					conn.delegate=self
 					conn.start()
@@ -942,6 +943,11 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 public struct QuickShareCode {
     let publicKey: P256.Signing.PublicKey
     let advertisingToken: Data
+    private let authenticationKey: SymmetricKey
+
+    func receiverHandshakeData(authToken: Data) -> Data {
+        Data(HMAC<SHA256>.authenticationCode(for: authToken, using: authenticationKey).prefix(16))
+    }
 
     public init(_ value:String) throws {
         guard value.utf8.count < 512,
@@ -958,6 +964,7 @@ public struct QuickShareCode {
               data.count == 35, data[0] == 0, data[1] == 0, data[2] == 2 || data[2] == 3 else {
             throw NearbyError.protocolError("This Quick Share code is invalid or unsupported.")
         }
+        authenticationKey=HKDF<SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: data), salt: Data(), info: Data("authKey".utf8), outputByteCount: 16)
         publicKey=try P256.Signing.PublicKey(compressedRepresentation: data.dropFirst(2))
         advertisingToken=HKDF<SHA256>.deriveKey(inputKeyMaterial: SymmetricKey(data: data), salt: Data(), info: Data("advertisingContext".utf8), outputByteCount: 16).withUnsafeBytes { Data($0) }
     }

@@ -22,3 +22,8 @@ project.xcworkspace/xcuserdata/
 # Package archives & disk images
 *.zip
 *.dmg
+
+# Local test & verification logs
+*-TEST-*.md
+RELEASE-VERIFICATION*.md
+

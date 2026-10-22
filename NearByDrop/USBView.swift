@@ -655,7 +655,7 @@ struct USBView: View {
                                     Button("Download Folder to Mac") { usb.downloadFolder(item) }
                                      Button("Upload Files to this Folder…") { usb.chooseAndUploadFiles(to: item) }
                                 } else {
-                                    Button("Download to Nearbydrop") { usb.download(item) }
+                                    Button("Download to Nearby Drop") { usb.download(item) }
                                     Button("Save As…") { usb.saveItemAs(item) }
                                     if let url = usb.lastDownloadedURL,
                                        url.lastPathComponent == item.name,

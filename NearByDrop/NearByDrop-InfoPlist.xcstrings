@@ -8,13 +8,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Nearbydrop"
+            "value" : "Nearby Drop"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nearbydrop"
+            "value" : "Nearby Drop"
           }
         }
       },
@@ -27,13 +27,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Nearbydrop needs access to your local network to send and receive files."
+            "value" : "Nearby Drop needs access to your local network to send and receive files."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nearbydrop необходим доступ к устройствам в вашей локальной сети для приёма и передачи файлов."
+            "value" : "Nearby Drop необходим доступ к устройствам в вашей локальной сети для приёма и передачи файлов."
           }
         }
       }
@@ -45,7 +45,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Nearbydrop needs access to the camera to scan Quick Share QR codes."
+            "value" : "Nearby Drop needs access to the camera to scan Quick Share QR codes."
           }
         }
       }

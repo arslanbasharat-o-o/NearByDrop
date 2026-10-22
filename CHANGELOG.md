@@ -1,3 +1,11 @@
+# 2.3.1 (15)
+
+- Preserve binary endpoint information in connection request frames to ensure compatibility with Windows and Android senders.
+- Add sequential chunk numbering and distinct attachment IDs for outgoing file transfers.
+- Implement payload acknowledgement tracking and safe-disconnect handshake for reliable transfer completion.
+- Update app branding, packaging scripts, and privacy permission descriptions to "Nearby Drop".
+- Add comprehensive protocol regression tests for binary endpoint decoding, chunk indexing, and safe disconnect.
+
 # 2.3.0 (14)
 
 - Keep Send, Receive, Transfers, and USB in the menu bar dropdown, with an inline camera for QR scanning.

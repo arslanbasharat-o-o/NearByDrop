@@ -119,6 +119,36 @@ class NearbyConnection{
 		return Int(length)
 	}
 
+    internal static func isPayloadControl(_ frame: Location_Nearby_Connections_PayloadTransferFrame) throws -> Bool {
+        switch frame.packetType {
+        case .payloadAck: return true
+        case .control:
+            guard frame.hasControlMessage, frame.controlMessage.hasEvent else {
+                throw NearbyError.requiredFieldMissing("payloadTransfer.controlMessage.event")
+            }
+            switch frame.controlMessage.event {
+            case .payloadReceivedAck: return true
+            case .payloadCanceled: throw NearbyError.canceled(reason: .userCanceled)
+            case .payloadError: throw NearbyError.protocolError("The receiving device could not receive the payload.")
+            default: throw NearbyError.protocolError("Unknown payload control event")
+            }
+        case .data: return false
+        default: throw NearbyError.protocolError("Unknown payload packet type")
+        }
+    }
+
+    internal func processPayloadAcknowledgement(id: Int64) {}
+    internal func remoteSafeDisconnectionAcknowledged() {}
+
+    internal func acknowledgePayload(_ header: Location_Nearby_Connections_PayloadTransferFrame.PayloadHeader) throws {
+        var frame = Location_Nearby_Connections_OfflineFrame()
+        frame.version = .v1
+        frame.v1.type = .payloadTransfer
+        frame.v1.payloadTransfer.packetType = .payloadAck
+        frame.v1.payloadTransfer.payloadHeader = header
+        try encryptAndSendOfflineFrame(frame)
+    }
+
 	internal static func isValidPayloadRange(totalSize:Int64, offset:Int64, bodyCount:Int) -> Bool {
 		guard totalSize >= 0, offset >= 0, bodyCount >= 0, offset <= totalSize else { return false }
 		return Int64(bodyCount) <= totalSize - offset
@@ -343,6 +373,11 @@ class NearbyConnection{
 		if offlineFrame.hasV1 && offlineFrame.v1.hasType, case .payloadTransfer = offlineFrame.v1.type {
 			guard offlineFrame.v1.hasPayloadTransfer else { throw NearbyError.requiredFieldMissing("offlineFrame.v1.payloadTransfer") }
 			let payloadTransfer=offlineFrame.v1.payloadTransfer
+            if try Self.isPayloadControl(payloadTransfer) {
+                guard payloadTransfer.payloadHeader.hasID else { throw NearbyError.requiredFieldMissing("payloadHeader.id") }
+                processPayloadAcknowledgement(id: payloadTransfer.payloadHeader.id)
+                return
+            }
 			let header=payloadTransfer.payloadHeader;
 			let chunk=payloadTransfer.payloadChunk;
 			guard header.hasType, header.hasID, header.hasTotalSize else { throw NearbyError.requiredFieldMissing("payloadHeader.type|id|totalSize") }
@@ -399,6 +434,17 @@ class NearbyConnection{
 			}else{
 				throw NearbyError.protocolError("Unsupported payload type")
 			}
+        }else if offlineFrame.hasV1 && offlineFrame.v1.type == .disconnection {
+            if offlineFrame.v1.disconnection.requestSafeToDisconnect {
+                var acknowledgement = Location_Nearby_Connections_OfflineFrame()
+                acknowledgement.version = .v1
+                acknowledgement.v1.type = .disconnection
+                acknowledgement.v1.disconnection.ackSafeToDisconnect = true
+                try encryptAndSendOfflineFrame(acknowledgement, completion: { [weak self] in
+                    self?.remoteSafeDisconnectionAcknowledged()
+                    self?.disconnect()
+                })
+            }
 		}else if offlineFrame.hasV1 && offlineFrame.v1.hasType, case .keepAlive = offlineFrame.v1.type{
 #if DEBUG
 			print("Sent keep-alive")
