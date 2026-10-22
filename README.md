@@ -3,7 +3,10 @@
 [![Build](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg)](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml)
 [![Release](https://img.shields.io/github/v/release/arslanbasharat-o-o/NearByDrop?color=blue)](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-macOS%2014%2B%20%7C%20Apple%20Silicon%20%26%20Intel-green.svg)](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)
+[![Website](https://img.shields.io/badge/website-live-brightgreen)](https://arslanbasharat-o-o.github.io/NearByDrop/)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+
+[**Website & Guides**](https://arslanbasharat-o-o.github.io/NearByDrop/) · [**Download DMG**](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest) · [**Report Issue**](https://github.com/arslanbasharat-o-o/NearByDrop/issues) · [**Contributing**](CONTRIBUTING.md)
 
 Seamless, high-speed file transfer between macOS and Android. Nearbydrop brings Android Quick Share (Nearby Share), instant camera QR code pairing, and direct USB MTP file management into a single lightweight Mac menu bar utility — delivering an AirDrop-like experience for Android and Mac.
 

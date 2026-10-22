@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://arslanbasharat-o-o.github.io/NearByDrop/sitemap.xml
