@@ -1,4 +1,4 @@
-# Nearbydrop
+# Nearby Drop
 
 [![Build](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg)](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml)
 [![Release](https://img.shields.io/github/v/release/arslanbasharat-o-o/NearByDrop?color=blue)](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)
@@ -8,13 +8,13 @@
 
 [**Website & Guides**](https://arslanbasharat-o-o.github.io/NearByDrop/) · [**Download DMG**](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest) · [**Report Issue**](https://github.com/arslanbasharat-o-o/NearByDrop/issues) · [**Contributing**](CONTRIBUTING.md)
 
-Seamless, high-speed file transfer between macOS and Android. Nearbydrop brings Android Quick Share (Nearby Share), instant camera QR code pairing, and direct USB MTP file management into a single lightweight Mac menu bar utility — delivering an AirDrop-like experience for Android and Mac.
+Nearby Drop is an independent macOS menu bar app for transferring files between a Mac and Android devices that support Quick Share (formerly Nearby Share). It includes wireless sending and receiving, an inline QR scanner, and a USB MTP file browser. It is free to download and distributed under a proprietary license.
 
 Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-o).
 
 ## Key Features
 
-- **Wireless Quick Share Transfers**: Send and receive photos, videos, large archives, and links wirelessly over your local network at maximum Wi-Fi speeds (up to 500+ MB/s).
+- **Wireless Quick Share Transfers**: Send and receive photos, videos, archives, and links over a shared local network. Actual speed depends on the phone, Mac, signal, and network.
 - **Inline QR Camera Pairing**: Scan an Android device's Quick Share QR code directly with a live camera preview in the menu bar dropdown, or display a QR code for selected Mac files.
 - **Direct Android USB Storage (MTP)**: Built-in high-speed MTP file manager for browsing phone storage, downloading full directories, batch uploading, and Finder drag-and-drop over USB.
 - **macOS Finder Share Menu**: Send files, folders, or web links directly to nearby Android phones from Finder via the native Share Extension.
@@ -63,6 +63,7 @@ Settings → About displays the active version and provides manual update checks
 
 - Wireless speed depends on network capacity. A 5 GHz Wi-Fi or Wi-Fi 6 router delivers the best throughput.
 - Both devices must share a reachable local subnet. Guest networks or router client isolation can prevent discovery.
+- LTE-only phone-hotspot discovery has not been verified and may not show the Mac. Use a shared Wi-Fi network or USB MTP if discovery fails.
 - The Mac advertises itself on your local network while Nearbydrop is active. Google account/contact-restricted discovery is not supported.
 - See [release verification](RELEASE-VERIFICATION.md) for full hardware test coverage and limits.
 
