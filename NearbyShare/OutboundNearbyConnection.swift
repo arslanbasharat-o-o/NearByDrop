@@ -26,6 +26,7 @@ class OutboundNearbyConnection:NearbyConnection{
 	public var delegate:OutboundNearbyConnectionDelegate?
 	private var totalBytesToSend:Int64=0
 	private var totalBytesSent:Int64=0
+    private var lastProgressTime=DispatchTime.now()
 	private var cancelled:Bool=false
 	private var textPayloadID:Int64=0
 	private var resultReported=false
@@ -154,8 +155,8 @@ class OutboundNearbyConnection:NearbyConnection{
 	}
 	
 	override func handleConnectionClosure() {
-		guard !resultReported || currentState == .finishing else { return }
 		super.handleConnectionClosure()
+		guard !resultReported || currentState == .finishing else { return }
 		NSLog("[NearByDrop] Outbound connection closed in state: %@, lastError: %@", String(describing: currentState), String(describing: lastError))
 		if currentState == .finishing && disconnectionSent && lastError == nil {
 			currentState = .completed
@@ -209,8 +210,9 @@ class OutboundNearbyConnection:NearbyConnection{
 		var pkey=Securemessage_GenericPublicKey()
 		pkey.type = .ecP256
 		pkey.ecP256PublicKey=Securemessage_EcP256PublicKey()
-		pkey.ecP256PublicKey.x=NearbyConnection.fixedCoordinate32Bytes(pubKey.w.x)
-		pkey.ecP256PublicKey.y=NearbyConnection.fixedCoordinate32Bytes(pubKey.w.y)
+		// SecureMessage coordinates are signed integers; preserve the positive sign bit.
+		pkey.ecP256PublicKey.x=Data(pubKey.w.x.asSignedBytes())
+		pkey.ecP256PublicKey.y=Data(pubKey.w.y.asSignedBytes())
 		finish.publicKey=try pkey.serializedData()
 		finishFrame.messageData=try finish.serializedData()
 		ukeyClientFinishMsgData=try finishFrame.serializedData()
@@ -220,7 +222,7 @@ class OutboundNearbyConnection:NearbyConnection{
 		
 		var clientInit=Securegcm_Ukey2ClientInit()
 		clientInit.version=1
-		clientInit.random=Data.randomData(length: 32)
+		clientInit.random=try Data.randomData(length: 32)
 		clientInit.nextProtocol="AES_256_CBC-HMAC_SHA256"
 		var sha=SHA512()
 		sha.update(data: ukeyClientFinishMsgData!)
@@ -289,8 +291,8 @@ class OutboundNearbyConnection:NearbyConnection{
 		pairedEncryption.v1=Sharing_Nearby_V1Frame()
 		pairedEncryption.v1.type = .pairedKeyEncryption
 		pairedEncryption.v1.pairedKeyEncryption=Sharing_Nearby_PairedKeyEncryptionFrame()
-		pairedEncryption.v1.pairedKeyEncryption.secretIDHash=Data.randomData(length: 6)
-		pairedEncryption.v1.pairedKeyEncryption.signedData=Data.randomData(length: 72)
+		pairedEncryption.v1.pairedKeyEncryption.secretIDHash=try Data.randomData(length: 6)
+		pairedEncryption.v1.pairedKeyEncryption.signedData=try Data.randomData(length: 72)
 		if let qrKey=qrCodePrivateKey{
 			if let authKeyData=authKey?.data(), let signature = try? qrKey.signature(for: authKeyData) {
 				pairedEncryption.v1.pairedKeyEncryption.qrCodeHandshakeData=signature.rawRepresentation
@@ -333,7 +335,8 @@ class OutboundNearbyConnection:NearbyConnection{
 				let displayName = displayNames != nil && displayNames!.count==urlsToSend.count ? displayNames![index] : url.lastPathComponent
 				meta.name=OutboundNearbyConnection.sanitizeFileName(name: displayName)
 				let attrs=try FileManager.default.attributesOfItem(atPath: url.path)
-				meta.size=(attrs[FileAttributeKey.size] as! NSNumber).int64Value
+				guard let fileSize=attrs[FileAttributeKey.size] as? NSNumber else { throw NearbyError.inputOutput }
+				meta.size=fileSize.int64Value
 				let typeID=try? url.resourceValues(forKeys: [.typeIdentifierKey]).typeIdentifier
 				meta.mimeType="application/octet-stream"
 				if let typeID=typeID{
@@ -421,9 +424,7 @@ class OutboundNearbyConnection:NearbyConnection{
 	}
 	
 	private func sendNextFileChunk() throws{
-		if cancelled{
-			return
-		}
+		if cancelled || resultReported { return }
 		if currentTransfer==nil || currentTransfer?.currentOffset==currentTransfer?.totalBytes{
 			if var transfer=currentTransfer, transfer.handle != nil{
 				try transfer.handle?.close()
@@ -457,9 +458,10 @@ class OutboundNearbyConnection:NearbyConnection{
 
 		let fileBuffer:Data
 		if #available(macOS 10.15.4, *) {
-			guard let _fileBuffer=try currentTransfer!.handle!.read(upToCount: 512*1024) else{
+			guard let _fileBuffer=try currentTransfer!.handle!.read(upToCount: Int(min(512*1024, currentTransfer!.totalBytes-currentTransfer!.currentOffset))) else{
 				throw NearbyError.inputOutput
 			}
+			guard !_fileBuffer.isEmpty else { throw NearbyError.inputOutput }
 			fileBuffer=_fileBuffer
 		} else {
 			fileBuffer=currentTransfer!.handle!.readData(ofLength: 512*1024)
@@ -510,11 +512,12 @@ class OutboundNearbyConnection:NearbyConnection{
 			self.lastError=error
 			self.protocolError()
 		})
-		#if DEBUG
-		print("sent file chunk, current transfer: \(String(describing: currentTransfer))")
-		#endif
 		totalBytesSent+=Int64(fileBuffer.count)
-		delegate?.outboundConnection(connection: self, transferProgress: totalBytesToSend>0 ? Double(totalBytesSent)/Double(totalBytesToSend) : 0)
+        let now=DispatchTime.now()
+        if totalBytesSent == totalBytesToSend || now > lastProgressTime + .milliseconds(100) {
+            lastProgressTime=now
+            delegate?.outboundConnection(connection: self, transferProgress: totalBytesToSend>0 ? Double(totalBytesSent)/Double(totalBytesToSend) : 1)
+        }
 		
 	}
 	

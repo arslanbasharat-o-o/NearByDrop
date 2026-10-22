@@ -2,67 +2,67 @@
   "sourceLanguage" : "en",
   "strings" : {
     "0xp-rC-2gr.title" : {
-      "comment" : "Class = \"NSTextFieldCell\"; title = \"NearByDrop Created by Arslan Basharat\"; ObjectID = \"0xp-rC-2gr\";",
+      "comment" : "Class = \"NSTextFieldCell\"; title = \"Nearby Drop\"; ObjectID = \"0xp-rC-2gr\";",
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "NearByDrop Created by Arslan Basharat"
+            "value" : "Nearby Drop"
           }
         }
       },

@@ -1,11 +1,12 @@
 //
 //  Data+URLSafeBase64.swift
-//  NearByDrop Created by Arslan Basharat
+//  Nearby Drop — Created by Arslan Basharat
 //
 //
 
 import Foundation
 import CoreFoundation
+import os
 
 extension Data{
 	func urlSafeBase64EncodedString() -> String {
@@ -27,11 +28,17 @@ extension Data{
 		return subdata(in: count-numBytes..<count)
 	}
 	
-	static func randomData(length: Int) -> Data{
+	static func randomData(length: Int) throws -> Data{
+		guard length >= 0 else { throw NearbyError.protocolError("Invalid random-data length") }
 		var data=Data(count: length)
-		data.withUnsafeMutableBytes {
-			guard 0 == SecRandomCopyBytes(kSecRandomDefault, length, $0.baseAddress!) else { fatalError() }
+		let status=data.withUnsafeMutableBytes { bytes in
+			guard length == 0 else {
+				guard let baseAddress=bytes.baseAddress else { return errSecParam }
+				return SecRandomCopyBytes(kSecRandomDefault, length, baseAddress)
+			}
+			return errSecSuccess
 		}
+		guard status == errSecSuccess else { throw NearbyError.protocolError("Secure random generation failed") }
 		return data
 	}
 	
@@ -48,6 +55,18 @@ extension Data{
 		while (regularB64.count%4) != 0{
 			regularB64=regularB64+"="
 		}
-		return Data(base64Encoded: regularB64, options: .ignoreUnknownCharacters)
+		return Data(base64Encoded: regularB64)
 	}
+
+	func hexEncodedString() -> String {
+		return map { String(format: "%02x", $0) }.joined()
+	}
+}
+
+public enum NearbyLogger {
+    private static let logger = Logger(subsystem: "com.arslanbasharat.NearByDrop", category: "nearby")
+
+    public static func log(_ message: String) {
+        logger.info("\(message, privacy: .private)")
+    }
 }
