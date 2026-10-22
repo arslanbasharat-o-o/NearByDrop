@@ -14,10 +14,10 @@ app="$staging/Nearby Drop.app"
 ditto "$product" "$app"
 notices="$app/Contents/Resources/ThirdPartyLicenses"
 mkdir -p "$notices"
-cp UNLICENSE "$notices/NearbyDrop-UNLICENSE.txt"
+cp LICENSE "$notices/Nearbydrop-LICENSE.txt"
 cp Vendor/USB/licenses/*.txt "$notices/"
 cp Vendor/USB/README.md "$notices/USB.md"
-cp README.md "$notices/NearbyDrop-README.md"
+cp README.md "$notices/Nearbydrop-README.md"
 for dependency in ASN1 BigInt SwiftECC swift-qrcode-generator QRCode swift-protobuf SwiftImageReadWrite; do
     checkout="$derived/SourcePackages/checkouts/$dependency"
     if [ ! -d "$checkout" ] && [ "$dependency" = QRCode ]; then

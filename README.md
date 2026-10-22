@@ -1,10 +1,10 @@
-# NearbyDrop
+# Nearbydrop
 
 [![Build](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg)](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml)
 
-Move files between your Mac and Android without a cloud account. Nearby Drop brings Quick Share transfers, QR pairing, and Android USB storage into one macOS menu bar app.
+Move files between your Mac and Android without a cloud account. Nearbydrop brings Quick Share transfers, QR pairing, and Android USB storage into one macOS menu bar app.
 
-Maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-o), building practical interfaces and dependable automation.
+Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-o), building practical interfaces and dependable automation.
 
 ## What it does
 
@@ -28,7 +28,7 @@ Settings → About shows the version and provides a manual update check. Updates
 ## Use it
 
 1. Connect the Mac and phone to the same local network. Allow local network access when macOS asks.
-2. Open Nearby Drop from the menu bar. Use **Send** to choose files and a nearby device, or **Receive** to scan a sender’s Quick Share QR code.
+2. Open Nearbydrop from the menu bar. Use **Send** to choose files and a nearby device, or **Receive** to scan a sender’s Quick Share QR code.
 3. Accept incoming requests in the dropdown. Compare the pairing code when prompted.
 
 For USB, unlock the phone, select **File transfer / Android Auto** in its USB settings, then open the **USB** tab. Close other MTP apps if they are holding the connection.
@@ -67,12 +67,17 @@ A trusted device may skip the consent prompt. Device trust is a convenience base
 
 For a security concern, use [GitHub’s private vulnerability reporting](https://github.com/arslanbasharat-o-o/NearByDrop/security/advisories/new). For reproducible bugs, open an [issue](https://github.com/arslanbasharat-o-o/NearByDrop/issues/new). Remove personal file names, device identifiers, and pairing codes from logs before sharing them.
 
-## Credits and licenses
+## Copyright and License
 
-The app and protocol implementation build on [grishka/NearDrop](https://github.com/grishka/NearDrop), released into the public domain. This project retains the [Unlicense](UNLICENSE).
+**Nearbydrop** is proprietary software created by **Arslan Basharat**.  
+Copyright © 2026 Arslan Basharat. All rights reserved.
 
-Dependencies include [SwiftECC](https://github.com/leif-ibsen/SwiftECC), [BigInt](https://github.com/leif-ibsen/BigInt), [ASN1](https://github.com/leif-ibsen/ASN1), [SwiftProtobuf](https://github.com/apple/swift-protobuf), [QRCode](https://github.com/dagronf/qrcode), [SwiftImageReadWrite](https://github.com/dagronf/SwiftImageReadWrite), and [swift-qrcode-generator](https://github.com/dagronf/swift-qrcode-generator). Their own licenses apply.
+Unauthorized copying, distribution, modification, reverse engineering, decompilation, or commercial exploitation of this software and source code, in whole or in part, without express written permission is strictly prohibited. See [LICENSE](LICENSE) for details.
 
-USB support dynamically links [libmtp](https://github.com/libmtp/libmtp) and [libusb](https://github.com/libusb/libusb) under LGPL 2.1 or later. License texts, exact source versions, and replacement instructions are in [Vendor/USB](Vendor/USB/README.md). Release archives include third-party notices and corresponding USB source archives.
+### Third-Party Licenses
 
-Nearby Drop is an independent project and is not affiliated with Google or Apple. Quick Share and other product names belong to their respective owners.
+Third-party dependencies retain their respective open-source licenses:
+- [SwiftECC](https://github.com/leif-ibsen/SwiftECC), [BigInt](https://github.com/leif-ibsen/BigInt), [ASN1](https://github.com/leif-ibsen/ASN1), [SwiftProtobuf](https://github.com/apple/swift-protobuf), [QRCode](https://github.com/dagronf/qrcode), [SwiftImageReadWrite](https://github.com/dagronf/SwiftImageReadWrite), and [swift-qrcode-generator](https://github.com/dagronf/swift-qrcode-generator). Their respective licenses apply.
+- USB support dynamically links [libmtp](https://github.com/libmtp/libmtp) and [libusb](https://github.com/libusb/libusb) under LGPL 2.1 or later. License texts, exact source versions, and replacement instructions are in [Vendor/USB](Vendor/USB/README.md). Release archives include third-party notices and corresponding USB source archives.
+
+Nearbydrop is an independent project and is not affiliated with Google or Apple. Quick Share and other product names belong to their respective owners.
