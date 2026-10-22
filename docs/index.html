@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nearbydrop – High-Speed AirDrop Alternative for Mac &amp; Android</title>
+  <meta name="description" content="Wirelessly transfer files, photos, and folders between Android and Mac at hardware speeds (up to 500+ MB/s). Quick Share compatible, QR camera pairing, zero-cloud privacy, and native USB file manager.">
+  <meta name="keywords" content="airdrop for android, android to mac file transfer, quick share mac, nearby share macos, airdrop alternative android, mac android transfer, usb mtp mac, arslan basharat">
+  <meta name="author" content="Arslan Basharat">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/">
+  <meta property="og:title" content="Nearbydrop – High-Speed AirDrop Alternative for Mac &amp; Android">
+  <meta property="og:description" content="Ultra-fast zero-cloud file transfers between macOS and Android. Quick Share compatible, instant QR pairing, and native USB MTP manager.">
+  <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/icon.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Nearbydrop – AirDrop Alternative for Mac &amp; Android">
+  <meta name="twitter:description" content="Ultra-fast zero-cloud file transfers between macOS and Android. Quick Share compatible, instant QR pairing, and native USB MTP manager.">
+  <meta name="twitter:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/icon.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/icon.png">
+
+  <!-- Structured Data (JSON-LD) for Google Rich Snippets -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Nearbydrop",
+    "operatingSystem": "macOS 14 Sonoma or later (Apple silicon & Intel)",
+    "applicationCategory": "UtilitiesApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "High-speed, zero-cloud peer-to-peer file transfer and device bridge between macOS and Android devices.",
+    "softwareVersion": "2.3.0",
+    "author": {
+      "@type": "Person",
+      "name": "Arslan Basharat",
+      "url": "https://github.com/arslanbasharat-o-o"
+    },
+    "downloadUrl": "https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/Nearbydrop-2.3.0.dmg",
+    "featureList": [
+      "Quick Share wireless peer-to-peer file transfer",
+      "Inline QR camera scanner pairing",
+      "Direct USB MTP Android storage manager",
+      "Zero-cloud local network privacy with UKEY2 encryption",
+      "Native macOS menu bar interface"
+    ]
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #090a0f;
+      --surface: #12151f;
+      --surface-border: #1f2536;
+      --text-main: #f3f5f9;
+      --text-muted: #9aa3b8;
+      --accent: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.25);
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; transition: opacity 0.2s; }
+    a:hover { opacity: 0.85; }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    header {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--surface-border);
+      position: sticky;
+      top: 0;
+      background: rgba(9, 10, 15, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+    .nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .brand img {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      font-size: 0.95rem;
+    }
+    .nav-links a { color: var(--text-muted); font-weight: 500; }
+    .nav-links a:hover { color: var(--text-main); }
+    .btn-github {
+      background: #24292e;
+      color: #fff !important;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid #3b434d;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 90px 0 60px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: clamp(1.1rem, 2vw, 1.35rem);
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto 36px;
+    }
+    .cta-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 24px var(--accent-glow);
+    }
+    .btn-primary:hover { background: var(--accent-hover); opacity: 1; }
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text-main);
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      border: 1px solid var(--surface-border);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hero-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Features Grid */
+    .section-title {
+      text-align: center;
+      margin: 80px 0 40px;
+    }
+    .section-title h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .section-title p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      padding: 32px 28px;
+      border-radius: 16px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: #3b82f655;
+    }
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+    .feature-card h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    /* Comparison Table */
+    .comparison-wrapper {
+      overflow-x: auto;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      margin: 40px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--surface-border);
+    }
+    th {
+      background: #161b29;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    th.highlight, td.highlight {
+      background: rgba(59, 130, 246, 0.08);
+      color: #60a5fa;
+      font-weight: 600;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    /* FAQ Section */
+    .faq-list {
+      max-width: 800px;
+      margin: 0 auto 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .faq-item {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      padding: 22px 26px;
+    }
+    .faq-item h3 {
+      font-size: 1.15rem;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    .faq-item p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Blog / Guides preview */
+    .blog-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-bottom: 80px;
+    }
+    .blog-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .blog-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #60a5fa;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .blog-card h3 {
+      font-size: 1.15rem;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+    .blog-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--surface-border);
+      padding: 40px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    footer a { color: var(--text-muted); }
+    footer a:hover { color: var(--text-main); }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container nav-inner">
+      <div class="brand">
+        <img src="assets/icon.png" alt="Nearbydrop logo">
+        <span>Nearbydrop</span>
+      </div>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#compare">Compare</a>
+        <a href="#guides">Guides</a>
+        <a href="#faq">FAQ</a>
+        <a class="btn-github" href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener">
+          <svg height="18" viewBox="0 0 16 16" width="18" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+          Star on GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero container">
+      <div class="badge">🚀 Version 2.3.0 Released</div>
+      <h1>The High-Speed AirDrop Alternative for Mac &amp; Android.</h1>
+      <p>Wirelessly transfer photos, 4K videos, and entire folders between your Mac and Android phone at hardware speeds up to 500+ MB/s. Zero cloud, end-to-end encrypted, and completely free.</p>
+      
+      <div class="cta-group">
+        <a class="btn-primary" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/Nearbydrop-2.3.0.dmg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Download for Mac (.DMG)
+        </a>
+        <a class="btn-secondary" href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener">
+          View Source &amp; Star ⭐
+        </a>
+      </div>
+      <div class="hero-meta">Universal Binary · Apple silicon (M1–M4) &amp; Intel · macOS 14 Sonoma or newer</div>
+    </section>
+
+    <section id="features" class="container">
+      <div class="section-title">
+        <h2>Engineered for Effortless Speed</h2>
+        <p>No subscriptions, no accounts, and no uploading your files to third-party servers.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <span class="feature-icon">⚡</span>
+          <h3>Quick Share Protocol</h3>
+          <p>Native compatibility with Android Quick Share. Transfers stream directly over your local Wi-Fi at up to 500+ MB/s with full gigabit throughput.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">📷</span>
+          <h3>Inline QR Camera Scanner</h3>
+          <p>Scan your phone's Quick Share QR code directly using your Mac’s camera in the menu bar dropdown, or display a QR code for selected files.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🔌</span>
+          <h3>Direct USB MTP Manager</h3>
+          <p>Plug in your Android phone via USB-C for fast wired file browsing, folder downloads, and batch transfers without annoying crashes.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🔒</span>
+          <h3>Zero-Cloud Data Boundary</h3>
+          <p>All transfers use UKEY2 elliptic-curve cryptographic handshakes. Files stream strictly between devices on your local network or cable.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">📂</span>
+          <h3>Finder Share Extension</h3>
+          <p>Right-click any file, photo, or directory in macOS Finder and click Share → Nearbydrop to beam it to your Android device instantly.</p>
+        </div>
+
+        <div class="feature-card">
+          <span class="feature-icon">🍎</span>
+          <h3>Lightweight Menu Bar App</h3>
+          <p>Built purely in native SwiftUI. Stays unobtrusively in your macOS menu bar with real-time transfer progress and auto-closing popovers.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="compare" class="container">
+      <div class="section-title">
+        <h2>How Nearbydrop Compares</h2>
+        <p>Why users choose Nearbydrop over cloud storage, Bluetooth, or legacy tools.</p>
+      </div>
+
+      <div class="comparison-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th class="highlight">Nearbydrop</th>
+              <th>Apple AirDrop</th>
+              <th>Cloud (Drive / Dropbox)</th>
+              <th>Bluetooth</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Android &amp; Mac Support</strong></td>
+              <td class="highlight">✅ Yes (Two-way)</td>
+              <td>❌ Apple devices only</td>
+              <td>✅ Yes</td>
+              <td>⚠️ Unreliable / Slow</td>
+            </tr>
+            <tr>
+              <td><strong>Transfer Speeds</strong></td>
+              <td class="highlight"><strong>Up to 500+ MB/s</strong></td>
+              <td>Up to 400 MB/s</td>
+              <td>Limited by upload speed</td>
+              <td>~1–2 MB/s</td>
+            </tr>
+            <tr>
+              <td><strong>Account / Login Required</strong></td>
+              <td class="highlight">❌ None (Zero accounts)</td>
+              <td>Apple ID required</td>
+              <td>Google / Dropbox account</td>
+              <td>None</td>
+            </tr>
+            <tr>
+              <td><strong>Privacy &amp; Data Boundary</strong></td>
+              <td class="highlight">🔒 100% Local / P2P</td>
+              <td>Local</td>
+              <td>Uploaded to remote servers</td>
+              <td>Local</td>
+            </tr>
+            <tr>
+              <td><strong>Cable / USB Support</strong></td>
+              <td class="highlight">✅ Built-in MTP Explorer</td>
+              <td>❌ No</td>
+              <td>❌ No</td>
+              <td>❌ No</td>
+            </tr>
+            <tr>
+              <td><strong>Cost</strong></td>
+              <td class="highlight">Free &amp; Open</td>
+              <td>Free</td>
+              <td>Monthly storage fees</td>
+              <td>Free</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="guides" class="container">
+      <div class="section-title">
+        <h2>Guides &amp; Articles</h2>
+        <p>Learn how to get the fastest wireless and wired transfer speeds between your devices.</p>
+      </div>
+
+      <div class="blog-cards">
+        <article class="blog-card">
+          <div>
+            <div class="blog-tag">Tutorial</div>
+            <h3>How to Transfer Files from Android to Mac (Fastest Methods in 2026)</h3>
+            <p>Step-by-step tutorial comparing Quick Share Wi-Fi, QR code pairing, and direct USB-C file transfer.</p>
+          </div>
+          <a href="blog/how-to-transfer-files-mac-android.html">Read Tutorial →</a>
+        </article>
+
+        <article class="blog-card">
+          <div>
+            <div class="blog-tag">Comparison</div>
+            <h3>The Best AirDrop Alternative for Android and macOS</h3>
+            <p>A deep dive into why cross-platform file transfers have historically been broken and how peer-to-peer protocols solve it.</p>
+          </div>
+          <a href="blog/airdrop-alternative-for-android.html">Read Comparison →</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="faq" class="container">
+      <div class="section-title">
+        <h2>Frequently Asked Questions</h2>
+        <p>Everything you need to know about Nearbydrop.</p>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <h3>Can I AirDrop files from Android to Mac?</h3>
+          <p>Apple's native AirDrop is strictly restricted to Apple hardware (iPhone, iPad, Mac). Nearbydrop bridges this exact gap by implementing the Android Quick Share protocol on macOS, enabling wireless drag-and-drop transfers with any modern Android device.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Do I need an active internet connection to transfer files?</h3>
+          <p>No. Nearbydrop operates completely offline over your local Wi-Fi network, phone mobile hotspot, or direct USB cable. No data ever touches the cloud or outside servers.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Which Android devices and versions are supported?</h3>
+          <p>Any Android phone or tablet running Android 6.0 or newer with Google Play Services (Quick Share / Nearby Share) or running modern Samsung Galaxy, Google Pixel, Xiaomi, OnePlus, and Motorola devices.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>How secure is the transfer?</h3>
+          <p>Nearbydrop uses the UKEY2 cryptographic protocol with elliptic-curve Diffie-Hellman (P-256) handshakes to encrypt data in transit and confirm matching PIN codes on both screens before any data exchange begins.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>How do I install the app on macOS?</h3>
+          <p>Download the official <code>Nearbydrop-2.3.0.dmg</code> from GitHub Releases, open it, and drag the app into your Applications folder. Because the app is ad-hoc signed, on first run you can approve it via macOS System Settings → Privacy &amp; Security → Open Anyway.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases">Releases</a>
+        <a href="https://github.com/arslanbasharat-o-o/NearByDrop/issues">Issue Tracker</a>
+        <a href="https://github.com/arslanbasharat-o-o/NearByDrop/blob/main/CONTRIBUTING.md">Contributing</a>
+      </div>
+      <p>Nearbydrop is created and engineered by <strong><a href="https://github.com/arslanbasharat-o-o">Arslan Basharat</a></strong>. Copyright &copy; 2026. All rights reserved.</p>
+    </div>
+  </footer>
+
+</body>
+</html>
