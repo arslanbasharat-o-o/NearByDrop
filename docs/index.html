@@ -223,11 +223,14 @@
   </header>
 
   <!-- Hero Section: High SEO Keyword Density (Nearby Share, Near Drop, Nearby Drop, AirDrop for Android) -->
-  <section class="relative pt-16 pb-20 md:pt-28 md:pb-28 border-b border-theme-border overflow-hidden z-10">
-    <div class="max-w-7xl mx-auto px-5 sm:px-8">
+  <section id="hero-section" class="relative pt-16 pb-20 md:pt-28 md:pb-28 border-b border-theme-border overflow-hidden z-10 select-none">
+    <!-- Halftone Wordmark Interactive Canvas (21st.dev Component in Hero) -->
+    <canvas id="hwf-canvas" class="absolute inset-0 w-full h-full block pointer-events-auto z-0" aria-hidden="true"></canvas>
+
+    <div class="max-w-7xl mx-auto px-5 sm:px-8 relative z-10 pointer-events-none">
       
       <!-- SEO Category Badge -->
-      <div class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-neutral-400 border border-theme-border px-3 py-1 bg-theme-surface mb-8 flex-wrap">
+      <div class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-neutral-400 border border-theme-border px-3 py-1 bg-theme-surface mb-8 flex-wrap pointer-events-auto">
         <span class="w-1.5 h-1.5 bg-emerald-400 rounded-none"></span>
         <span>GOOGLE NEARBY SHARE &amp; QUICK SHARE RECEIVER FOR MACOS • 100% OFFLINE</span>
       </div>
@@ -247,7 +250,7 @@
       </div>
 
       <!-- CTA Buttons -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-10">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-10 pointer-events-auto">
         <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/Nearbydrop-2.3.0.dmg"
            class="inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-white hover:bg-neutral-200 text-black font-mono text-sm font-semibold tracking-wider transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -262,7 +265,7 @@
       </div>
 
       <!-- Real 1-Click Terminal Install Snippet (Interactive Copy) -->
-      <div class="max-w-2xl p-4 bg-theme-surface border border-theme-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono text-xs mb-10">
+      <div class="max-w-2xl p-4 bg-theme-surface border border-theme-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono text-xs mb-10 pointer-events-auto">
         <div class="flex items-center gap-2 overflow-x-auto text-neutral-300 w-full sm:w-auto">
           <span class="text-neutral-600 select-none">$</span>
           <code id="cmdText" class="text-neutral-200 select-all">curl -fsSL https://raw.githubusercontent.com/arslanbasharat-o-o/NearByDrop/main/scripts/install.sh | sh</code>
@@ -273,7 +276,7 @@
       </div>
 
       <!-- Target Keywords Cloud (Organic SEO Search Terms) -->
-      <div class="flex flex-wrap gap-2 pt-4 border-t border-theme-border/60 font-mono text-[11px] text-neutral-400">
+      <div class="flex flex-wrap gap-2 pt-4 border-t border-theme-border/60 font-mono text-[11px] text-neutral-400 pointer-events-auto">
         <span class="text-neutral-600 font-semibold uppercase tracking-wider mr-2">// SEARCH INDEX:</span>
         <span class="px-2 py-0.5 border border-theme-border bg-theme-surface">nearby share</span>
         <span class="px-2 py-0.5 border border-theme-border bg-theme-surface">near drop</span>
@@ -490,66 +493,89 @@
   <section id="compare" class="py-20 border-b border-theme-border relative z-10">
     <div class="max-w-7xl mx-auto px-5 sm:px-8">
       
-      <div class="mb-12 border-b border-theme-border pb-6">
+      <div class="mb-8 border-b border-theme-border pb-6">
         <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 04 FEATURE &amp; PROTOCOL COMPARISON</span>
         <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
-          Nearby Drop vs. Alternatives
+          Nearby Drop vs. Original NearDrop &amp; AirDrop
         </h2>
+      </div>
+
+      <!-- Migration Callout for NearDrop Users -->
+      <div class="mb-8 p-5 bg-theme-surface border border-theme-border font-mono text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="flex items-start gap-3">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 mt-1 flex-shrink-0 animate-pulse"></span>
+          <div>
+            <span class="text-white font-bold block mb-1">MIGRATING FROM ORIGINAL NEARDROP? ZERO SETUP DROP-IN UPGRADE.</span>
+            <p class="text-neutral-400 font-sans text-xs leading-relaxed max-w-3xl">
+              Nearby Drop uses the same wire protocol as Grishka's original NearDrop, but solves its biggest limitations: adds two-way Mac-to-Android file sending, a direct high-speed USB-C MTP manager for networks that block peer-to-peer Wi-Fi, and active support for macOS 14 Sonoma &amp; 15 Sequoia.
+            </p>
+          </div>
+        </div>
+        <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/Nearbydrop-2.3.0.dmg" class="flex-shrink-0 px-4 py-2 bg-white text-black font-semibold text-xs tracking-wider uppercase hover:bg-neutral-200 transition-colors">
+          UPGRADE TO v2.3.0 →
+        </a>
       </div>
 
       <div class="overflow-x-auto border border-theme-border">
         <table class="w-full text-left font-mono text-xs">
           <thead>
             <tr class="border-b border-theme-border bg-theme-surface text-neutral-400">
-              <th class="p-4 uppercase">FEATURE / SPECIFICATION</th>
-              <th class="p-4 uppercase text-white bg-theme-elevated border-x border-theme-border">NEARBY DROP (NEARDROP)</th>
+              <th class="p-4 uppercase">FEATURE / CAPABILITY</th>
+              <th class="p-4 uppercase text-white bg-theme-elevated border-x border-theme-border">NEARBY DROP (v2.3.0)</th>
+              <th class="p-4 uppercase text-neutral-300">ORIGINAL NEARDROP (GRISHKA)</th>
               <th class="p-4 uppercase">APPLE AIRDROP</th>
               <th class="p-4 uppercase">GOOGLE DRIVE / CLOUD</th>
-              <th class="p-4 uppercase">BLUETOOTH</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-theme-border bg-theme-black text-neutral-300">
             <tr>
-              <td class="p-4 font-sans text-xs">Android to macOS Support</td>
-              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">Native Quick Share Wire</td>
-              <td class="p-4 text-neutral-600">Apple Hardware Only</td>
+              <td class="p-4 font-sans text-xs">Android to macOS Receiving</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">✓ Native Quick Share (25–80 MB/s)</td>
+              <td class="p-4 text-emerald-400">✓ Native Quick Share (25–80 MB/s)</td>
+              <td class="p-4 text-neutral-600">✗ Apple Hardware Only</td>
               <td class="p-4 text-neutral-400">Manual Web Upload</td>
-              <td class="p-4 text-neutral-400">Unreliable Pair</td>
             </tr>
             <tr>
-              <td class="p-4 font-sans text-xs">Offline Without Internet</td>
-              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">100% Offline (LAN / Hotspot)</td>
-              <td class="p-4 text-emerald-400">100% Offline (AWDL)</td>
-              <td class="p-4 text-rose-400">Impossible without Internet</td>
-              <td class="p-4 text-emerald-400">Offline</td>
+              <td class="p-4 font-sans text-xs">Mac to Android Sending (Reverse)</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">✓ Built-in QR Local Wi-Fi Stream</td>
+              <td class="p-4 text-rose-400">✗ Receive-only (Cannot send)</td>
+              <td class="p-4 text-neutral-600">✗ Apple Hardware Only</td>
+              <td class="p-4 text-neutral-400">Upload to cloud then share link</td>
             </tr>
             <tr>
-              <td class="p-4 font-sans text-xs">Real-World Throughput</td>
-              <td class="p-4 font-bold text-white bg-theme-surface border-x border-theme-border">25–80 MB/s (Wi-Fi) • 110 MB/s (USB)</td>
-              <td class="p-4 text-neutral-300">30–70 MB/s (Wi-Fi)</td>
-              <td class="p-4 text-neutral-500">Capped by Home Upload</td>
-              <td class="p-4 text-rose-400">1.5 MB/s (Painful)</td>
+              <td class="p-4 font-sans text-xs">Public / Hotel / Campus Wi-Fi Mode</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">✓ Wired USB-C MTP (Bypasses AP Isolation)</td>
+              <td class="p-4 text-rose-400">✗ Broken (Blocked by AP Isolation)</td>
+              <td class="p-4 text-emerald-400">✓ Works (Peer-to-Peer AWDL)</td>
+              <td class="p-4 text-neutral-400">Requires Internet login</td>
             </tr>
             <tr>
-              <td class="p-4 font-sans text-xs">Phone Companion App</td>
-              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">None (Uses System Share Sheet)</td>
-              <td class="p-4 text-neutral-400">System Built-in</td>
-              <td class="p-4 text-neutral-400">Requires App Install</td>
-              <td class="p-4 text-neutral-400">System Built-in</td>
+              <td class="p-4 font-sans text-xs">Wired USB-C High-Speed Transfers</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">✓ Built-in (libmtp / 80–150 MB/s)</td>
+              <td class="p-4 text-rose-400">✗ No USB Support</td>
+              <td class="p-4 text-neutral-600">✗ No</td>
+              <td class="p-4 text-neutral-600">✗ No</td>
             </tr>
             <tr>
-              <td class="p-4 font-sans text-xs">Wired USB-C MTP Mode</td>
-              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">Built-in (libmtp / libusb)</td>
-              <td class="p-4 text-neutral-600">No</td>
-              <td class="p-4 text-neutral-600">No</td>
-              <td class="p-4 text-neutral-600">No</td>
+              <td class="p-4 font-sans text-xs">Custom Download Folder &amp; Settings</td>
+              <td class="p-4 font-bold text-emerald-400 bg-theme-surface border-x border-theme-border">✓ Custom folder, themes, sounds, haptics</td>
+              <td class="p-4 text-neutral-400">Fixed to ~/Downloads (No Settings UI)</td>
+              <td class="p-4 text-neutral-400">Fixed to ~/Downloads</td>
+              <td class="p-4 text-neutral-400">Manual download</td>
+            </tr>
+            <tr>
+              <td class="p-4 font-sans text-xs">macOS 14 Sonoma &amp; 15 Sequoia Ready</td>
+              <td class="p-4 font-bold text-white bg-theme-surface border-x border-theme-border">✓ Universal (Apple Silicon &amp; Intel)</td>
+              <td class="p-4 text-neutral-400">Infrequent updates / legacy code</td>
+              <td class="p-4 text-neutral-300">System Built-in</td>
+              <td class="p-4 text-neutral-400">Browser / Electron app</td>
             </tr>
             <tr>
               <td class="p-4 font-sans text-xs">Cost &amp; Licensing</td>
               <td class="p-4 font-bold text-white bg-theme-surface border-x border-theme-border">Free / GPL-3.0 Open Source</td>
+              <td class="p-4 text-white">Free / GPL-3.0 Open Source</td>
               <td class="p-4 text-neutral-400">Proprietary / Free</td>
-              <td class="p-4 text-neutral-400">Monthly Subscriptions</td>
-              <td class="p-4 text-neutral-400">Free</td>
+              <td class="p-4 text-neutral-400">Paid Monthly Storage Tiers</td>
             </tr>
           </tbody>
         </table>
@@ -631,14 +657,10 @@
     </div>
   </section>
 
-  <!-- Halftone Wordmark Footer (21st.dev Component) -->
-  <footer id="hwf-footer" class="relative w-full overflow-hidden bg-theme-black border-t border-theme-border text-neutral-300 select-none min-h-[500px]">
-    <!-- Canvas for halftone dots and film grain -->
-    <canvas id="hwf-canvas" class="absolute inset-0 w-full h-full block pointer-events-auto" aria-hidden="true"></canvas>
-    <span class="sr-only">nearby drop</span>
-    
+  <!-- Site Footer -->
+  <footer id="site-footer" class="relative w-full bg-theme-black border-t border-theme-border text-neutral-300">
     <!-- Top content layer -->
-    <div class="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 sm:p-10 font-mono text-[11px] tracking-wider uppercase">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 sm:p-10 font-mono text-[11px] tracking-wider uppercase">
       <div>
         <div class="flex items-center gap-2 mb-2 font-bold text-white text-xs">
           <img src="assets/icon.png" alt="Logo" class="w-5 h-5 rounded">
@@ -678,7 +700,7 @@
     </div>
 
     <!-- Rule and Back to Top -->
-    <div class="relative z-10 flex justify-between items-center px-6 sm:px-10 py-4 border-t border-white/10 font-mono text-[11px] tracking-wider uppercase text-neutral-500">
+    <div class="max-w-7xl mx-auto relative z-10 flex justify-between items-center px-6 sm:px-10 py-4 border-t border-white/10 font-mono text-[11px] tracking-wider uppercase text-neutral-500">
       <span>ENGINEERED BY ARSLAN BASHARAT</span>
       <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="hover:text-white transition-colors flex items-center gap-1 cursor-pointer">
         <span>BACK TO TOP</span>
@@ -831,9 +853,9 @@
     showIssue('not-found');
     runCompatibilityCheck();
 
-    // Halftone Wordmark Footer Canvas (21st.dev interactive spring canvas)
-    (function initHalftoneFooter() {
-      const root = document.getElementById('hwf-footer');
+    // Halftone Wordmark Hero Background Canvas (Option 1: Subtle Hero Background)
+    (function initHalftoneHero() {
+      const root = document.getElementById('hero-section');
       const canvas = document.getElementById('hwf-canvas');
       if (!root || !canvas) return;
       const ctx = canvas.getContext('2d');
@@ -843,13 +865,13 @@
       const wordmark = "nearby drop";
       const fontFamily = '"Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif';
       const fontWeight = 800;
-      const dotGap = 6;
-      const radius = 85;
-      const crop = 0.22;
-      const grain = 0.4;
+      const dotGap = 7;
+      const radius = 95;
+      const crop = 0.08;
+      const grain = 0.35;
       const bg = '#090a0f';
-      const ink = [226, 232, 240];
-      const warm = [16, 185, 129]; // emerald green accent
+      const ink = [38, 45, 58]; // subtle dark slate resting dots for razor-sharp text contrast
+      const warm = [16, 185, 129]; // bright neon emerald glow on mouse push
 
       let w = 0, h = 0, dpr = 1;
       let px = -1e5, py = -1e5;
@@ -870,7 +892,7 @@
         const d2 = dx * dx + dy * dy;
         if (r > 0 && d2 < r * r) {
           const d = Math.sqrt(d2) + 0.001;
-          const f = (1 - d / r) * 2.6;
+          const f = (1 - d / r) * 2.8;
           vx += (dx / d) * f;
           vy += (dy / d) * f;
         }
@@ -995,7 +1017,7 @@
                 Math.round(ink[0] + (warm[0] - ink[0]) * k) + ',' +
                 Math.round(ink[1] + (warm[1] - ink[1]) * k) + ',' +
                 Math.round(ink[2] + (warm[2] - ink[2]) * k) + ')'
-            : '#e2e8f0';
+            : 'rgb(' + ink[0] + ',' + ink[1] + ',' + ink[2] + ')';
 
           ctx.beginPath();
           ctx.arc(x, y, dots[j + 6], 0, 6.2832);
@@ -1003,7 +1025,7 @@
         }
 
         if (grainTile && grain > 0) {
-          ctx.globalAlpha = Math.min(1, grain) * 0.09;
+          ctx.globalAlpha = Math.min(1, grain) * 0.08;
           ctx.globalCompositeOperation = 'overlay';
           const pattern = ctx.createPattern(grainTile, 'repeat');
           if (pattern) {
@@ -1046,7 +1068,7 @@
       });
 
       root.addEventListener('pointerdown', (e) => {
-        if (reduced || e.target.closest('a, button')) return;
+        if (reduced || e.target.closest('a, button, input, code')) return;
         const p = toLocal(e);
         ring = { x: p[0], y: p[1], t: performance.now() };
         wake();
