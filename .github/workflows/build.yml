@@ -17,8 +17,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [macos-26, macos-26-intel]
+        # macOS 26 Intel can hang in ibtool: actions/runner-images#14751.
+        runner: [macos-26, macos-15-intel]
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
@@ -50,6 +52,7 @@ jobs:
     name: Universal app
     needs: test
     runs-on: macos-26
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
