@@ -26,3 +26,8 @@ skills/
 skills-lock.json
 AGENTS.md
 
+
+build-*/
+dist/
+*.log
+*.xcresult/

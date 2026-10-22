@@ -18,15 +18,32 @@ struct TransferHistoryItem: Codable, Identifiable, Hashable {
     let fileURL: URL?
 }
 
+struct CompletedTransferInfo: Identifiable, Equatable {
+    let id: String
+    let fileName: String
+    let fileCount: Int
+    let fileURL: URL?
+    let destinationPath: String
+}
+
 final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     enum Tab: String, CaseIterable { case send = "Send", receive = "Receive", history = "Transfers", usb = "USB" }
-    @Published var tab: Tab = .send
+    @Published var tab: Tab = .receive {
+        didSet {
+            scanning = false
+            if tab == .send || showingQR {
+                startSendingDiscovery()
+            } else {
+                stopSendingDiscovery()
+            }
+        }
+    }
     @Published var urls: [URL] = []
     @Published var devices: [RemoteDeviceInfo] = []
     @Published var advertisement = NearbyConnectionManager.AdvertisementState.idle
-    @Published var scanning = false
     @Published var qrImage: NSImage?
     @Published var showingQR = false
+    @Published var scanning = false
     @Published var waitingForQR = false
     @Published var qrTransferStatus: String = "Waiting for phone to scan…"
     @Published var incoming: [String: TransferInfo] = [:]
@@ -37,6 +54,37 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var sending = false
     @Published var recipient = ""
     @Published var error: String?
+    @Published var lastCompletedTransfer: CompletedTransferInfo?
+    @Published var lastTransferError: String?
+
+    @Published var incomingProgress: [String: ReceiveProgress] = [:]
+    var qrTransferID: String?
+
+    func updateIncomingProgress(id: String, bytesTransferred: Int64, totalBytes: Int64) {
+        guard incoming[id] != nil else { return }
+        var progress = incomingProgress[id] ?? ReceiveProgress()
+        progress.bytes = bytesTransferred
+        progress.total = totalBytes
+        progress.updated = Date()
+        incomingProgress[id] = progress
+    }
+
+    func cancelIncomingTransfer(_ id: String) {
+        NearbyConnectionManager.shared.cancelIncomingTransfer(id: id)
+        incoming.removeValue(forKey: id)
+        incomingProgress.removeValue(forKey: id)
+        accepted.remove(id)
+        clearCompletedTransfer()
+        FeedbackManager.shared.vibrateTap()
+    }
+
+    func clearCompletedTransfer() {
+        withAnimation {
+            lastCompletedTransfer = nil
+            lastTransferError = nil
+            if incoming.isEmpty { incomingProgress.removeAll() }
+        }
+    }
 
     // Folder & relative path transfers
     @Published var displayNames: [String] = []
@@ -61,36 +109,37 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         return downloadDirectory.lastPathComponent
     }
     @Published var isChoosingDirectory: Bool = false
+    @Published var isChoosingFiles: Bool = false
     @Published var launchAtLogin: Bool = false
-    @Published var menuBarOnly: Bool = UserDefaults.standard.bool(forKey: "menuBarOnly") {
-        didSet {
-            UserDefaults.standard.set(menuBarOnly, forKey: "menuBarOnly")
-            if menuBarOnly {
-                window?.close()
-            }
-        }
-    }
     @Published var trustedDevices: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? [])
     @Published var history: [TransferHistoryItem] = []
     private static let historyKey = "transferHistory"
 
     let usb = USBModel()
     var deviceName: String { NearbyConnectionManager.currentDeviceName }
-    weak var window: NSWindow?
     var onConsent: ((String, Bool) -> Void)?
     private var chosenID: String?
     private var scopedURLs: [URL] = []
-    private var scopedDownloadDirectory: URL?
-    private var scopedDownloadDirectoryAccessed = false
     private var qrExpiry: DispatchWorkItem?
     private var timeout: DispatchWorkItem?
     private var adDebounce: DispatchWorkItem?
+    @Published private var pendingTrust: [String: Bool] = [:]
+
+    private var isDiscoveringDevices = false
+    func startSendingDiscovery() {
+        guard !isDiscoveringDevices else { return }
+        isDiscoveringDevices = true
+        NearbyConnectionManager.shared.startDeviceDiscovery()
+    }
+    func stopSendingDiscovery() {
+        guard isDiscoveringDevices else { return }
+        isDiscoveringDevices = false
+        NearbyConnectionManager.shared.stopDeviceDiscovery()
+    }
 
     deinit {
+        stopSendingDiscovery()
         scopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
-        if scopedDownloadDirectoryAccessed {
-            scopedDownloadDirectory?.stopAccessingSecurityScopedResource()
-        }
         NearbyConnectionManager.shared.removeShareExtensionDelegate(self)
     }
 
@@ -122,7 +171,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         super.init()
         loadHistory()
         updateLaunchAtLoginStatus()
-        NearbyConnectionManager.shared.startDeviceDiscovery()
         NearbyConnectionManager.shared.addShareExtensionDelegate(self)
     }
 
@@ -184,32 +232,27 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         guard !sending, !usb.busy else { return }
         scanning = false
         showingQR = false
+        isChoosingFiles = true
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = true
         panel.canChooseDirectories = true
         panel.canChooseFiles = true
         panel.prompt = "Choose"
         let handler: (NSApplication.ModalResponse) -> Void = { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isChoosingFiles = false
+                NotificationCenter.default.post(name: .didFinishChoosingFiles, object: nil)
+            }
             guard result == .OK, let self else { return }
             self.setFiles(panel.urls)
             FeedbackManager.shared.vibrateClick()
-            self.window?.makeKeyAndOrderFront(nil)
             if let device = device {
                 self.send(to: device)
             } else if thenShowQR {
                 self.showQR()
             }
         }
-        if let window = self.window, window.isVisible, window.attachedSheet == nil {
-            panel.beginSheetModal(for: window, completionHandler: handler)
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-            panel.begin { result in
-                DispatchQueue.main.async {
-                    handler(result)
-                }
-            }
-        }
+        panel.presentForInteraction(completion: handler)
     }
     func send(to device: RemoteDeviceInfo) {
         guard !sending, !urls.isEmpty, let id = device.id else { return }
@@ -243,6 +286,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         guard !urls.isEmpty, !sending else { return }
 
         NearbyConnectionManager.shared.clearQrCodeKey()
+        startSendingDiscovery()
         let qrKey = NearbyConnectionManager.shared.generateQrCodeKey()
         let quickShareURL = "https://quickshare.google/qrcode#key=\(qrKey)"
 
@@ -261,6 +305,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
 
     func dismissQR() {
+        if tab != .send { stopSendingDiscovery() }
         NearbyConnectionManager.shared.clearQrCodeKey()
         showingQR = false
         qrImage = nil
@@ -268,9 +313,9 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
     func scan(_ value: String) -> String? {
         guard let url = URL(string: value) else { return "Invalid QR code" }
-        lastScannedURL = url
         do {
             try NearbyConnectionManager.shared.receiveQRCode(value)
+            lastScannedURL = url
             scanning = false
             waitingForQR = true
             qrStatus = .connecting(sender: "Phone")
@@ -286,7 +331,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             }
             qrExpiry = expiry
             DispatchQueue.main.asyncAfter(deadline: .now() + 120, execute: expiry)
-            window?.makeKeyAndOrderFront(nil)
             return nil
         } catch { return Self.errorMessage(error) }
     }
@@ -299,11 +343,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
     func resetQRTransfer() {
         stopQRReceive()
-        for id in incoming.keys {
-            onConsent?(id, false)
-        }
-        incoming.removeAll()
-        accepted.removeAll()
+        if let id = qrTransferID { cancelIncomingTransfer(id) }
+        qrTransferID = nil
         qrStatus = .idle
     }
     func addDevice(device: RemoteDeviceInfo) {
@@ -325,40 +366,62 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             }
         }
     }
-    func connectionWasEstablished(pinCode: String) { sendMessage = "Confirm code \(pinCode) on \(recipient)" }
+    func connectionWasEstablished(pinCode: String) {
+        DispatchQueue.main.async {
+            self.sendMessage = "Confirm code \(pinCode) on \(self.recipient)"
+        }
+    }
     func connectionFailed(with error: Error) {
-        timeout?.cancel()
-        sending = false
-        chosenID = nil
-        self.error = Self.errorMessage(error)
-        sendMessage = ""
-        resetSpeedTracking()
-        FeedbackManager.shared.playError()
-        FeedbackManager.shared.vibrateTap()
+        DispatchQueue.main.async {
+            guard self.sending else { return }
+            self.timeout?.cancel()
+            self.sending = false
+            self.chosenID = nil
+            self.error = Self.errorMessage(error)
+            self.sendMessage = ""
+            self.resetSpeedTracking()
+            FeedbackManager.shared.playError()
+            FeedbackManager.shared.vibrateTap()
+        }
     }
     func transferAccepted() {
-        timeout?.cancel()
-        sendMessage = "Sending to \(recipient)…"
-        FeedbackManager.shared.vibrateTap()
+        DispatchQueue.main.async {
+            self.timeout?.cancel()
+            self.sendMessage = "Sending to \(self.recipient)…"
+            FeedbackManager.shared.vibrateTap()
+        }
     }
     func transferProgress(progress: Double) {
-        self.progress = min(1, max(0, progress))
-        let currentBytes = Int64(Double(totalBytes) * self.progress)
-        updateSpeedAndETA(currentBytes: currentBytes, total: totalBytes)
+        DispatchQueue.main.async {
+            self.progress = min(1, max(0, progress))
+            let currentBytes = Int64(Double(self.totalBytes) * self.progress)
+            self.updateSpeedAndETA(currentBytes: currentBytes, total: self.totalBytes)
+        }
     }
     func transferFinished() {
-        timeout?.cancel()
-        sending = false
-        let peer = recipient
-        chosenID = nil
-        progress = 1
-        sendMessage = "Sent to \(peer)"
-        let fileName = displayNames.first ?? urls.first?.lastPathComponent ?? "Files"
-        let display = urls.count > 1 ? "\(fileName) (+\(urls.count - 1))" : fileName
-        recordTransfer(fileName: display, fileSize: totalBytes, direction: .outgoing, peerName: peer, fileURL: urls.first)
-        FeedbackManager.shared.playSuccess()
-        FeedbackManager.shared.vibrateSuccess()
-        resetSpeedTracking()
+        DispatchQueue.main.async { [self] in
+            self.timeout?.cancel()
+            let peer = self.recipient
+            self.chosenID = nil
+            self.progress = 1
+            self.sendMessage = "Sent to \(peer)"
+            let fileName = self.displayNames.first ?? self.urls.first?.lastPathComponent ?? "Files"
+            let display = self.urls.count > 1 ? "\(fileName) (+\(self.urls.count - 1))" : fileName
+            self.recordTransfer(fileName: display, fileSize: self.totalBytes, direction: .outgoing, peerName: peer, fileURL: self.urls.first)
+            FeedbackManager.shared.playSuccess()
+            FeedbackManager.shared.vibrateSuccess()
+            self.resetSpeedTracking()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+                guard let self, self.chosenID == nil else { return }
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    self.sending = false
+                    self.setFiles([])
+                    self.sendMessage = ""
+                    self.progress = 0
+                }
+            }
+        }
     }
 
     func updateSpeedAndETA(currentBytes: Int64, total: Int64) {
@@ -430,7 +493,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         }
     }
 
-    func recordIncoming(info: TransferInfo) {
+    func recordIncoming(info: TransferInfo, fileURLs: [URL]) {
         let name: String
         if let text = info.transfer.textDescription {
             name = text
@@ -440,15 +503,29 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             name = "Unknown file"
         }
         let total = info.transfer.files.reduce(0) { $0 + $1.size }
-        let url = info.transfer.files.first
-            .map { downloadDirectory.appendingPathComponent($0.name) }
-            .flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
-        recordTransfer(fileName: name, fileSize: total, direction: .incoming, peerName: info.device.name, fileURL: url)
+        recordTransfer(fileName: name, fileSize: total, direction: .incoming, peerName: info.device.name, fileURL: fileURLs.first)
     }
 
     func isDeviceTrusted(_ device: RemoteDeviceInfo) -> Bool {
         let key = NearbyConnectionManager.trustedDeviceKey(name: device.name, id: device.id)
         return trustedDevices.contains(key) || NearbyConnectionManager.isTrusted(name: device.name, id: device.id)
+    }
+
+    func isDeviceTrusted(for transferID: String, device: RemoteDeviceInfo) -> Bool {
+        pendingTrust[transferID] ?? isDeviceTrusted(device)
+    }
+
+    func setPendingDeviceTrusted(_ transferID: String, device: RemoteDeviceInfo, trusted: Bool) {
+        pendingTrust[transferID] = trusted
+    }
+
+    func commitPendingDeviceTrust(_ transferID: String, device: RemoteDeviceInfo) {
+        guard let trusted = pendingTrust.removeValue(forKey: transferID) else { return }
+        setDeviceTrusted(device, trusted: trusted)
+    }
+
+    func discardPendingDeviceTrust(_ transferID: String) {
+        pendingTrust.removeValue(forKey: transferID)
     }
 
     func setDeviceTrusted(_ device: RemoteDeviceInfo, trusted: Bool) {
@@ -468,16 +545,11 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
 
     func setDownloadDirectory(_ url: URL) {
-        if scopedDownloadDirectoryAccessed {
-            scopedDownloadDirectory?.stopAccessingSecurityScopedResource()
-        }
-        scopedDownloadDirectoryAccessed = url.startAccessingSecurityScopedResource()
-        scopedDownloadDirectory = scopedDownloadDirectoryAccessed ? url : nil
         NearbyConnectionManager.downloadDirectory = url
         downloadDirectory = url
     }
 
-    func chooseDownloadDirectory() {
+    func chooseDownloadDirectory(relativeTo window: NSWindow? = nil) {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = true
@@ -486,22 +558,16 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         panel.prompt = "Select"
         panel.message = "Choose a download folder for received files"
         panel.directoryURL = downloadDirectory
-        panel.level = NSWindow.Level(Int(CGWindowLevelForKey(.popUpMenuWindow)) + 1)
         isChoosingDirectory = true
         let handler: (NSApplication.ModalResponse) -> Void = { [weak self] result in
             DispatchQueue.main.async {
                 self?.isChoosingDirectory = false
+                NotificationCenter.default.post(name: .didFinishChoosingFiles, object: nil)
             }
             guard result == .OK, let url = panel.url, let self = self else { return }
             self.setDownloadDirectory(url)
         }
-        if let window = self.window, window.isVisible, window.attachedSheet == nil {
-            panel.beginSheetModal(for: window, completionHandler: handler)
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-            panel.makeKeyAndOrderFront(nil)
-            panel.begin(completionHandler: handler)
-        }
+        panel.presentForInteraction(relativeTo: window, completion: handler)
     }
 
     func resetDownloadDirectoryToDefault() {
@@ -548,14 +614,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
 
     static func errorMessage(_ error: Error) -> String {
-        if let error = error as? NearbyError {
-            switch error {
-            case .protocolError(let message): return message
-            case .inputOutput: return "The connection was interrupted. Try again."
-            case .canceled: return "The transfer was declined or canceled."
-            default: return "Could not connect securely. Try again."
-            }
-        }
         return error.localizedDescription
     }
     static func openDownloads() {
@@ -563,486 +621,224 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
 }
 
-final class TransferWindowController: NSWindowController {
-    init(model: TransferModel) {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 530), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
-        window.title = "Nearby Drop"
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
-        window.isReleasedWhenClosed = false
-        window.minSize = NSSize(width: 560, height: 480)
-        window.setFrameAutosaveName("Transfers")
-        window.contentView = NSHostingView(rootView: TransferView(model: model))
-        window.center()
-        model.window = window
-        super.init(window: window)
-    }
-    required init?(coder: NSCoder) { fatalError() }
-}
+struct TransferCompletionCard: View {
+    let completed: CompletedTransferInfo
+    @ObservedObject var model: TransferModel
+    @ObservedObject var theme = ThemeManager.shared
+    @State private var checkmarkScale: CGFloat = 0.3
+    @State private var checkmarkOpacity: Double = 0.0
 
-struct PrimaryAction: ViewModifier {
-    @ObservedObject private var theme = ThemeManager.shared
-    func body(content: Content) -> some View {
-        content
-            .buttonStyle(.borderedProminent)
-            .tint(theme.currentAccent.color)
-    }
-}
-struct NavigationSurface: ViewModifier {
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @ViewBuilder func body(content: Content) -> some View {
-        if reduceTransparency { content.background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 16)) }
-        else if #available(macOS 26, *) { content.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16)) }
-        else { content.background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16)) }
-    }
-}
-struct StatusLabel: View {
-    @ObservedObject var model: TransferModel
     var body: some View {
-        Label {
-            Text(!model.incoming.isEmpty ? "Receiving" : model.advertisement == .published ? "Ready to receive" : model.advertisement == .failed ? "Network unavailable" : "Connecting…")
-        } icon: {
-            Image(systemName: model.advertisement == .failed ? "wifi.slash" : "circle.fill")
-                .font(.system(size: 8)).foregroundStyle(model.advertisement == .published ? Color.green : Color.secondary)
-        }.font(.callout).foregroundStyle(.secondary)
-    }
-}
-struct TransferView: View {
-    @ObservedObject var model: TransferModel
-    @ObservedObject private var theme = ThemeManager.shared
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Nearby Drop").font(.system(size: 22, weight: .semibold))
-                    Text("Created by Arsalan Bisharat").font(.caption).foregroundStyle(.secondary)
+        VStack(spacing: 12) {
+            Spacer(minLength: 6)
+
+            ZStack {
+                Circle()
+                    .fill(Color.green.opacity(0.12))
+                    .frame(width: 58, height: 58)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.green)
+                    .scaleEffect(checkmarkScale)
+                    .opacity(checkmarkOpacity)
+            }
+            .onAppear {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.6)) {
+                    checkmarkScale = 1.0
+                    checkmarkOpacity = 1.0
                 }
-                Spacer()
-                Button(action: TransferModel.openDownloads) { Image(systemName: "folder").frame(width: 26, height: 26) }
-                    .buttonStyle(.bordered).help("Open Downloads").accessibilityLabel("Open Downloads")
-                Button(action: { (NSApp.delegate as? AppDelegate)?.openSettings(nil) }) {
-                    Image(systemName: "gearshape").frame(width: 26, height: 26)
-                }
-                .buttonStyle(.bordered).help("Settings").accessibilityLabel("Settings")
-            }.padding(.horizontal, 28).padding(.top, 36).padding(.bottom, 16)
-            Picker("Transfer method", selection: $model.tab) {
-                ForEach(TransferModel.Tab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }.pickerStyle(.segmented).labelsHidden().padding(8).modifier(NavigationSurface()).padding(.horizontal, 28).padding(.bottom, 20)
-            Group {
-                switch model.tab {
-                case .send: sendView
-                case .receive: receiveView
-                case .history: historyView
-                case .usb: USBView(usb: model.usb, files: model.urls, chooseFiles: model.chooseFiles)
-                }
-            }.frame(maxWidth: .infinity, maxHeight: .infinity)
-            Divider()
-            HStack {
-                StatusLabel(model: model)
-                Text("•").foregroundStyle(.quaternary)
-                Text("Visible as \"\(model.deviceName)\"").font(.callout).foregroundStyle(.secondary)
-                Spacer()
-                Text("Quick Share & Nearby Share").font(.caption).foregroundStyle(.tertiary)
-            }.padding(.horizontal, 28).padding(.vertical, 14)
-        }
-        .background(Color(nsColor: .windowBackgroundColor))
-        .sheet(isPresented: $model.scanning) { QRScannerView(onCode: model.scan) }
-        .sheet(isPresented: $model.showingQR, onDismiss: model.dismissQR) {
-            VStack(spacing: 16) {
-                Text("Pair with QR Code").font(.title2.weight(.semibold))
-                Text("Scan with phone camera or Google Lens to connect directly.")
-                    .font(.callout)
+            }
+
+            VStack(spacing: 4) {
+                Text("Transfer Complete")
+                    .font(.headline)
+                Text(completed.fileName)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .lineLimit(2)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            }
 
-                if let image = model.qrImage {
-                    Image(nsImage: image)
-                        .interpolation(.none)
-                        .resizable()
-                        .frame(width: 220, height: 220)
-                        .padding(14)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 16))
-                        .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
-                }
-
-                HStack(spacing: 8) {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(theme.currentAccent.color)
-                    Text("Quick Share Pairing Code")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.primary)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .background(Color(nsColor: .controlBackgroundColor), in: Capsule())
-
-                Text(model.qrTransferStatus)
+            HStack(spacing: 6) {
+                Image(systemName: "folder")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
-                Button("Done", action: model.dismissQR)
-                    .keyboardShortcut(.cancelAction)
-                    .modifier(PrimaryAction())
+                Text(completed.destinationPath)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
             }
-            .padding(24)
-            .frame(width: 380)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
+
+            HStack(spacing: 10) {
+                Button("Show in Finder") {
+                    if let url = completed.fileURL, FileManager.default.fileExists(atPath: url.path) {
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
+                    } else {
+                        TransferModel.openDownloads()
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
+
+                Button("Receive Another") {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        model.clearCompletedTransfer()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(theme.currentAccent.color)
+                .controlSize(.regular)
+            }
+            .padding(.top, 4)
+
+            Spacer(minLength: 6)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    private var sendView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(spacing: 14) {
-                Image(systemName: model.urls.count > 1 ? "doc.on.doc" : "doc").font(.system(size: 28)).foregroundStyle(theme.currentAccent.color).frame(width: 40)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(model.urls.isEmpty ? "Choose what to send" : model.urls.count == 1 ? model.urls[0].lastPathComponent : "\(model.urls.count) files selected").font(.headline).lineLimit(2)
-                    Text(model.urls.isEmpty ? "Drag files here or click Choose." : "Ready to share").font(.callout).foregroundStyle(.secondary)
+}
+
+struct TransferErrorCard: View {
+    let error: String
+    @ObservedObject var model: TransferModel
+    @ObservedObject var theme = ThemeManager.shared
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Spacer(minLength: 6)
+
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 38))
+                .foregroundStyle(.red)
+
+            Text("Transfer Failed")
+                .font(.headline)
+
+            Text(error)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .padding(.horizontal, 20)
+
+            Button("Dismiss") {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    model.clearCompletedTransfer()
                 }
-                Spacer(minLength: 8)
-                Button(model.urls.isEmpty ? "Choose Files…" : "Change…") { model.chooseFiles() }.modifier(PrimaryAction()).disabled(model.sending || model.usb.busy)
             }
-            Divider()
-            if model.sending {
-                VStack(alignment: .leading, spacing: 16) {
-                    Label(model.recipient, systemImage: "iphone").font(.title3.weight(.semibold))
-                    ProgressView(value: model.progress)
-                    HStack {
-                        Text(model.sendMessage).foregroundStyle(.secondary)
-                        Spacer()
-                        if !model.transferSpeed.isEmpty {
-                            Text(model.transferSpeed)
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(.secondary)
-                        }
-                        if !model.timeRemaining.isEmpty {
-                            Text("• \(model.timeRemaining)")
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(.secondary)
-                        }
-                        Button("Cancel", action: model.cancelSend)
-                    }
-                }.padding(.vertical, 8)
-                Spacer()
-            } else {
-                HStack {
-                    Text("Nearby devices").font(.headline)
-                    Spacer()
-                    Button {
-                        if model.urls.isEmpty {
-                            model.chooseFiles(thenSendTo: nil, thenShowQR: true)
-                        } else {
-                            model.showQR()
-                        }
-                    } label: {
-                        Label("Show QR Code", systemImage: "qrcode")
-                    }
-                }
-                if model.devices.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 30)).foregroundStyle(.secondary)
-                        Text("Looking for Devices").font(.headline)
-                        Text("Turn on Quick Share on your nearby device.").font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                    }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 8) {
-                            ForEach(model.devices, id: \.id) { device in
-                                Button {
-                                    if model.urls.isEmpty {
-                                        model.chooseFiles(thenSendTo: device)
-                                    } else {
-                                        model.send(to: device)
-                                    }
-                                } label: {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: device.type == .computer ? "laptopcomputer" : "iphone").font(.title2).frame(width: 36)
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(device.name).font(.headline)
-                                            Text(model.urls.isEmpty ? "Ready to send" : "Send files").font(.caption).foregroundStyle(.secondary)
-                                        }
-                                        Spacer()
-                                        Image(systemName: "arrow.up.right").foregroundStyle(.secondary)
-                                    }.padding(14).frame(maxWidth: .infinity).background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
-                                }.buttonStyle(.plain)
-                            }
-                        }
-                    }
-                }
-                if !model.sendMessage.isEmpty { Label(model.sendMessage, systemImage: model.progress == 1 ? "checkmark.circle.fill" : "info.circle").foregroundStyle(.secondary) }
-            }
-            if let error = model.error { Text(error).foregroundStyle(.red).font(.callout).fixedSize(horizontal: false, vertical: true).textSelection(.enabled) }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .padding(.top, 4)
+
+            Spacer(minLength: 6)
         }
-        .padding(.horizontal, 28).padding(.bottom, 20)
-        .dropDestination(for: URL.self) { items, _ in
-            guard !items.isEmpty else { return false }
-            model.setFiles(items)
-            FeedbackManager.shared.vibrateClick()
-            return true
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    private var receiveView: some View {
-        Group {
-            if model.qrStatus != .idle {
-                VStack(spacing: 18) {
-                    switch model.qrStatus {
-                    case .connecting(let sender):
-                        Image(systemName: "antenna.radiowaves.left.and.right")
-                            .font(.system(size: 46, weight: .light))
-                            .foregroundStyle(theme.currentAccent.color)
-                            .padding(.top, 28)
-                        Text(sender ?? "Connecting to phone…")
-                            .font(.title2.weight(.semibold))
-                        ProgressView()
-                            .controlSize(.regular)
-                        Text("Preparing transfer…")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Button("Cancel", action: model.resetQRTransfer)
-                            .buttonStyle(.bordered)
-                            .padding(.top, 8)
+}
 
-                    case .downloading(let sender, let description):
-                        Image(systemName: "arrow.down.circle")
-                            .font(.system(size: 46, weight: .light))
-                            .foregroundStyle(theme.currentAccent.color)
-                            .padding(.top, 28)
-                        Text(sender)
-                            .font(.title2.weight(.semibold))
-                        if let desc = description {
-                            Text(desc)
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-                        }
-                        ProgressView()
-                            .controlSize(.regular)
-                        Text("Downloading to Downloads folder…")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Button("Cancel", action: model.resetQRTransfer)
-                            .buttonStyle(.bordered)
-                            .padding(.top, 8)
+struct IncomingTransferReceivingCard: View {
+    let id: String
+    let item: TransferInfo
+    @ObservedObject var model: TransferModel
+    @ObservedObject var theme = ThemeManager.shared
 
-                    case .completed(let filename, let count):
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 52))
-                            .foregroundStyle(.green)
-                            .padding(.top, 28)
-                        Text("Transfer Complete")
-                            .font(.title2.weight(.semibold))
-                        Text(count > 1 ? "\(count) files saved to Downloads folder" : (filename.lowercased().hasPrefix("saved") ? "\(filename) to Downloads folder" : "\(filename) saved to Downloads folder"))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        HStack(spacing: 12) {
-                            Button("Done", action: model.resetQRTransfer)
-                            Button("Open Downloads", action: TransferModel.openDownloads)
-                                .modifier(PrimaryAction())
-                        }
-                        .padding(.top, 12)
-
-                    case .failed(let error):
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 46, weight: .light))
-                            .foregroundStyle(.red)
-                            .padding(.top, 28)
-                        Text("Transfer Failed")
-                            .font(.title2.weight(.semibold))
-                        Text(error)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                        Button("Try Again", action: model.resetQRTransfer)
-                            .modifier(PrimaryAction())
-                            .padding(.top, 8)
-
-                    case .idle:
-                        EmptyView()
-                    }
-                }
-                .padding(.horizontal, 28)
-                .padding(.vertical, 24)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        if model.incoming.isEmpty {
-                            Image(systemName: "arrow.down.circle")
-                                .font(.system(size: 46, weight: .light))
-                                .foregroundStyle(theme.currentAccent.color)
-                                .padding(.top, 28)
-                            Text("Ready to Receive")
-                                .font(.title2.weight(.semibold))
-                            Text("Select \(model.deviceName) on your device to share files.")
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                            Button { model.scanning = true } label: {
-                                Label("Scan QR Code", systemImage: "qrcode.viewfinder")
-                            }
-                            .modifier(PrimaryAction())
-                            .controlSize(.large)
-                            if !model.receiveMessage.isEmpty {
-                                Text(model.receiveMessage)
-                                    .font(.callout)
-                                    .foregroundStyle(.secondary)
-                                    .textSelection(.enabled)
-                            }
-                        } else {
-                            ForEach(model.incoming.keys.sorted(), id: \.self) { id in
-                                if let item = model.incoming[id] {
-                                    VStack(alignment: .leading, spacing: 14) {
-                                        Label(item.device.name, systemImage: "iphone").font(.headline)
-                                        Text(item.transfer.textDescription ?? item.transfer.files.map(\.name).joined(separator: ", ")).lineLimit(4)
-                                        if model.accepted.contains(id) { ProgressView("Receiving…") }
-                                        else {
-                                            Text("Confirm code \(item.transfer.pinCode ?? "—")").font(.title3.monospacedDigit())
-                                            Toggle("Trust this device (auto-accept)", isOn: Binding(
-                                                get: { model.isDeviceTrusted(item.device) },
-                                                set: { model.setDeviceTrusted(item.device, trusted: $0) }
-                                            ))
-                                            .toggleStyle(.checkbox)
-                                            .font(.callout)
-                                            HStack { Spacer(); Button("Decline") { model.onConsent?(id, false) }; Button("Accept") { model.onConsent?(id, true) }.modifier(PrimaryAction()) }
-                                        }
-                                    }.padding(20).background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 16))
-                                }
-                            }
-                        }
-
-                        // Custom download location card
-                        HStack(spacing: 8) {
-                            Button {
-                                TransferModel.openDownloads()
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "folder.fill")
-                                        .foregroundStyle(theme.currentAccent.color)
-                                        .font(.system(size: 14))
-                                    Text(model.downloadDirectoryDisplayPath)
-                                        .font(.callout.weight(.medium))
-                                        .foregroundStyle(.primary)
-                                        .lineLimit(1)
-                                }
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .help("Open \(model.downloadDirectory.path) in Finder")
-
-                            Spacer()
-
-                            Button("Change…") {
-                                model.chooseDownloadDirectory()
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-                        .contextMenu {
-                            Button("Open in Finder") {
-                                TransferModel.openDownloads()
-                            }
-                            Button("Change Folder…") {
-                                model.chooseDownloadDirectory()
-                            }
-                            Button("Reset to Downloads") {
-                                model.resetDownloadDirectoryToDefault()
-                            }
-                        }
-                    }.frame(maxWidth: .infinity).padding(.horizontal, 28).padding(.bottom, 24)
-                }
-            }
-        }
+    var totalBytes: Int64 {
+        if let progress = model.incomingProgress[id], progress.total > 0 { return progress.total }
+        return item.transfer.files.reduce(0) { $0 + $1.size }
     }
 
-    private var historyView: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Transfer History")
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: item.device.type == .computer ? "laptopcomputer" : "iphone")
+                    .foregroundStyle(theme.currentAccent.color)
+                Text(item.device.name)
                     .font(.headline)
+                    .foregroundStyle(.primary)
                 Spacer()
-                if !model.history.isEmpty {
-                    Button("Clear History") {
-                        model.clearHistory()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                if let progress = model.incomingProgress[id], progress.bytesPerSecond > 0 {
+                    Text("\(TransferModel.formatBytes(Int64(progress.bytesPerSecond)))/s")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                 }
             }
-            .padding(.horizontal, 28)
-            .padding(.bottom, 12)
 
-            if model.history.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 38, weight: .light))
-                        .foregroundStyle(.secondary)
-                    Text("No Transfers Yet")
-                        .font(.headline)
-                    Text("Files you send or receive will appear here.")
-                        .font(.callout)
+            Text(item.transfer.textDescription ?? "\(item.transfer.files.count) \(item.transfer.files.count == 1 ? "item" : "items")")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+
+            ProgressView(value: totalBytes > 0 ? Double(model.incomingProgress[id]?.bytes ?? 0) / Double(totalBytes) : nil)
+                .progressViewStyle(.linear)
+
+            HStack {
+                Text("\(TransferModel.formatBytes((model.incomingProgress[id]?.bytes ?? 0))) of \(TransferModel.formatBytes(totalBytes))")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                Spacer()
+
+            }
+
+            HStack {
+                Spacer()
+                Button("Cancel") {
+                    model.cancelIncomingTransfer(id)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        }
+        .padding(12)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+struct QuickShareGuideCard: View {
+    let deviceName: String
+    @ObservedObject var theme = ThemeManager.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("How to Send to This Mac", systemImage: "questionmark.circle")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "wifi")
+                        .font(.caption)
+                        .foregroundStyle(theme.currentAccent.color)
+                        .frame(width: 16)
+                    Text("Connect both devices to the same Wi-Fi network.")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        ForEach(model.history) { item in
-                            HStack(spacing: 12) {
-                                Image(systemName: item.direction == .incoming ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(item.direction == .incoming ? Color.green : Color.blue)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.fileName)
-                                        .font(.subheadline.weight(.medium))
-                                        .lineLimit(1)
-                                    HStack(spacing: 6) {
-                                        Text(item.direction.rawValue)
-                                            .font(.caption2.weight(.semibold))
-                                            .padding(.horizontal, 5)
-                                            .padding(.vertical, 1)
-                                            .background(
-                                                (item.direction == .incoming ? Color.green : Color.blue).opacity(0.12),
-                                                in: RoundedRectangle(cornerRadius: 4)
-                                            )
-                                        Text("•")
-                                            .font(.caption2)
-                                            .foregroundStyle(.quaternary)
-                                        Text(item.peerName)
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                        Text("•")
-                                            .font(.caption2)
-                                            .foregroundStyle(.quaternary)
-                                        Text(TransferModel.formatBytes(item.fileSize))
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                        Text("•")
-                                            .font(.caption2)
-                                            .foregroundStyle(.quaternary)
-                                        Text(TransferModel.formatDate(item.timestamp))
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-
-                                Spacer()
-
-                                if let url = item.fileURL, FileManager.default.fileExists(atPath: url.path) {
-                                    Button("Show in Finder") {
-                                        NSWorkspace.shared.activateFileViewerSelecting([url])
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                                }
-                            }
-                            .padding(12)
-                            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-                        }
-                    }
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 20)
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.caption)
+                        .foregroundStyle(theme.currentAccent.color)
+                        .frame(width: 16)
+                    Text("On Android or Windows, tap Share → Quick Share.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "laptopcomputer")
+                        .font(.caption)
+                        .foregroundStyle(theme.currentAccent.color)
+                        .frame(width: 16)
+                    Text("Select '\(deviceName)' to send your files.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
     }
 }

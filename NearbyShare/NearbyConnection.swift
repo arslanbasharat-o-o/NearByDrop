@@ -1,6 +1,6 @@
 //
 //  NearbyConnection.swift
-//  NearByDrop Created by Arslan Basharat
+//  Nearby Drop — Created by Arslan Basharat
 //
 //
 
@@ -55,10 +55,11 @@ class NearbyConnection{
 	}
 	
 	func start(){
-		connection.stateUpdateHandler={state in
+		connection.stateUpdateHandler={ [weak self] state in
+            guard let self=self else { return }
 			if case .ready = state {
 				self.connectionReady()
-				self.receiveFrameAsync()
+				self.receiveStreamAsync()
 			} else if case .failed(let err) = state {
 				self.lastError=err
 				print("Error opening socket: \(err)")
@@ -79,7 +80,10 @@ class NearbyConnection{
 		payloadBuffers.removeAll()
 		payloadSizes.removeAll()
 		bufferedPayloadBytes=0
+		streamBuffer.removeAll()
 		stopKeepAliveTimer()
+        connection.stateUpdateHandler=nil
+        connection.cancel()
 		print("Connection closed")
 	}
 	
@@ -88,15 +92,16 @@ class NearbyConnection{
 	}
 	
 	internal func processReceivedFrame(frameData:Data){
-		fatalError()
+		lastError=NearbyError.protocolError("Received frame on an unsupported connection")
+		protocolError()
 	}
 	
 	internal func processTransferSetupFrame(_ frame:Sharing_Nearby_Frame) throws{
-		fatalError()
+		throw NearbyError.protocolError("Received transfer setup on an unsupported connection")
 	}
 	
 	internal func isServer() -> Bool{
-		fatalError()
+		return false
 	}
 	
 	internal func processFileChunk(frame:Location_Nearby_Connections_PayloadTransferFrame) throws{
@@ -126,8 +131,10 @@ class NearbyConnection{
 		payloadSizes.removeValue(forKey: id)
 	}
 
-	private func receiveFrameAsync(){
-		connection.receive(minimumIncompleteLength: 4, maximumLength: 4) { [weak self] content, _, isComplete, error in
+	private var streamBuffer = Data()
+
+	private func receiveStreamAsync(){
+		connection.receive(minimumIncompleteLength: 1, maximumLength: 262144) { [weak self] content, _, isComplete, error in
 			guard let self=self else { return }
 			if self.connectionClosed{
 				return
@@ -137,46 +144,32 @@ class NearbyConnection{
 				self.protocolError()
 				return
 			}
-			guard let content=content else {
-				self.lastError=NearbyError.protocolError("Missing frame length")
-				self.protocolError()
-				return
+			if let content=content, !content.isEmpty{
+				self.streamBuffer.append(content)
+				self.drainStreamBuffer()
 			}
-			guard let frameLength=NearbyConnection.frameLength(from: content), !isComplete else {
-				self.lastError=NearbyError.protocolError("Unexpected packet length")
-				self.protocolError()
-				return
-			}
-			self.receiveFrameAsync(length: frameLength)
-		}
-	}
-	
-	private func receiveFrameAsync(length:Int){
-		connection.receive(minimumIncompleteLength: length, maximumLength: length) { [weak self] content, _, isComplete, error in
-			guard let self=self else { return }
-			if self.connectionClosed{
-				return
-			}
-			if let error=error{
-				self.lastError=error
-				self.protocolError()
-				return
-			}
-			guard let content=content else {
-				self.protocolError()
-				return
-			}
-			guard content.count == length else {
-				self.lastError=NearbyError.protocolError("Incomplete frame payload")
-				self.protocolError()
-				return
-			}
-			self.processReceivedFrame(frameData: content)
 			if isComplete {
 				self.handleConnectionClosure()
 			} else {
-				self.receiveFrameAsync()
+				self.receiveStreamAsync()
 			}
+		}
+	}
+
+	private func drainStreamBuffer(){
+		while !connectionClosed && streamBuffer.count >= 4 {
+			guard let frameLength=NearbyConnection.frameLength(from: Data(streamBuffer.prefix(4))) else {
+				lastError=NearbyError.protocolError("Unexpected packet length")
+				protocolError()
+				return
+			}
+			let totalNeeded=4+frameLength
+			if streamBuffer.count < totalNeeded {
+				break
+			}
+			let frameData=streamBuffer.subdata(in: 4..<totalNeeded)
+			streamBuffer.removeSubrange(0..<totalNeeded)
+			processReceivedFrame(frameData: frameData)
 		}
 	}
 	
@@ -223,7 +216,7 @@ class NearbyConnection{
 		d2dMsg.message=try frame.serializedData()
 		
 		let serializedMsg=try d2dMsg.serializedData()
-		let iv=Data.randomData(length: 16)
+		let iv=try Data.randomData(length: 16)
 		var encryptedData=Data(count: serializedMsg.count+16)
 		var encryptedLength:size_t=0
 		var encryptionStatus=CCCryptorStatus(kCCSuccess)
@@ -481,7 +474,7 @@ class NearbyConnection{
 		let key=try ECPublicKey(domain: domain, w: Point(BInt(magnitude: [UInt8](clientX)), BInt(magnitude: [UInt8](clientY))))
 		
 		guard let privateKey=privateKey else { throw NearbyError.protocolError("Missing local key") }
-		let dhs=try privateKey.domain.multiplyPoint(key.w, privateKey.s).x.asMagnitudeBytes()
+		let dhs=NearbyConnection.fixedCoordinate32Bytes(try privateKey.domain.multiplyPoint(key.w, privateKey.s).x)
 		var sha=SHA256()
 		sha.update(data: dhs)
 		let derivedSecretKey=Data(sha.finalize())
@@ -533,7 +526,11 @@ class NearbyConnection{
 		}
 		connectionClosed=true
 		stopKeepAliveTimer()
-		connection.send(content: nil, isComplete: true, completion: .contentProcessed({ [weak self] error in
+        guard connection.state == .ready else {
+            handleConnectionClosure()
+            return
+        }
+		connection.send(content: nil, contentContext: .finalMessage, isComplete: true, completion: .contentProcessed({ [weak self] error in
 			guard let self=self else { return }
 			if let error=error { self.lastError=error }
 			self.handleConnectionClosure()
@@ -619,7 +616,6 @@ struct InternalFileInfo{
 	let payloadID:Int64
 	let destinationURL:URL
 	var bytesTransferred:Int64=0
-	var fileHandle:FileHandle?
-	var progress:Progress?
+	var fd:Int32 = -1
 	var created:Bool=false
 }

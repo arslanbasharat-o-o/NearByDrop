@@ -8,9 +8,10 @@
 - (instancetype)init { if ((self = [super init])) { static dispatch_once_t once; dispatch_once(&once, ^{ LIBMTP_Init(); }); } return self; }
 - (void)close { if (_device) { LIBMTP_Release_Device(_device); _device = NULL; } }
 - (void)dealloc { [self close]; }
-- (void)fail:(NSError **)error message:(NSString *)message {
+- (BOOL)fail:(NSError **)error message:(NSString *)message {
     if (error) *error = [NSError errorWithDomain:@"NearByDrop.USB" code:1 userInfo:@{NSLocalizedDescriptionKey: message}];
     if (_device) LIBMTP_Clear_Errorstack(_device);
+    return NO;
 }
 static NSString *DeviceID(LIBMTP_raw_device_t d) { return [NSString stringWithFormat:@"%u:%u", d.bus_location, d.devnum]; }
 - (NSArray *)devices:(NSError **)error {

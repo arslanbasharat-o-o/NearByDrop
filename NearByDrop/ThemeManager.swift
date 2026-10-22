@@ -103,13 +103,6 @@ final class ThemeManager: ObservableObject {
         }
     }
 
-    @Published var showInDock: Bool {
-        didSet {
-            UserDefaults.standard.set(showInDock, forKey: "showInDock")
-            applyDockPolicy()
-        }
-    }
-
     var onMenuBarIconChanged: (() -> Void)?
 
     private init() {
@@ -122,19 +115,7 @@ final class ThemeManager: ObservableObject {
         let savedIcon = UserDefaults.standard.string(forKey: "menuBarIconStyle") ?? MenuBarIconStyle.quickShare.rawValue
         self.menuBarIconStyle = MenuBarIconStyle(rawValue: savedIcon) ?? .quickShare
 
-        if UserDefaults.standard.object(forKey: "showInDock") == nil {
-            self.showInDock = true
-        } else {
-            self.showInDock = UserDefaults.standard.bool(forKey: "showInDock")
-        }
-
         currentTheme.apply()
-    }
-
-    func applyDockPolicy() {
-        DispatchQueue.main.async {
-            NSApp.setActivationPolicy(self.showInDock ? .regular : .accessory)
-        }
     }
 
     func menuBarImage() -> NSImage? {
@@ -145,13 +126,13 @@ final class ThemeManager: ObservableObject {
                 return img
             }
             let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            return NSImage(systemSymbolName: "antenna.radiowaves.left.and.right", accessibilityDescription: "NearByDrop")?.withSymbolConfiguration(config)
+            return NSImage(systemSymbolName: "antenna.radiowaves.left.and.right", accessibilityDescription: "Nearby Drop")?.withSymbolConfiguration(config)
         case .antenna:
             let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            return NSImage(systemSymbolName: "dot.radiowaves.left.and.right", accessibilityDescription: "NearByDrop")?.withSymbolConfiguration(config)
+            return NSImage(systemSymbolName: "dot.radiowaves.left.and.right", accessibilityDescription: "Nearby Drop")?.withSymbolConfiguration(config)
         case .paperplane:
             let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            return NSImage(systemSymbolName: "paperplane.fill", accessibilityDescription: "NearByDrop")?.withSymbolConfiguration(config)
+            return NSImage(systemSymbolName: "paperplane.fill", accessibilityDescription: "Nearby Drop")?.withSymbolConfiguration(config)
         }
     }
 }

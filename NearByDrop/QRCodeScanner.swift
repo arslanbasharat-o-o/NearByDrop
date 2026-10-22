@@ -8,16 +8,20 @@ final class QRScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSampl
     @Published var message = "Hold your phone’s Quick Share code in the frame."
     @Published var denied = false
     private var active = false
+    private var wantsRunning = false
     private var lastFrame = Date.distantPast
-    private var lastCode = ""
     var onCode: ((String) -> String?)?
 
     func start() {
+        wantsRunning = true
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized: configure()
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] allowed in
-                DispatchQueue.main.async { if allowed { self?.configure() } else { self?.permissionDenied() } }
+                DispatchQueue.main.async {
+                    guard let self, self.wantsRunning else { return }
+                    if allowed { self.configure() } else { self.permissionDenied() }
+                }
             }
         default: permissionDenied()
         }
@@ -47,6 +51,7 @@ final class QRScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSampl
         }
     }
     func stop() {
+        wantsRunning = false
         queue.async {
             self.active = false
             if self.session.isRunning {
@@ -69,22 +74,30 @@ final class QRScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSampl
         request.symbologies = [.qr]
         do {
             try VNImageRequestHandler(cvPixelBuffer: buffer).perform([request])
-            guard let value = request.results?.first?.payloadStringValue, value != lastCode else { return }
-            lastCode = value
-            DispatchQueue.main.async {
-                if let error = self.onCode?(value) { self.message = error }
-                else { self.stop() }
+            guard let value = request.results?.first?.payloadStringValue else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.wantsRunning else { return }
+                self.handleCode(value)
             }
         } catch { DispatchQueue.main.async { self.message = "Could not read the code. Hold it steady and try again." } }
     }
+    func handleCode(_ value: String) {
+        guard let onCode else { return }
+        if let error = onCode(value) { message = error }
+        else { stop() }
+    }
     deinit {
-        stop()
+        // Never enqueue a closure retaining self while self is being deallocated.
+        let session = session
+        queue.async { if session.isRunning { session.stopRunning() } }
     }
 }
 private struct CameraPreview: NSViewRepresentable {
     let session: AVCaptureSession
     func makeNSView(context: Context) -> PreviewView { PreviewView(session: session) }
-    func updateNSView(_ nsView: PreviewView, context: Context) {}
+    func updateNSView(_ nsView: PreviewView, context: Context) {
+        if nsView.preview.session !== session { nsView.preview.session = session }
+    }
     final class PreviewView: NSView {
         let preview: AVCaptureVideoPreviewLayer
         init(session: AVCaptureSession) {
@@ -94,7 +107,7 @@ private struct CameraPreview: NSViewRepresentable {
             preview.videoGravity = .resizeAspectFill
             layer?.addSublayer(preview)
         }
-        required init?(coder: NSCoder) { fatalError() }
+        required init?(coder: NSCoder) { return nil }
         override func layout() { super.layout(); preview.frame = bounds }
         override func viewWillMove(toWindow newWindow: NSWindow?) {
             super.viewWillMove(toWindow: newWindow)
@@ -105,35 +118,24 @@ private struct CameraPreview: NSViewRepresentable {
     }
 }
 struct QRScannerView: View {
-    @ObservedObject var scanner: QRScanner
-    @Environment(\.dismiss) private var dismiss
+    @StateObject private var scanner = QRScanner()
     let onCode: (String) -> String?
-    var onCancel: (() -> Void)? = nil
-
-    init(scanner: QRScanner = QRScanner(), onCode: @escaping (String) -> String?, onCancel: (() -> Void)? = nil) {
-        self.scanner = scanner
-        self.onCode = onCode
-        self.onCancel = onCancel
-    }
+    let onCancel: () -> Void
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 12) {
             HStack {
-                Text("Scan QR Code").font(.title2.weight(.semibold))
+                Text("Scan QR Code").font(.headline)
                 Spacer()
                 Button("Cancel") {
                     scanner.stop()
-                    if let onCancel = onCancel {
-                        onCancel()
-                    } else {
-                        dismiss()
-                    }
+                    onCancel()
                 }
                 .keyboardShortcut(.cancelAction)
             }
             CameraPreview(session: scanner.session)
-                .frame(height: 240).background(.black).clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay { Image(systemName: "viewfinder").font(.system(size: 120, weight: .ultraLight)).foregroundStyle(.white.opacity(0.8)).accessibilityHidden(true) }
+                .frame(height: 180).background(.black).clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay { Image(systemName: "viewfinder").font(.system(size: 96, weight: .ultraLight)).foregroundStyle(.white.opacity(0.8)).accessibilityHidden(true) }
             Text(scanner.message).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).frame(minHeight: 34)
             if scanner.denied {
                 Button("Open Camera Settings") {
@@ -141,76 +143,11 @@ struct QRScannerView: View {
                     NSWorkspace.shared.open(settingsURL)
                 }
             }
-        }.padding(24).frame(width: 440)
+        }.padding(14).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .onAppear { scanner.onCode = onCode; scanner.start() }
             .onDisappear {
                 scanner.onCode = nil
                 scanner.stop()
             }
-    }
-}
-
-final class QRScannerWindowController: NSWindowController, NSWindowDelegate {
-    static let shared = QRScannerWindowController()
-    private var currentScanner: QRScanner?
-    private var scannerToken: UUID?
-
-    private init() {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 440, height: 380),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "Scan QR Code"
-        window.isReleasedWhenClosed = false
-        window.level = .floating
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.center()
-        super.init(window: window)
-        window.delegate = self
-    }
-
-    required init?(coder: NSCoder) { return nil }
-
-    func show(onCode: @escaping (String) -> String?) {
-        currentScanner?.stop()
-        let scanner = QRScanner()
-        let token = UUID()
-        currentScanner = scanner
-        scannerToken = token
-        window?.contentView = NSHostingView(rootView: QRScannerView(scanner: scanner, onCode: { [weak self] code in
-            guard let self, self.scannerToken == token else { return "Scanner is no longer active." }
-            let res = onCode(code)
-            if res == nil {
-                DispatchQueue.main.async {
-                    guard self.scannerToken == token else { return }
-                    self.close()
-                }
-            }
-            return res
-        }, onCancel: { [weak self] in
-            guard let self, self.scannerToken == token else { return }
-            self.close()
-        }))
-        showWindow(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        window?.makeKeyAndOrderFront(nil)
-        window?.orderFrontRegardless()
-    }
-
-    override func close() {
-        currentScanner?.stop()
-        currentScanner = nil
-        scannerToken = nil
-        window?.contentView = nil
-        super.close()
-    }
-
-    func windowWillClose(_ notification: Notification) {
-        currentScanner?.stop()
-        currentScanner = nil
-        scannerToken = nil
-        window?.contentView = nil
     }
 }
