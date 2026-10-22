@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import os
 import Network
 import CryptoKit
 import CommonCrypto
@@ -15,7 +16,10 @@ import SwiftECC
 import BigInt
 
 class OutboundNearbyConnection:NearbyConnection{
-	private var currentState:State = .initial
+	private static let logger = Logger(subsystem: "com.arslanbasharat.NearByDrop", category: "OutgoingTransfer")
+    private var currentState:State = .initial {
+        didSet { Self.logger.notice("Outgoing stage: \(String(describing: self.currentState), privacy: .public)") }
+    }
 	private let urlsToSend:[URL]
 	// Names sent in the introduction; entries may contain "/" (relative paths when
 	// the user selected directories). Falls back to the URL's last path component.
@@ -31,7 +35,8 @@ class OutboundNearbyConnection:NearbyConnection{
 	private var textPayloadID:Int64=0
 	private var resultReported=false
 	private var handlesClosed=false
-	private var disconnectionSent=false
+    private var pendingAcknowledgements: Set<Int64> = []
+    private var acknowledgementTimeout: DispatchWorkItem?
 	
 	public var qrCodePrivateKey:P256.Signing.PrivateKey?
 	
@@ -139,7 +144,9 @@ class OutboundNearbyConnection:NearbyConnection{
 			try sendDisconnectionAndDisconnect()
 			return
 		}
-		print(frame)
+        Self.logger.notice("Received sharing frame: \(String(describing: frame.v1.type), privacy: .public), stage: \(String(describing: self.currentState), privacy: .public)")
+        if (currentState == .sendingFiles || currentState == .finishing),
+           frame.v1.type == .progressUpdate || frame.v1.type == .certificateInfo { return }
 		switch currentState{
 		case .sentPairedKeyEncryption:
 			try processPairedKeyEncryption(frame: frame)
@@ -150,15 +157,16 @@ class OutboundNearbyConnection:NearbyConnection{
 		case .sendingFiles:
 			break
 		default:
-			throw NearbyError.protocolError("Unexpected transfer setup state")
+			throw NearbyError.protocolError("Unexpected \(frame.v1.type) frame while \(currentState)")
 		}
 	}
 	
 	override func handleConnectionClosure() {
+		acknowledgementTimeout?.cancel()
 		super.handleConnectionClosure()
 		guard !resultReported || currentState == .finishing else { return }
 		NSLog("[NearByDrop] Outbound connection closed in state: %@, lastError: %@", String(describing: currentState), String(describing: lastError))
-		if currentState == .finishing && disconnectionSent && lastError == nil {
+		if currentState == .finishing && lastError == nil {
 			currentState = .completed
 			closeAllTransferHandles()
 			guard !resultReported else { return }
@@ -191,7 +199,7 @@ class OutboundNearbyConnection:NearbyConnection{
 		frame.v1.type = .connectionRequest
 		frame.v1.connectionRequest=Location_Nearby_Connections_ConnectionRequestFrame()
 		frame.v1.connectionRequest.endpointID=String(bytes: NearbyConnectionManager.shared.endpointID, encoding: .ascii) ?? "ABCD"
-		frame.v1.connectionRequest.endpointName=deviceName
+		frame.v1.connectionRequest.endpointName=Data(deviceName.utf8)
 		let endpointInfo=EndpointInfo(name: deviceName, deviceType: .computer)
 		frame.v1.connectionRequest.endpointInfo=endpointInfo.serialize()
 		frame.v1.connectionRequest.mediums=[.wifiLan]
@@ -269,6 +277,7 @@ class OutboundNearbyConnection:NearbyConnection{
 		resp.v1.connectionResponse=Location_Nearby_Connections_ConnectionResponseFrame()
 		resp.v1.connectionResponse.response = .accept
 		resp.v1.connectionResponse.status=0
+            resp.v1.connectionResponse.safeToDisconnectVersion=6
 		resp.v1.connectionResponse.osInfo=Location_Nearby_Connections_OsInfo()
 		resp.v1.connectionResponse.osInfo.type = .apple
 		sendFrameAsync(try resp.serializedData())
@@ -321,6 +330,8 @@ class OutboundNearbyConnection:NearbyConnection{
 		var introduction=Sharing_Nearby_Frame()
 		introduction.version = .v1
 		introduction.v1.type = .introduction
+        introduction.v1.introduction.startTransfer = true
+        introduction.v1.introduction.useCase = .nearbyShare
 		if urlsToSend.count==1 && !urlsToSend[0].isFileURL{
 			var meta=Sharing_Nearby_TextMetadata()
 			meta.type = .url
@@ -332,6 +343,7 @@ class OutboundNearbyConnection:NearbyConnection{
 			for (index,url) in urlsToSend.enumerated(){
 				guard url.isFileURL else {continue}
 				var meta=Sharing_Nearby_FileMetadata()
+                meta.id = Int64(index + 1)
 				let displayName = displayNames != nil && displayNames!.count==urlsToSend.count ? displayNames![index] : url.lastPathComponent
 				meta.name=OutboundNearbyConnection.sanitizeFileName(name: displayName)
 				let attrs=try FileManager.default.attributesOfItem(atPath: url.path)
@@ -363,6 +375,7 @@ class OutboundNearbyConnection:NearbyConnection{
 					meta.type = .unknown
 				}
 				meta.payloadID=Int64.random(in: Int64.min...Int64.max)
+                pendingAcknowledgements.insert(meta.payloadID)
 				queue.append(OutgoingFileTransfer(url: url, payloadID: meta.payloadID, handle: try FileHandle(forReadingFrom: url), totalBytes: meta.size, currentOffset: 0))
 				introduction.v1.introduction.fileMetadata.append(meta)
 				totalBytesToSend+=meta.size
@@ -471,11 +484,14 @@ class OutboundNearbyConnection:NearbyConnection{
 		transfer.packetType = .data
 		transfer.payloadChunk.offset=currentTransfer!.currentOffset
 		transfer.payloadChunk.flags=0
+        transfer.payloadChunk.index=currentTransfer!.nextChunkIndex
+        currentTransfer!.nextChunkIndex += 1
 		transfer.payloadChunk.body=fileBuffer
 		transfer.payloadHeader.id=currentTransfer!.payloadID
 		transfer.payloadHeader.type = .file
 		transfer.payloadHeader.totalSize=Int64(currentTransfer!.totalBytes)
 		transfer.payloadHeader.isSensitive=false
+        transfer.payloadHeader.fileName=Self.sanitizeFileName(name: currentTransfer!.url.lastPathComponent)
 		currentTransfer!.currentOffset+=Int64(fileBuffer.count)
 		
 		var wrapper=Location_Nearby_Connections_OfflineFrame()
@@ -527,10 +543,12 @@ class OutboundNearbyConnection:NearbyConnection{
 		frameTransfer.packetType = .data
 		frameTransfer.payloadChunk.offset=transfer.currentOffset
 		frameTransfer.payloadChunk.flags=1 // <- the end-of-file bit
+        frameTransfer.payloadChunk.index=transfer.nextChunkIndex
 		frameTransfer.payloadHeader.id=transfer.payloadID
 		frameTransfer.payloadHeader.type = .file
 		frameTransfer.payloadHeader.totalSize=transfer.totalBytes
 		frameTransfer.payloadHeader.isSensitive=false
+        frameTransfer.payloadHeader.fileName=Self.sanitizeFileName(name: transfer.url.lastPathComponent)
 		
 		var wrapper=Location_Nearby_Connections_OfflineFrame()
 		wrapper.version = .v1
@@ -543,20 +561,43 @@ class OutboundNearbyConnection:NearbyConnection{
 		#endif
 	}
 
-	private func beginFinishing(){
-		guard !resultReported, currentState == .sendingFiles else { return }
-		currentState = .finishing
-		do {
-			try sendDisconnectionAndDisconnect { [weak self] in self?.disconnectionSent=true }
-		}catch{
-			lastError=error
-			protocolError()
-		}
-	}
+    override func remoteSafeDisconnectionAcknowledged() {
+        guard currentState == .finishing, !resultReported else { return }
+        // Older Android builds confirm drained payloads through safe disconnect instead of PAYLOAD_ACK.
+        pendingAcknowledgements.removeAll()
+        Self.logger.notice("Receiver completed the safe-disconnect handshake")
+    }
+
+    override func processPayloadAcknowledgement(id: Int64) {
+        guard pendingAcknowledgements.remove(id) != nil else { return }
+        Self.logger.notice("Receiver acknowledged file; remaining: \(self.pendingAcknowledgements.count)")
+        if currentState == .finishing && pendingAcknowledgements.isEmpty { finishAcknowledgedTransfer() }
+    }
+
+    private func beginFinishing() {
+        guard !resultReported, currentState == .sendingFiles else { return }
+        currentState = .finishing
+        if pendingAcknowledgements.isEmpty { finishAcknowledgedTransfer(); return }
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self, !self.resultReported else { return }
+            self.lastError = NearbyError.protocolError("The receiver did not confirm saving the files.")
+            self.protocolError()
+        }
+        acknowledgementTimeout = timeout
+        NearbyConnection.connectionQueue.asyncAfter(deadline: .now() + 30, execute: timeout)
+    }
+
+    private func finishAcknowledgedTransfer() {
+        acknowledgementTimeout?.cancel()
+        do { try sendDisconnectionAndDisconnect() }
+        catch { lastError = error; protocolError() }
+    }
 
 	private func reportFailure(_ error:Error){
+        Self.logger.error("Outgoing failure: \(error.localizedDescription, privacy: .public)")
 		guard !resultReported else { return }
 		resultReported=true
+        acknowledgementTimeout?.cancel()
 		closeAllTransferHandles()
 		delegate?.outboundConnection(connection: self, failedWithError: error)
 	}
@@ -589,6 +630,7 @@ fileprivate struct OutgoingFileTransfer{
 	var handle:FileHandle?
 	let totalBytes:Int64
 	var currentOffset:Int64
+    var nextChunkIndex:Int32 = 0
 }
 
 protocol OutboundNearbyConnectionDelegate{
