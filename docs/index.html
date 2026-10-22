@@ -631,29 +631,59 @@
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="py-12 border-t border-theme-border bg-theme-black relative z-10 font-mono text-xs text-neutral-500">
-    <div class="max-w-7xl mx-auto px-5 sm:px-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-      
+  <!-- Halftone Wordmark Footer (21st.dev Component) -->
+  <footer id="hwf-footer" class="relative w-full overflow-hidden bg-theme-black border-t border-theme-border text-neutral-300 select-none min-h-[500px]">
+    <!-- Canvas for halftone dots and film grain -->
+    <canvas id="hwf-canvas" class="absolute inset-0 w-full h-full block pointer-events-auto" aria-hidden="true"></canvas>
+    <span class="sr-only">nearby drop</span>
+    
+    <!-- Top content layer -->
+    <div class="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 sm:p-10 font-mono text-[11px] tracking-wider uppercase">
       <div>
-        <div class="flex items-center gap-3 text-white font-bold mb-2">
-          <img src="assets/icon.png" alt="Nearby Drop Logo" class="w-5 h-5 rounded">
+        <div class="flex items-center gap-2 mb-2 font-bold text-white text-xs">
+          <img src="assets/icon.png" alt="Logo" class="w-5 h-5 rounded">
           <span>NEARBY DROP<sup class="text-[9px] text-neutral-500">®</sup></span>
-          <span class="text-neutral-600">//</span>
-          <span class="text-neutral-400 font-normal">NEARDROP CLIENT v2.3.0</span>
         </div>
-        <p class="text-neutral-500 text-[11px]">
-          Created and maintained by <a href="https://github.com/arslanbasharat-o-o" target="_blank" rel="noopener" class="text-neutral-300 hover:text-white underline">Arslan Basharat</a>. Distributed under GPL-3.0.
+        <p class="text-neutral-500 normal-case font-sans text-xs leading-relaxed">
+          Google Nearby Share &amp; Quick Share client for macOS. 100% offline, free, and open source under GPL-3.0.
         </p>
       </div>
 
-      <div class="flex flex-wrap items-center gap-6 text-[11px] text-neutral-400">
-        <a href="blog/how-to-transfer-files-mac-android.html" class="hover:text-white transition-colors">// TUTORIAL GUIDE</a>
-        <a href="blog/airdrop-alternative-for-android.html" class="hover:text-white transition-colors">// AIRDROP COMPARISON</a>
-        <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases" class="hover:text-white transition-colors">// RELEASES</a>
-        <a href="https://github.com/arslanbasharat-o-o/NearByDrop" class="hover:text-white transition-colors">// GITHUB REPOSITORY</a>
+      <div>
+        <h3 class="text-neutral-500 font-bold mb-3">// DOCUMENTATION</h3>
+        <ul class="space-y-2 text-neutral-400">
+          <li><a href="blog/how-to-transfer-files-mac-android.html" class="hover:text-white transition-colors">Tutorial Guide</a></li>
+          <li><a href="blog/airdrop-alternative-for-android.html" class="hover:text-white transition-colors">AirDrop Comparison</a></li>
+          <li><a href="https://github.com/arslanbasharat-o-o/NearByDrop/blob/main/PROTOCOL.md" target="_blank" rel="noopener" class="hover:text-white transition-colors">Protocol Spec</a></li>
+        </ul>
       </div>
 
+      <div>
+        <h3 class="text-neutral-500 font-bold mb-3">// REPOSITORY</h3>
+        <ul class="space-y-2 text-neutral-400">
+          <li><a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener" class="hover:text-white transition-colors">GitHub Source</a></li>
+          <li><a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest" target="_blank" rel="noopener" class="hover:text-white transition-colors">Latest DMG (v2.3.0)</a></li>
+          <li><a href="https://github.com/arslanbasharat-o-o/NearByDrop/issues" target="_blank" rel="noopener" class="hover:text-white transition-colors">Report an Issue</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-neutral-500 font-bold mb-3">// ARCHITECTURE</h3>
+        <ul class="space-y-2 text-neutral-400">
+          <li><span>Universal Mach-O</span></li>
+          <li><span>Apple Silicon &amp; Intel</span></li>
+          <li><span>macOS 14+ Sonoma / Sequoia</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Rule and Back to Top -->
+    <div class="relative z-10 flex justify-between items-center px-6 sm:px-10 py-4 border-t border-white/10 font-mono text-[11px] tracking-wider uppercase text-neutral-500">
+      <span>ENGINEERED BY ARSLAN BASHARAT</span>
+      <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="hover:text-white transition-colors flex items-center gap-1 cursor-pointer">
+        <span>BACK TO TOP</span>
+        <span>↑</span>
+      </button>
     </div>
   </footer>
 
@@ -800,6 +830,245 @@
     // Initialize default issue content on load
     showIssue('not-found');
     runCompatibilityCheck();
+
+    // Halftone Wordmark Footer Canvas (21st.dev interactive spring canvas)
+    (function initHalftoneFooter() {
+      const root = document.getElementById('hwf-footer');
+      const canvas = document.getElementById('hwf-canvas');
+      if (!root || !canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const wordmark = "nearby drop";
+      const fontFamily = '"Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif';
+      const fontWeight = 800;
+      const dotGap = 6;
+      const radius = 85;
+      const crop = 0.22;
+      const grain = 0.4;
+      const bg = '#090a0f';
+      const ink = [226, 232, 240];
+      const warm = [16, 185, 129]; // emerald green accent
+
+      let w = 0, h = 0, dpr = 1;
+      let px = -1e5, py = -1e5;
+      let raf = 0, visible = true, awake = true;
+      let ring = { x: 0, y: 0, t: -1 };
+      let dots = new Float32Array(0);
+      let count = 0;
+      let grainTile = null;
+
+      function hwfRadius(cov, gap) {
+        const c = cov < 0 ? 0 : cov > 1 ? 1 : cov;
+        return Math.sqrt(c) * gap * 0.56;
+      }
+
+      function hwfStep(x, y, vx, vy, hx, hy, px, py, r) {
+        const dx = x - px;
+        const dy = y - py;
+        const d2 = dx * dx + dy * dy;
+        if (r > 0 && d2 < r * r) {
+          const d = Math.sqrt(d2) + 0.001;
+          const f = (1 - d / r) * 2.6;
+          vx += (dx / d) * f;
+          vy += (dy / d) * f;
+        }
+        vx = (vx + (hx - x) * 0.05) * 0.84;
+        vy = (vy + (hy - y) * 0.05) * 0.84;
+        return [x + vx, y + vy, vx, vy];
+      }
+
+      function hwfWarmth(x, y, hx, hy, span) {
+        const d = Math.hypot(x - hx, y - hy);
+        return span > 0 ? Math.min(1, d / span) : 0;
+      }
+
+      function layout() {
+        const rect = root.getBoundingClientRect();
+        w = Math.max(1, Math.round(rect.width));
+        h = Math.max(1, Math.round(rect.height));
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+
+        const mask = document.createElement('canvas');
+        mask.width = w;
+        mask.height = h;
+        const m = mask.getContext('2d', { willReadFrequently: true });
+        if (!m) return;
+
+        m.font = fontWeight + ' 100px ' + fontFamily;
+        const measured = m.measureText(wordmark).width;
+        const fit = measured > 0 ? ((w * 1.02) / measured) * 100 : 0;
+        m.font = fontWeight + ' ' + fit + 'px ' + fontFamily;
+
+        const box = m.measureText(wordmark);
+        const cap = box.actualBoundingBoxAscent || fit * 0.72;
+        const c = Math.max(0, Math.min(0.6, crop));
+        m.fillStyle = '#000';
+        m.textBaseline = 'alphabetic';
+        m.fillText(wordmark, (w - box.width) / 2, h + cap * c);
+
+        const img = m.getImageData(0, 0, w, h).data;
+        const gap = Math.max(3, dotGap);
+        const cols = Math.ceil(w / gap);
+        const rows = Math.ceil(h / gap);
+        const tmp = [];
+
+        for (let gy = 0; gy < rows; gy++) {
+          for (let gx = 0; gx < cols; gx++) {
+            let sum = 0;
+            for (let sy = 0; sy < 3; sy++) {
+              for (let sx = 0; sx < 3; sx++) {
+                const x = Math.min(w - 1, Math.floor(gx * gap + ((sx + 0.5) * gap) / 3));
+                const y = Math.min(h - 1, Math.floor(gy * gap + ((sy + 0.5) * gap) / 3));
+                sum += img[(y * w + x) * 4 + 3];
+              }
+            }
+            const cov = sum / (9 * 255);
+            if (cov < 0.06) continue;
+            const hx = gx * gap + gap / 2;
+            const hy = gy * gap + gap / 2;
+            tmp.push(hx, hy, 0, 0, hx, hy, hwfRadius(cov, gap));
+          }
+        }
+        dots = new Float32Array(tmp);
+        count = tmp.length / 7;
+
+        grainTile = document.createElement('canvas');
+        grainTile.width = 256;
+        grainTile.height = 256;
+        const g = grainTile.getContext('2d');
+        if (g) {
+          const id = g.createImageData(256, 256);
+          for (let i = 0; i < id.data.length; i += 4) {
+            const v = Math.random() * 255;
+            id.data[i] = id.data[i + 1] = id.data[i + 2] = v;
+            id.data[i + 3] = Math.random() < 0.5 ? 0 : 255;
+          }
+          g.putImageData(id, 0, 0);
+        }
+        awake = true;
+      }
+
+      function draw(now) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, w, h);
+
+        const r = !reduced ? Math.max(0, radius) : 0;
+        const ringAge = ring.t < 0 ? 1e9 : now - ring.t;
+        const ringR = ringAge * 0.9;
+        let moving = false;
+
+        for (let i = 0; i < count; i++) {
+          const j = i * 7;
+          let x = dots[j], y = dots[j + 1], vx = dots[j + 2], vy = dots[j + 3];
+          const hx = dots[j + 4], hy = dots[j + 5];
+
+          if (!reduced) {
+            if (ringAge < 900) {
+              const dx = hx - ring.x;
+              const dy = hy - ring.y;
+              const d = Math.sqrt(dx * dx + dy * dy) + 0.001;
+              const band = 1 - Math.min(1, Math.abs(d - ringR) / 26);
+              if (band > 0) {
+                const f = band * 3.2 * (1 - ringAge / 900);
+                vx += (dx / d) * f;
+                vy += (dy / d) * f;
+              }
+            }
+            const s = hwfStep(x, y, vx, vy, hx, hy, px, py, r);
+            x = s[0]; y = s[1]; vx = s[2]; vy = s[3];
+            if (Math.abs(vx) + Math.abs(vy) > 0.02 || Math.abs(x - hx) + Math.abs(y - hy) > 0.05) {
+              moving = true;
+            } else {
+              x = hx; y = hy; vx = 0; vy = 0;
+            }
+            dots[j] = x; dots[j + 1] = y; dots[j + 2] = vx; dots[j + 3] = vy;
+          }
+
+          const k = hwfWarmth(x, y, hx, hy, 28);
+          ctx.fillStyle = k > 0.02
+            ? 'rgb(' +
+                Math.round(ink[0] + (warm[0] - ink[0]) * k) + ',' +
+                Math.round(ink[1] + (warm[1] - ink[1]) * k) + ',' +
+                Math.round(ink[2] + (warm[2] - ink[2]) * k) + ')'
+            : '#e2e8f0';
+
+          ctx.beginPath();
+          ctx.arc(x, y, dots[j + 6], 0, 6.2832);
+          ctx.fill();
+        }
+
+        if (grainTile && grain > 0) {
+          ctx.globalAlpha = Math.min(1, grain) * 0.09;
+          ctx.globalCompositeOperation = 'overlay';
+          const pattern = ctx.createPattern(grainTile, 'repeat');
+          if (pattern) {
+            ctx.fillStyle = pattern;
+            ctx.fillRect(0, 0, w, h);
+          }
+          ctx.globalAlpha = 1;
+          ctx.globalCompositeOperation = 'source-over';
+        }
+
+        awake = moving || ringAge < 900 || px > -1e4;
+      }
+
+      function loop(now) {
+        raf = 0;
+        if (!visible) return;
+        draw(now);
+        if (awake) raf = requestAnimationFrame(loop);
+      }
+
+      function wake() {
+        awake = true;
+        if (!raf && visible) raf = requestAnimationFrame(loop);
+      }
+
+      function toLocal(e) {
+        const b = canvas.getBoundingClientRect();
+        return [e.clientX - b.left, e.clientY - b.top];
+      }
+
+      root.addEventListener('pointermove', (e) => {
+        const p = toLocal(e);
+        px = p[0]; py = p[1];
+        wake();
+      });
+
+      root.addEventListener('pointerleave', () => {
+        px = -1e5; py = -1e5;
+        wake();
+      });
+
+      root.addEventListener('pointerdown', (e) => {
+        if (reduced || e.target.closest('a, button')) return;
+        const p = toLocal(e);
+        ring = { x: p[0], y: p[1], t: performance.now() };
+        wake();
+      });
+
+      layout();
+      draw(performance.now());
+      wake();
+
+      const ro = new ResizeObserver(() => { layout(); wake(); });
+      ro.observe(root);
+
+      const io = new IntersectionObserver((entries) => {
+        visible = entries[0] ? entries[0].isIntersecting : true;
+        if (visible) wake();
+      });
+      io.observe(root);
+
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => { layout(); wake(); });
+      }
+    })();
   </script>
 
 </body>
