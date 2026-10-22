@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How to Transfer Files from Android to Mac with Quick Share – Nearby Drop</title>
-  <meta name="description" content="A practical guide to sending files from Android to Mac with Quick Share, QR pairing, or a USB MTP cable using Nearby Drop.">
+  <title>Android to Mac Quick Share Guide | Nearby Drop</title>
+  <meta name="description" content="Use Nearby Drop to transfer Android files to Mac over Quick Share or USB MTP. Check native AirDrop compatibility and local-network requirements.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/how-to-transfer-files-mac-android.html">
 
   <meta property="og:type" content="article">
   <meta property="og:title" content="How to Transfer Files from Android to Mac with Quick Share">
-  <meta property="og:description" content="A practical guide to Quick Share, QR pairing, and USB MTP transfers between Android and Mac.">
+  <meta property="og:description" content="A practical guide to Quick Share over local Wi-Fi and USB MTP transfers, including current Android-to-Mac compatibility notes.">
   <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/icon.png">
   <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/blog/how-to-transfer-files-mac-android.html">
 
@@ -72,7 +72,7 @@
     "@context": "https://schema.org",
     "@type": "HowTo",
     "name": "How to Transfer Files from Android to Mac with Quick Share",
-    "description": "Guide to sending files from Android to macOS over a shared local Wi-Fi network, with QR pairing and USB MTP as alternatives.",
+    "description": "Guide to sending files from Android to macOS over reachable local Wi-Fi or USB MTP, with current notes on native Quick Share and AirDrop support.",
     "author": {
       "@type": "Person",
       "name": "Arslan Basharat"
@@ -165,7 +165,7 @@
     <div class="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-neutral-400 mb-6">
       <span class="px-2 py-0.5 border border-theme-border bg-theme-surface text-emerald-400">[ TUTORIAL // GUIDE ]</span>
       <span class="text-neutral-600">//</span>
-      <span>UPDATED FOR MACOS 14 &amp; 15</span>
+      <span>UPDATED FOR MACOS 14+</span>
       <span class="text-neutral-600">//</span>
       <span>5 MIN READ</span>
     </div>
@@ -184,11 +184,11 @@
     <!-- Article Body -->
     <div class="space-y-6 text-neutral-300 font-sans text-sm sm:text-base leading-relaxed">
       <p>
-        AirDrop is designed for Apple devices, so moving files from Android to Mac takes a different route. Nearby Drop is a macOS menu bar app that works with Android Quick Share and also includes USB MTP file browsing.
+        Google now supports native Quick Share-to-AirDrop sharing on select Android devices. Check <a href="https://support.google.com/pixelphone/answer/9286773?hl=en" target="_blank" rel="noopener" class="underline hover:text-white">Google's current compatible-device guide</a>. Nearby Drop is a separate macOS menu bar client for Android Quick Share and includes USB MTP file browsing; it can be useful when native interoperability is unavailable or when you want the Mac-side app workflow.
       </p>
 
       <p>
-        This guide covers three options: wireless Quick Share on a reachable local network, QR pairing when available, and a direct USB MTP connection. Transfer speed depends on the devices and network or cable.
+        This guide covers wireless Quick Share on a reachable local network and a direct USB MTP connection. Transfer speed depends on the devices and network or cable. Android-generated QR receiving on Mac is not verified for this release.
       </p>
 
       <p>
@@ -247,25 +247,20 @@
         </div>
       </div>
 
-      <!-- Method 2 -->
+      <!-- QR status -->
       <div class="mt-12 pt-8 border-t border-theme-border">
-        <span class="font-mono text-xs text-emerald-400 uppercase tracking-widest block mb-2">[ METHOD 02 ]</span>
+        <span class="font-mono text-xs text-amber-300 uppercase tracking-widest block mb-2">[ QR STATUS ]</span>
         <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">
-          Inline QR Code Pairing (Instant Direct Connect)
+          Android-to-Mac QR receiving is not ready
         </h2>
         <p class="mb-4">
-          Nearby Drop includes a built-in optical QR camera scanner for situations where mDNS broadcast is delayed:
+          A physical Pixel 8 Pro test scanned the Android Quick Share code, but the receive handshake did not complete. For Android-to-Mac transfers, use the Quick Share device list on a reachable local network or use USB MTP. Nearby Drop's separate Mac-generated QR send flow is intended for Mac-to-Android sharing.
         </p>
-        <ul class="space-y-2 list-disc list-inside text-neutral-400 text-xs sm:text-sm">
-          <li>On your Android phone, select your files, tap Quick Share, and tap <strong>Share with QR Code</strong>.</li>
-          <li>Click Nearby Drop in your Mac menu bar and choose <strong>Receive → Scan QR</strong>.</li>
-          <li>Point your Mac's FaceTime HD camera at the phone screen; Nearby Drop reads the cryptographic session token and negotiates an encrypted Wi-Fi transfer immediately.</li>
-        </ul>
       </div>
 
       <!-- Method 3 -->
       <div class="mt-12 pt-8 border-t border-theme-border">
-        <span class="font-mono text-xs text-emerald-400 uppercase tracking-widest block mb-2">[ METHOD 03 ]</span>
+          <span class="font-mono text-xs text-emerald-400 uppercase tracking-widest block mb-2">[ METHOD 02 ]</span>
         <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">
           Direct USB-C Cable (Hardware MTP Storage Manager)
         </h2>
@@ -351,7 +346,7 @@
         <ul class="space-y-2 text-neutral-400">
           <li><span>Universal Mach-O</span></li>
           <li><span>Apple Silicon &amp; Intel</span></li>
-          <li><span>macOS 14+ Sonoma / Sequoia</span></li>
+          <li><span>macOS 14 or later</span></li>
         </ul>
       </div>
     </div>
