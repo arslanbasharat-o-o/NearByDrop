@@ -1,0 +1,24 @@
+Copyright (c) 2026 Arslan Basharat. All rights reserved.
+
+Nearbydrop
+Created by Arslan Basharat
+
+PROPRIETARY LICENSE AGREEMENT
+
+This software and its associated source code, design, documentation, and assets ("Software") are proprietary and confidential to Arslan Basharat ("Copyright Holder").
+
+1. RESERVATION OF RIGHTS:
+All rights, title, and interest in and to the Software, including all copyrights, patents, trade secrets, trademarks, and other intellectual property rights, are and shall remain exclusively with the Copyright Holder.
+
+2. PROHIBITIONS:
+Without prior express written permission from the Copyright Holder, no individual or entity may:
+- Copy, reproduce, redistribute, republish, or broadcast the Software or any portion thereof;
+- Modify, adapt, translate, reverse engineer, decompile, disassemble, or create derivative works based upon the Software;
+- Sublicense, rent, lease, sell, distribute, or commercially exploit the Software;
+- Remove, alter, or obscure any copyright notice, trademark, or other proprietary markings on or within the Software.
+
+3. THIRD-PARTY COMPONENTS:
+Certain third-party libraries bundled with or linked by the Software (such as libmtp and libusb under the GNU Lesser General Public License, and Swift libraries under MIT or Apache 2.0 licenses) are governed by their respective open-source licenses. Nothing in this agreement restricts rights granted by the applicable third-party open-source licenses for those specific independent components. Full texts of third-party licenses are provided in the ThirdPartyLicenses directory and repository Vendor documentation.
+
+4. DISCLAIMER OF WARRANTIES:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
