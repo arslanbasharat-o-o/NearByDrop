@@ -1,26 +1,26 @@
 import Cocoa
 import SwiftUI
-import UserNotifications
 import NearbyShare
 
 @main
-class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate, NSPopoverDelegate, MainAppDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDelegate {
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
     let model = TransferModel()
-    private lazy var transferWindow = TransferWindowController(model: model)
     private lazy var settingsWindow = SettingsWindowController(model: model)
+    private var outsideClickMonitor: Any?
+    private var localClickMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         model.onConsent = { [weak self] id, accept in self?.consent(id, accept: accept) }
-        ThemeManager.shared.applyDockPolicy()
+        NSApp.setActivationPolicy(.accessory)
         setupMainMenu()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = ThemeManager.shared.menuBarImage()
         statusItem.button?.target = self
         statusItem.button?.action = #selector(toggleMenu)
-        statusItem.button?.setAccessibilityLabel("NearByDrop")
+        statusItem.button?.setAccessibilityLabel("Nearby Drop")
         ThemeManager.shared.onMenuBarIconChanged = { [weak self] in
             self?.statusItem.button?.image = ThemeManager.shared.menuBarImage()
         }
@@ -29,39 +29,30 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             model: model,
             send: { [weak self] in self?.sendFiles(nil) },
             scan: { [weak self] in self?.scanCode(nil) },
-            open: { [weak self] in self?.openApp(nil) },
             settings: { [weak self] in self?.openSettings(nil) },
             guide: { [weak self] in self?.openGuide(nil) },
             privacy: { [weak self] in self?.openPrivacy(nil) }
         ))
-        popover.contentSize = NSSize(width: 360, height: 505)
-        popover.behavior = .transient
+        popover.contentSize = NSSize(width: 360, height: 480)
+        popover.behavior = .applicationDefined
         popover.delegate = self
-
-        let nc = UNUserNotificationCenter.current()
-        nc.delegate = self
-        nc.setNotificationCategories([
-            UNNotificationCategory(identifier: "INCOMING_TRANSFERS", actions: [
-                UNNotificationAction(identifier: "ACCEPT", title: "Accept", options: .authenticationRequired),
-                UNNotificationAction(identifier: "DECLINE", title: "Decline")
-            ], intentIdentifiers: []),
-            UNNotificationCategory(identifier: "TRANSFER_COMPLETED", actions: [
-                UNNotificationAction(identifier: "OPEN", title: "Open", options: .foreground),
-                UNNotificationAction(identifier: "FINDER", title: "Show in Finder")
-            ], intentIdentifiers: [])
-        ])
-        nc.requestAuthorization(options: [.alert, .sound]) { _, _ in }
 
         NearbyConnectionManager.shared.mainAppDelegate = self
         NearbyConnectionManager.shared.becomeVisible()
 
+        NotificationCenter.default.addObserver(forName: .didFinishChoosingFiles, object: nil, queue: .main) { [weak self] _ in
+            guard let self = self else { return }
+            if !self.popover.isShown {
+                self.showPopover()
+            } else if let window = self.popover.contentViewController?.view.window {
+                NSApp.activate(ignoringOtherApps: true)
+                window.makeKeyAndOrderFront(nil)
+            }
+        }
+
         if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
             OnboardingWindowController.showOnboarding(onFinished: { [weak self] in
-                if !(self?.model.menuBarOnly ?? false) {
-                    self?.openApp(nil)
-                } else {
-                    self?.showPopover()
-                }
+                self?.showPopover()
             })
         }
     }
@@ -71,10 +62,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         // App Menu
         let appMenuItem = NSMenuItem()
-        let appMenu = NSMenu(title: "NearByDrop")
-        let aboutItem = NSMenuItem(title: "About NearByDrop", action: #selector(openAbout(_:)), keyEquivalent: "")
+        let appMenu = NSMenu(title: "Nearby Drop")
+        let aboutItem = NSMenuItem(title: "About Nearby Drop", action: #selector(openAbout(_:)), keyEquivalent: "")
         aboutItem.target = self
         appMenu.addItem(aboutItem)
+        let updates = NSMenuItem(title: "Check for Updates…", action: #selector(openUpdates(_:)), keyEquivalent: "")
+        updates.target = self
+        appMenu.addItem(updates)
         appMenu.addItem(NSMenuItem.separator())
         let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings(_:)), keyEquivalent: ",")
         settingsItem.target = self
@@ -86,13 +80,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         NSApp.servicesMenu = servicesMenu
         appMenu.addItem(servicesItem)
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Hide NearByDrop", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: "Hide Nearby Drop", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         let hideOthers = NSMenuItem(title: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         hideOthers.keyEquivalentModifierMask = [.command, .option]
         appMenu.addItem(hideOthers)
         appMenu.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(withTitle: "Quit NearByDrop", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit Nearby Drop", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appMenuItem.submenu = appMenu
         mainMenu.addItem(appMenuItem)
 
@@ -100,8 +94,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let fileMenuItem = NSMenuItem()
         let fileMenu = NSMenu(title: "File")
         for (title, action, key) in [
-            ("Open NearByDrop", #selector(openApp(_:)), "0"),
-            ("Settings…", #selector(openSettings(_:)), ","),
+            ("Show Nearby Drop", #selector(showMenu(_:)), "0"),
             ("Send Files…", #selector(sendFiles(_:)), "o"),
             ("Scan QR Code…", #selector(scanCode(_:)), "r"),
             ("Open Downloads", #selector(openDownloads(_:)), "d")
@@ -162,14 +155,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Help Menu
         let helpMenuItem = NSMenuItem()
         let helpMenu = NSMenu(title: "Help")
-        let guideItem = NSMenuItem(title: "NearByDrop Quick Start Guide", action: #selector(openGuide(_:)), keyEquivalent: "?")
+        let guideItem = NSMenuItem(title: "Nearby Drop Quick Start Guide", action: #selector(openGuide(_:)), keyEquivalent: "?")
         guideItem.target = self
         helpMenu.addItem(guideItem)
         let privacyItem = NSMenuItem(title: "Privacy & Security Policy", action: #selector(openPrivacy(_:)), keyEquivalent: "")
         privacyItem.target = self
         helpMenu.addItem(privacyItem)
         helpMenu.addItem(NSMenuItem.separator())
-        let githubItem = NSMenuItem(title: "NearByDrop on GitHub…", action: #selector(openGitHub(_:)), keyEquivalent: "")
+        let githubItem = NSMenuItem(title: "Nearby Drop on GitHub…", action: #selector(openGitHub(_:)), keyEquivalent: "")
         githubItem.target = self
         helpMenu.addItem(githubItem)
         helpMenuItem.submenu = helpMenu
@@ -185,6 +178,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             window.level = .popUpMenu
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         }
+        startMonitoringOutsideClicks()
     }
 
     func popoverDidShow(_ notification: Notification) {
@@ -196,32 +190,78 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         }
     }
 
+    func popoverDidClose(_ notification: Notification) {
+        stopMonitoringOutsideClicks()
+        model.scanning = false
+    }
+
     func popoverShouldClose(_ popover: NSPopover) -> Bool {
-        return !model.isChoosingDirectory
+        return !shouldPreventPopoverDismissal()
+    }
+
+    private func shouldPreventPopoverDismissal() -> Bool {
+        if model.isChoosingDirectory || model.isChoosingFiles || model.usb.isChoosingFiles {
+            return true
+        }
+        if NSApp.windows.contains(where: { ($0 is NSOpenPanel || $0 is NSSavePanel) && $0.isVisible }) {
+            return true
+        }
+        return false
+    }
+
+    private func startMonitoringOutsideClicks() {
+        stopMonitoringOutsideClicks()
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            self?.handleOutsideClick()
+        }
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            self?.handleLocalClick(event)
+            return event
+        }
+    }
+
+    private func stopMonitoringOutsideClicks() {
+        if let monitor = outsideClickMonitor {
+            NSEvent.removeMonitor(monitor)
+            outsideClickMonitor = nil
+        }
+        if let monitor = localClickMonitor {
+            NSEvent.removeMonitor(monitor)
+            localClickMonitor = nil
+        }
+    }
+
+    private func handleOutsideClick() {
+        guard popover.isShown, !shouldPreventPopoverDismissal() else { return }
+        let mouseLocation = NSEvent.mouseLocation
+        if let buttonWindow = statusItem.button?.window, buttonWindow.frame.contains(mouseLocation) {
+            return
+        }
+        if let popoverWindow = popover.contentViewController?.view.window, popoverWindow.frame.contains(mouseLocation) {
+            return
+        }
+        popover.performClose(nil)
+    }
+
+    private func handleLocalClick(_ event: NSEvent) {
+        guard popover.isShown, !shouldPreventPopoverDismissal() else { return }
+        guard let popoverWindow = popover.contentViewController?.view.window else { return }
+        if event.window === popoverWindow || event.window === statusItem.button?.window {
+            return
+        }
+        popover.performClose(nil)
     }
 
     @objc private func toggleMenu() {
-        guard let button = statusItem.button else { return }
-        if popover.isShown {
-            popover.performClose(nil)
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-            popover.contentSize = NSSize(width: 360, height: 505)
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            if let window = popover.contentViewController?.view.window {
-                window.level = .popUpMenu
-                window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
-                window.makeKeyAndOrderFront(nil)
-                window.orderFrontRegardless()
-            }
-        }
+        if popover.isShown { popover.performClose(nil) }
+        else { showPopover() }
     }
 
     func showPopover() {
         guard let button = statusItem.button else { return }
         if !popover.isShown {
             NSApp.activate(ignoringOtherApps: true)
-            popover.contentSize = NSSize(width: 360, height: 505)
+            popover.contentSize = NSSize(width: 360, height: 480)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             if let window = popover.contentViewController?.view.window {
                 window.level = .popUpMenu
@@ -229,14 +269,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 window.makeKeyAndOrderFront(nil)
                 window.orderFrontRegardless()
             }
+            startMonitoringOutsideClicks()
         }
     }
-    @objc func openApp(_ sender: Any?) {
-        popover.performClose(nil)
-        transferWindow.showWindow(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        transferWindow.window?.makeKeyAndOrderFront(nil)
-    }
+    @objc func showMenu(_ sender: Any?) { showPopover() }
     @objc func openSettings(_ sender: Any?) {
         popover.performClose(nil)
         settingsWindow.show(tab: .general)
@@ -255,7 +291,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
     @objc func openPrivacy(_ sender: Any?) {
         popover.performClose(nil)
-        if let url = URL(string: "https://github.com/arslanbasharat/NearByDrop#privacy--security") {
+        if let url = URL(string: "https://github.com/arslanbasharat-o-o/NearByDrop#privacy--security") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -263,26 +299,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         popover.performClose(nil)
         settingsWindow.show(tab: .about)
     }
+    @objc func openUpdates(_ sender: Any?) { openAbout(sender) }
     @objc func openGitHub(_ sender: Any?) {
-        if let url = URL(string: "https://github.com/arslanbasharat/NearByDrop") {
+        if let url = URL(string: "https://github.com/arslanbasharat-o-o/NearByDrop") {
             NSWorkspace.shared.open(url)
         }
     }
     @objc func showSendTab(_ sender: Any?) {
         model.tab = .send
-        if model.menuBarOnly { showPopover() } else { openApp(nil) }
+        showPopover()
     }
     @objc func showReceiveTab(_ sender: Any?) {
         model.tab = .receive
-        if model.menuBarOnly { showPopover() } else { openApp(nil) }
+        showPopover()
     }
     @objc func showHistoryTab(_ sender: Any?) {
         model.tab = .history
-        if model.menuBarOnly { showPopover() } else { openApp(nil) }
+        showPopover()
     }
     @objc func showUSBTab(_ sender: Any?) {
         model.tab = .usb
-        if model.menuBarOnly { showPopover() } else { openApp(nil) }
+        showPopover()
     }
     @objc func sendFiles(_ sender: Any?) {
         model.tab = .send
@@ -290,17 +327,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
     @objc func scanCode(_ sender: Any?) {
         model.tab = .receive
-        QRScannerWindowController.shared.show { [weak self] code in
-            self?.model.scan(code)
-        }
+        model.scanning = true
+        showPopover()
     }
     @objc func openDownloads(_ sender: Any?) { TransferModel.openDownloads() }
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if model.menuBarOnly {
-            toggleMenu()
-            return true
-        }
-        openApp(nil)
+    func applicationShouldHandleReopen(_ app: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showPopover()
         return true
     }
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
@@ -308,60 +340,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     private func consent(_ id: String, accept: Bool) {
         guard model.incoming[id] != nil, !model.accepted.contains(id) else { return }
+        let device = model.incoming[id]?.device
         if accept {
+            if let device { model.commitPendingDeviceTrust(id, device: device) }
             model.accepted.insert(id)
             FeedbackManager.shared.vibrateClick()
         } else {
+            model.discardPendingDeviceTrust(id)
             model.incoming.removeValue(forKey: id)
             FeedbackManager.shared.vibrateTap()
         }
-        TransferNotificationManager.shared.transferDidConsent(id: id, accept: accept)
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["transfer_" + id])
         NearbyConnectionManager.shared.submitUserConsent(transferID: id, accept: accept)
     }
 
-    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .sound, .list])
-    }
-
-    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completion: @escaping () -> Void) {
-        DispatchQueue.main.async {
-            let userInfo = response.notification.request.content.userInfo
-            if let id = userInfo["transferID"] as? String {
-                if response.actionIdentifier == "ACCEPT" || response.actionIdentifier == "DECLINE" {
-                    self.consent(id, accept: response.actionIdentifier == "ACCEPT")
-                } else {
-                    self.model.tab = .receive
-                    if self.model.menuBarOnly { self.showPopover() } else { self.openApp(nil) }
-                }
-            } else if let filePath = userInfo["filePath"] as? String {
-                let fileURL = URL(fileURLWithPath: filePath)
-                if response.actionIdentifier == "FINDER" {
-                    if FileManager.default.fileExists(atPath: fileURL.path) {
-                        NSWorkspace.shared.activateFileViewerSelecting([fileURL])
-                    } else {
-                        TransferModel.openDownloads()
-                    }
-                } else {
-                    if FileManager.default.fileExists(atPath: fileURL.path) {
-                        NSWorkspace.shared.open(fileURL)
-                    } else {
-                        TransferModel.openDownloads()
-                    }
-                }
-            }
-            completion()
-        }
-    }
-
     func obtainUserConsent(for transfer: TransferMetadata, from device: RemoteDeviceInfo) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if self.model.incoming.isEmpty { self.model.clearCompletedTransfer() }
+            if !self.model.waitingForQR { self.model.qrStatus = .idle }
             self.model.incoming[transfer.id] = TransferInfo(device: device, transfer: transfer)
             self.model.tab = .receive
-            self.model.stopQRReceive()
+            let scannedTransfer = self.model.waitingForQR && device.id?.hasPrefix("qr:") == true
+            if scannedTransfer {
+                self.model.qrTransferID = transfer.id
+                self.model.stopQRReceive()
+            }
 
             // When receiving via QR code scanner, the user actively initiated by scanning the sender's code
-            if self.model.qrStatus != .idle {
+            if scannedTransfer {
                 let desc: String
                 if let text = transfer.textDescription {
                     desc = text
@@ -380,7 +386,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             // Auto-accept transfers from trusted devices
             if self.model.isDeviceTrusted(device) {
                 self.consent(transfer.id, accept: true)
-                TransferNotificationManager.shared.showAutoAccepted(transfer: transfer, device: device)
                 return
             }
 
@@ -388,82 +393,68 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             FeedbackManager.shared.vibrateTap()
 
             // Automatically open UI so incoming transfer is immediately visible
-            if self.popover.isShown || self.model.menuBarOnly || self.transferWindow.window?.isVisible != true {
-                self.showPopover()
-            } else {
-                self.openApp(nil)
-            }
-
-            TransferNotificationManager.shared.showIncoming(
-                transfer: transfer,
-                device: device,
-                isTrusted: self.model.isDeviceTrusted(device),
-                onConsent: { [weak self] accept in
-                    self?.consent(transfer.id, accept: accept)
-                },
-                onTrust: { [weak self] trusted in
-                    self?.model.setDeviceTrusted(device, trusted: trusted)
-                }
-            )
-
-            let content = UNMutableNotificationContent()
-            content.title = device.name
-            content.body = "Wants to send \(transfer.files.count == 1 ? transfer.files[0].name : "\(transfer.files.count) items")"
-            content.subtitle = "Code: \(transfer.pinCode ?? "—")"
-            content.categoryIdentifier = "INCOMING_TRANSFERS"
-            content.sound = .default
-            content.userInfo = ["transferID": transfer.id]
-            UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "transfer_" + transfer.id, content: content, trigger: nil))
+            self.showPopover()
         }
     }
 
     func incomingTransfer(id: String, didFinishWith error: Error?) {
         DispatchQueue.main.async {
-            let info = self.model.incoming[id]
-            let fileURL = info?.transfer.files.first
-                .map { self.model.downloadDirectory.appendingPathComponent($0.name) }
+            // Discovery probes and canceled requests are not user transfers.
+            guard let info = self.model.incoming[id] else { return }
+            let fileURL = info.transfer.files.first?.destinationURL
                 .flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
             let fileName: String
-            if let text = info?.transfer.textDescription {
+            if let text = info.transfer.textDescription {
                 fileName = text
-            } else if let first = info?.transfer.files.first {
-                fileName = (info?.transfer.files.count ?? 1) > 1 ? "\(first.name) (+\((info?.transfer.files.count ?? 1) - 1))" : first.name
+            } else if let first = info.transfer.files.first {
+                fileName = info.transfer.files.count > 1 ? "\(first.name) (+\(info.transfer.files.count - 1))" : first.name
             } else {
                 fileName = "File"
             }
 
-            if error == nil, let info = info {
-                self.model.recordIncoming(info: info)
+            if error == nil {
+                self.model.commitPendingDeviceTrust(id, device: info.device)
+                let receivedURLs = info.transfer.files.compactMap(\.destinationURL)
+                self.model.recordIncoming(info: info, fileURLs: receivedURLs)
                 FeedbackManager.shared.playSuccess()
                 FeedbackManager.shared.vibrateSuccess()
-                TransferNotificationManager.shared.transferDidFinish(id: id, error: nil, fileURL: fileURL, fileName: fileName)
 
-                let completeContent = UNMutableNotificationContent()
-                completeContent.title = "Transfer Complete"
-                completeContent.body = "Received \(fileName) from \(info.device.name)"
-                completeContent.categoryIdentifier = "TRANSFER_COMPLETED"
-                completeContent.sound = .default
-                if let fileURL = fileURL {
-                    completeContent.userInfo = ["filePath": fileURL.path]
-                }
-                UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "complete_" + id, content: completeContent, trigger: nil))
+                self.model.lastCompletedTransfer = CompletedTransferInfo(
+                    id: id,
+                    fileName: fileName,
+                    fileCount: info.transfer.files.count,
+                    fileURL: fileURL,
+                    destinationPath: self.model.downloadDirectoryDisplayPath
+                )
+                self.model.lastTransferError = nil
 
-                if self.model.qrStatus != .idle {
+                if self.model.qrTransferID == id {
                     self.model.qrStatus = .completed(filename: fileName, count: info.transfer.files.count)
                 }
             } else if let error {
-                NSLog("[Nearby Drop] Inbound transfer %@ finished with error: %@", id, error.localizedDescription)
+                self.model.discardPendingDeviceTrust(id)
+                NearbyLogger.log("[Nearby Drop] Inbound transfer \(id) finished with error: \(error)")
                 FeedbackManager.shared.playError()
                 FeedbackManager.shared.vibrateTap()
-                TransferNotificationManager.shared.transferDidFinish(id: id, error: error, fileURL: nil, fileName: fileName)
-                if self.model.qrStatus != .idle {
+
+                self.model.lastCompletedTransfer = nil
+                self.model.lastTransferError = TransferModel.errorMessage(error)
+
+                if self.model.qrTransferID == id {
                     self.model.qrStatus = .failed(error: TransferModel.errorMessage(error))
                 }
             }
             self.model.incoming.removeValue(forKey: id)
+            self.model.incomingProgress.removeValue(forKey: id)
             self.model.accepted.remove(id)
             self.model.receiveMessage = error.map(TransferModel.errorMessage) ?? "Saved to \(self.model.downloadDirectoryDisplayPath)"
-            UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["transfer_" + id])
+        }
+    }
+
+    func incomingTransferProgress(id: String, bytesTransferred: Int64, totalBytes: Int64) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.model.updateIncomingProgress(id: id, bytesTransferred: bytesTransferred, totalBytes: totalBytes)
         }
     }
 
@@ -474,17 +465,99 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
 struct TransferInfo { let device: RemoteDeviceInfo; let transfer: TransferMetadata }
 
+struct SonarWaveRing: View {
+    let delay: Double
+    let accent: Color
+    @State private var isAnimating = false
+
+    var body: some View {
+        Circle()
+            .stroke(accent.opacity(isAnimating ? 0.0 : 0.42), lineWidth: isAnimating ? 1.0 : 2.0)
+            .scaleEffect(isAnimating ? 2.3 : 0.35)
+            .animation(
+                Animation.easeOut(duration: 2.2)
+                    .repeatForever(autoreverses: false)
+                    .delay(delay),
+                value: isAnimating
+            )
+            .onAppear {
+                isAnimating = true
+            }
+    }
+}
+
+struct RadarScanningView: View {
+    @ObservedObject var theme = ThemeManager.shared
+    @State private var floating = false
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Spacer(minLength: 10)
+            ZStack {
+                SonarWaveRing(delay: 0.0, accent: theme.currentAccent.color)
+                SonarWaveRing(delay: 0.7, accent: theme.currentAccent.color)
+                SonarWaveRing(delay: 1.4, accent: theme.currentAccent.color)
+
+                Circle()
+                    .fill(theme.currentAccent.color.opacity(0.08))
+                    .frame(width: 64, height: 64)
+
+                Circle()
+                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .frame(width: 48, height: 48)
+                    .shadow(color: theme.currentAccent.color.opacity(0.18), radius: 6, y: 2)
+                    .overlay(
+                        Circle()
+                            .stroke(theme.currentAccent.color.opacity(0.25), lineWidth: 1)
+                    )
+
+                Image(systemName: "macbook.and.iphone")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(theme.currentAccent.color)
+                    .offset(y: floating ? -2 : 2)
+                    .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: floating)
+            }
+            .frame(width: 120, height: 100)
+            .onAppear { floating = true }
+
+            VStack(spacing: 4) {
+                Text("Looking for Devices")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
+                Text("Turn on Quick Share on your nearby device.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            }
+            Spacer(minLength: 10)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
 struct MenuView: View {
     @ObservedObject var model: TransferModel
     let send: () -> Void
     let scan: () -> Void
-    let open: () -> Void
     var settings: (() -> Void)? = nil
     var guide: (() -> Void)? = nil
     var privacy: (() -> Void)? = nil
     @ObservedObject private var theme = ThemeManager.shared
     @State private var isDragging = false
-    @State private var isFolderTargeted = false
+    @State private var lastStagedTitle: String = ""
+    @State private var lastStagedBytes: Int64 = 0
+    @State private var lastStagedIconPath: String? = nil
+    @State private var lastStagedCount: Int = 1
+
+    private func updateStagedSnapshot() {
+        if !model.urls.isEmpty {
+            lastStagedTitle = model.urls.count == 1 ? (model.displayNames.first ?? model.urls[0].lastPathComponent) : "\(model.urls.count) files ready"
+            lastStagedBytes = model.totalBytes
+            lastStagedIconPath = model.urls.count == 1 ? model.urls[0].path : nil
+            lastStagedCount = model.urls.count
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -500,7 +573,7 @@ struct MenuView: View {
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text("NearByDrop")
+                        Text("Nearby Drop")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(.primary)
                         Circle()
@@ -531,26 +604,24 @@ struct MenuView: View {
 
             // Tab Content
             Group {
-                switch model.tab {
-                case .send: sendView
-                case .receive: receiveView
-                case .history: historyView
-                case .usb: USBView(usb: model.usb, files: model.urls, chooseFiles: model.chooseFiles, horizontalPadding: 14, bottomPadding: 8)
+                if model.scanning {
+                    QRScannerView(onCode: model.scan, onCancel: { model.scanning = false })
+                } else {
+                    switch model.tab {
+                    case .send: sendView
+                    case .receive: receiveView
+                    case .history: historyView
+                    case .usb: USBView(usb: model.usb, files: model.urls, chooseFiles: model.chooseFiles, horizontalPadding: 14, bottomPadding: 8)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.easeInOut(duration: 0.18), value: model.tab)
 
             Divider()
 
             // Bottom Bar
             HStack {
-                Button(action: open) {
-                    Label("Open NearByDrop", systemImage: "macwindow")
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.primary)
-
                 Spacer()
 
                 Button(action: TransferModel.openDownloads) {
@@ -574,7 +645,8 @@ struct MenuView: View {
                 }
 
                 Menu {
-                    Toggle("Run as Menu Bar Only", isOn: $model.menuBarOnly)
+                    Button("Change Download Location…") { model.chooseDownloadDirectory() }
+                    Button("Open Downloads Folder") { TransferModel.openDownloads() }
                     Divider()
                     if let settings = settings {
                         Button("Settings…", action: settings)
@@ -586,13 +658,9 @@ struct MenuView: View {
                         Button("Privacy & Security Policy…", action: privacy)
                     }
                     Divider()
-                    Toggle("Launch at Login", isOn: Binding(
-                        get: { model.launchAtLogin },
-                        set: { model.toggleLaunchAtLogin(enabled: $0) }
-                    ))
-                    Toggle("Show NearByDrop in Dock", isOn: $theme.showInDock)
+                    Button("About Nearby Drop") { (NSApp.delegate as? AppDelegate)?.openAbout(nil) }
                     Divider()
-                    Button("Quit NearByDrop") { NSApp.terminate(nil) }
+                    Button("Quit Nearby Drop") { NSApp.terminate(nil) }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .font(.system(size: 13))
@@ -605,7 +673,7 @@ struct MenuView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
         }
-        .frame(width: 360, height: 505)
+        .frame(width: 360, height: 480)
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
             let group = DispatchGroup()
             var loadedURLs: [URL] = []
@@ -643,48 +711,94 @@ struct MenuView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(theme.currentAccent.color, lineWidth: isDragging ? 2 : 0)
         )
+        .onAppear { updateStagedSnapshot() }
+        .onChange(of: model.urls) { updateStagedSnapshot() }
     }
 
     // MARK: - Send View
+    private var stagedFilesCard: some View {
+        let title = !model.urls.isEmpty ? (model.urls.count == 1 ? (model.displayNames.first ?? model.urls[0].lastPathComponent) : "\(model.urls.count) files ready") : lastStagedTitle
+        let bytes = !model.urls.isEmpty ? model.totalBytes : lastStagedBytes
+        let iconPath = !model.urls.isEmpty ? (model.urls.count == 1 ? model.urls[0].path : nil) : lastStagedIconPath
+        let count = !model.urls.isEmpty ? model.urls.count : lastStagedCount
+
+        return VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                if let path = iconPath, count == 1 {
+                    Image(nsImage: NSWorkspace.shared.icon(forFile: path))
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 32, height: 32)
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(theme.currentAccent.color.opacity(0.12))
+                            .frame(width: 32, height: 32)
+                        Image(systemName: "doc.on.doc.fill")
+                            .font(.system(size: 15))
+                            .foregroundStyle(theme.currentAccent.color)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title.isEmpty ? "File ready" : title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Text(TransferModel.formatBytes(bytes))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 4)
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        model.setFiles([])
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20, height: 20)
+                        .background(Color.primary.opacity(0.08), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .help("Clear selection")
+            }
+
+            HStack(spacing: 8) {
+                Button(action: { model.chooseFiles() }) {
+                    Label("Change…", systemImage: "arrow.triangle.2.circlepath")
+                        .font(.caption.weight(.medium))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                Button(action: { model.showQR() }) {
+                    Label("QR Code", systemImage: "qrcode")
+                        .font(.caption.weight(.medium))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Show QR Code for phone")
+            }
+        }
+        .padding(10)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+
     private var sendView: some View {
         VStack(spacing: 10) {
             // Selected files banner or File Picker button
             if !model.urls.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: model.urls.count > 1 ? "doc.on.doc.fill" : "doc.fill")
-                        .foregroundStyle(theme.currentAccent.color)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(model.urls.count == 1 ? (model.displayNames.first ?? model.urls[0].lastPathComponent) : "\(model.urls.count) files ready")
-                            .font(.caption.weight(.medium))
-                            .lineLimit(1)
-                        Text(TransferModel.formatBytes(model.totalBytes))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("Change…") { model.chooseFiles() }
-                        .buttonStyle(.bordered)
-                        .controlSize(.mini)
-                    Button {
-                        model.showQR()
-                    } label: {
-                        Image(systemName: "qrcode")
-                            .font(.caption)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.mini)
-                    .help("Show QR Code for phone")
-
-                    Button {
-                        model.setFiles([])
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(8)
-                .background(theme.currentAccent.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                stagedFilesCard
             } else {
                 HStack(spacing: 8) {
                     Button(action: { model.chooseFiles() }) {
@@ -760,7 +874,24 @@ struct MenuView: View {
                             .buttonStyle(.bordered)
                             .controlSize(.small)
                     }
-                    ProgressView(value: model.progress > 0 ? model.progress : nil)
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.primary.opacity(0.08))
+                                .frame(height: 6)
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [theme.currentAccent.color.opacity(0.85), theme.currentAccent.color],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: max(6, geo.size.width * CGFloat(max(0.0, min(1.0, model.progress)))), height: 6)
+                                .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.progress)
+                        }
+                    }
+                    .frame(height: 6)
                     HStack {
                         Text(model.sendMessage.isEmpty ? "Connecting…" : model.sendMessage)
                             .font(.caption)
@@ -792,20 +923,7 @@ struct MenuView: View {
                         Spacer()
                     }
                     if model.devices.isEmpty {
-                        VStack(spacing: 8) {
-                            Spacer()
-                            Image(systemName: "dot.radiowaves.left.and.right")
-                                .font(.system(size: 26))
-                                .foregroundStyle(.secondary)
-                            Text("Looking for Devices")
-                                .font(.subheadline.weight(.medium))
-                            Text("Turn on Quick Share on your nearby device.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        RadarScanningView()
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 4) {
@@ -855,6 +973,9 @@ struct MenuView: View {
             }
         }
         .padding(.horizontal, 14)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.urls.isEmpty)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.sending)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.showingQR)
     }
 
     // MARK: - Receive View
@@ -869,7 +990,11 @@ struct MenuView: View {
                             .foregroundStyle(theme.currentAccent.color)
                         Text(sender ?? "Connecting…")
                             .font(.headline)
-                        ProgressView().controlSize(.small)
+                        if let id = model.qrTransferID, let progress = model.incomingProgress[id], progress.total > 0 {
+                            ProgressView(value: Double(progress.bytes) / Double(progress.total))
+                        } else {
+                            ProgressView().controlSize(.small)
+                        }
                         Button("Cancel", action: model.resetQRTransfer)
                             .buttonStyle(.bordered)
                             .controlSize(.small)
@@ -885,7 +1010,11 @@ struct MenuView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        ProgressView().controlSize(.small)
+                        if let id = model.qrTransferID, let progress = model.incomingProgress[id], progress.total > 0 {
+                            ProgressView(value: Double(progress.bytes) / Double(progress.total))
+                        } else {
+                            ProgressView().controlSize(.small)
+                        }
                         Button("Cancel", action: model.resetQRTransfer)
                             .buttonStyle(.bordered)
                             .controlSize(.small)
@@ -933,37 +1062,44 @@ struct MenuView: View {
                     VStack(spacing: 8) {
                         ForEach(model.incoming.keys.sorted(), id: \.self) { id in
                             if let item = model.incoming[id] {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: item.device.type == .computer ? "laptopcomputer" : "iphone")
-                                            .foregroundStyle(theme.currentAccent.color)
-                                        Text(item.device.name)
-                                            .font(.headline)
-                                            .foregroundStyle(.primary)
-                                        Spacer()
-                                        if let pin = item.transfer.pinCode {
-                                            Text(pin)
-                                                .font(.system(.caption, design: .monospaced).weight(.semibold))
-                                                .padding(.horizontal, 6)
-                                                .padding(.vertical, 2)
-                                                .background(theme.currentAccent.color.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
+                                if model.accepted.contains(id) {
+                                    IncomingTransferReceivingCard(id: id, item: item, model: model)
+                                } else {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: item.device.type == .computer ? "laptopcomputer" : "iphone")
+                                                .foregroundStyle(theme.currentAccent.color)
+                                            Text(item.device.name)
+                                                .font(.headline)
+                                                .foregroundStyle(.primary)
+                                            Spacer()
+                                            if let pin = item.transfer.pinCode {
+                                                Text(pin)
+                                                    .font(.system(.caption, design: .monospaced).weight(.semibold))
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 2)
+                                                    .background(theme.currentAccent.color.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
+                                            }
                                         }
-                                    }
-                                    Text(item.transfer.textDescription ?? "\(item.transfer.files.count) \(item.transfer.files.count == 1 ? "item" : "items")")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(2)
+                                        Text(item.transfer.textDescription ?? "\(item.transfer.files.count) \(item.transfer.files.count == 1 ? "item" : "items")")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(2)
 
-                                    if model.accepted.contains(id) {
-                                        ProgressView("Receiving…")
-                                    } else {
-                                        Toggle("Trust this device", isOn: Binding(
-                                            get: { model.isDeviceTrusted(item.device) },
-                                            set: { model.setDeviceTrusted(item.device, trusted: $0) }
-                                        ))
-                                        .toggleStyle(.checkbox)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        Button {
+                                            let current = model.isDeviceTrusted(for: id, device: item.device)
+                                            model.setPendingDeviceTrusted(id, device: item.device, trusted: !current)
+                                        } label: {
+                                            HStack(spacing: 5) {
+                                                Image(systemName: model.isDeviceTrusted(for: id, device: item.device) ? "checkmark.square.fill" : "square")
+                                                    .font(.system(size: 12))
+                                                    .foregroundStyle(model.isDeviceTrusted(for: id, device: item.device) ? theme.currentAccent.color : .secondary)
+                                                Text("Trust this device")
+                                                    .font(.caption)
+                                                    .foregroundStyle(.primary)
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
 
                                         HStack(spacing: 8) {
                                             Spacer()
@@ -976,107 +1112,53 @@ struct MenuView: View {
                                                 .controlSize(.small)
                                         }
                                     }
+                                    .padding(10)
+                                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
                                 }
-                                .padding(10)
-                                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
                             }
                         }
                     }
                 }
+            } else if let completed = model.lastCompletedTransfer {
+                TransferCompletionCard(completed: completed, model: model)
+            } else if let error = model.lastTransferError {
+                TransferErrorCard(error: error, model: model)
             } else {
-                VStack(spacing: 12) {
-                    Spacer(minLength: 6)
-                    Image(systemName: "arrow.down.circle")
-                        .font(.system(size: 38))
-                        .foregroundStyle(theme.currentAccent.color)
-                    Text("Ready to Receive")
-                        .font(.headline)
-                    Text("Select \(model.deviceName) on your device to share files.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, 8)
+                ScrollView {
+                    VStack(spacing: 12) {
+                        Spacer(minLength: 4)
+                        Image(systemName: "arrow.down.circle")
+                            .font(.system(size: 38))
+                            .foregroundStyle(theme.currentAccent.color)
+                        Text("Ready to Receive")
+                            .font(.headline)
+                        Text("Select \(model.deviceName) on your device to share files.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 8)
 
-                    Button {
-                        QRScannerWindowController.shared.show { [weak model] code in
-                            model?.scan(code)
+                        Button(action: scan) {
+                            Label("Scan QR Code", systemImage: "qrcode.viewfinder")
                         }
-                    } label: {
-                        Label("Scan QR Code", systemImage: "qrcode.viewfinder")
+                        .buttonStyle(.borderedProminent)
+                        .tint(theme.currentAccent.color)
+                        .controlSize(.regular)
+
+                        QuickShareGuideCard(deviceName: model.deviceName)
+                            .padding(.top, 4)
+
+                        Spacer(minLength: 4)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(theme.currentAccent.color)
-                    .controlSize(.regular)
-                    Spacer(minLength: 6)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-
-            // Download Directory card
-            HStack(spacing: 8) {
-                Button {
-                    TransferModel.openDownloads()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "folder.fill")
-                            .foregroundStyle(theme.currentAccent.color)
-                            .font(.system(size: 14))
-                        Text(model.downloadDirectoryDisplayPath)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Open \(model.downloadDirectory.path) in Finder")
-
-                Spacer()
-
-                Button("Change…") {
-                    model.chooseDownloadDirectory()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.mini)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(isFolderTargeted ? theme.currentAccent.color : Color.clear, lineWidth: 1.5)
-                    )
-            )
-            .contextMenu {
-                Button("Open in Finder") {
-                    TransferModel.openDownloads()
-                }
-                Button("Change Folder…") {
-                    model.chooseDownloadDirectory()
-                }
-                Button("Reset to Downloads") {
-                    model.resetDownloadDirectoryToDefault()
-                }
-            }
-            .onDrop(of: [.fileURL], isTargeted: $isFolderTargeted) { providers in
-                guard let provider = providers.first else { return false }
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                    guard let url = url else { return }
-                    var isDir: ObjCBool = false
-                    if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
-                        DispatchQueue.main.async {
-                            model.setDownloadDirectory(url)
-                        }
-                    }
-                }
-                return true
-            }
         }
         .padding(.horizontal, 14)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.lastCompletedTransfer == nil)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.incoming.isEmpty)
     }
 
     // MARK: - History View
@@ -1133,13 +1215,9 @@ struct MenuView: View {
 
                                 Spacer()
 
-                                if let url = item.fileURL {
+                                if let url = item.fileURL, FileManager.default.fileExists(atPath: url.path) {
                                     Button {
-                                        if FileManager.default.fileExists(atPath: url.path) {
-                                            NSWorkspace.shared.activateFileViewerSelecting([url])
-                                        } else {
-                                            TransferModel.openDownloads()
-                                        }
+                                        NSWorkspace.shared.activateFileViewerSelecting([url])
                                     } label: {
                                         Image(systemName: "magnifyingglass")
                                             .font(.caption2)

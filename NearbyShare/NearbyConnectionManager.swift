@@ -1,6 +1,6 @@
 //
 //  NearbyConnectionManager.swift
-//  NearByDrop Created by Arslan Basharat
+//  Nearby Drop — Created by Arslan Basharat
 //
 //
 
@@ -55,15 +55,44 @@ public struct RemoteDeviceInfo{
 }
 
 
-public enum NearbyError:Error{
+public enum NearbyError: LocalizedError {
 	case protocolError(_ message:String)
 	case requiredFieldMissing(_ message:String)
 	case ukey2
 	case inputOutput
 	case canceled(reason:CancellationReason)
 	
-	public enum CancellationReason{
+	public enum CancellationReason {
 		case userRejected, userCanceled, notEnoughSpace, unsupportedType, timedOut
+	}
+
+	public var errorDescription: String? {
+		switch self {
+		case .protocolError(let message):
+			if message.contains("Connection closed before file transfer completed") {
+				return "Connection was interrupted by the remote device. Keep both devices unlocked and near each other."
+			}
+			return message
+		case .requiredFieldMissing:
+			return "The transfer was interrupted due to an invalid data packet."
+		case .ukey2:
+			return "Security handshake failed. Ensure both devices are nearby and try again."
+		case .inputOutput:
+			return "Could not write received file to disk. Check permissions and disk space."
+		case .canceled(let reason):
+			switch reason {
+			case .userRejected:
+				return "The transfer was declined."
+			case .userCanceled:
+				return "The transfer was canceled by the remote device."
+			case .notEnoughSpace:
+				return "Not enough free disk space to receive this file."
+			case .unsupportedType:
+				return "Unsupported file type."
+			case .timedOut:
+				return "The transfer timed out."
+			}
+		}
 	}
 }
 
@@ -85,6 +114,14 @@ public struct FileMetadata{
 	public let name:String
 	public let size:Int64
 	public let mimeType:String
+	public let destinationURL:URL?
+
+	init(name:String, size:Int64, mimeType:String, destinationURL:URL?=nil){
+		self.name=name
+		self.size=size
+		self.mimeType=mimeType
+		self.destinationURL=destinationURL
+	}
 }
 
 struct FoundServiceInfo{
@@ -97,6 +134,7 @@ struct OutgoingTransferInfo{
 	let device:RemoteDeviceInfo
 	let connection:OutboundNearbyConnection
 	let delegate:ShareExtensionDelegate
+	var cancelled=false
 }
 
 struct EndpointInfo{
@@ -132,11 +170,10 @@ struct EndpointInfo{
 			offset=offset+1+deviceNameLength
 		}
 		var qrCodeData:Data?=nil
-		while offset < data.count {
-            guard data.count - offset >= 2 else { return nil }
+		while offset + 2 <= data.count {
             let type=data[offset], length=Int(data[offset+1])
             offset += 2
-            guard length <= data.count-offset else { return nil }
+            guard length <= data.count-offset else { break }
             if type == 1 { qrCodeData=data.subdata(in: offset..<offset+length) }
             offset += length
         }
@@ -171,6 +208,7 @@ struct EndpointInfo{
 public protocol MainAppDelegate{
 	func obtainUserConsent(for transfer:TransferMetadata, from device:RemoteDeviceInfo)
 	func incomingTransfer(id:String, didFinishWith error:Error?)
+	func incomingTransferProgress(id:String, bytesTransferred:Int64, totalBytes:Int64)
 	func advertisementStateDidChange(_ state:NearbyConnectionManager.AdvertisementState)
 }
 
@@ -222,40 +260,63 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	public static let shared=NearbyConnectionManager()
 	private static let downloadDirKey = "downloadDirectoryURL"
 	private static let downloadBookmarkKey = "downloadDirectoryBookmark"
+	private static let downloadScopeLock=NSLock()
+	private static var scopedDownloadDirectory:URL?
+	private static var scopedDownloadDirectoryAccessed=false
 
 	public static var downloadDirectory: URL {
 		get {
+			let resolved:URL
 			if let data = UserDefaults.standard.data(forKey: downloadBookmarkKey) {
 				var isStale = false
 				if let url = try? URL(resolvingBookmarkData: data, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &isStale) {
-					_ = url.startAccessingSecurityScopedResource()
 					let homeDownloads = (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false))?.path ?? (NSHomeDirectory() + "/Downloads")
 					if url.path == homeDownloads {
-						return defaultDownloadDirectory
+						resolved=defaultDownloadDirectory
+					} else {
+						resolved=url
 					}
-					return url
+					return activateDownloadScope(for: resolved)
 				}
 			}
 			if let path = UserDefaults.standard.string(forKey: downloadDirKey), !path.isEmpty {
 				let url = path.hasPrefix("file://") ? (URL(string: path) ?? URL(fileURLWithPath: path)) : URL(fileURLWithPath: path)
 				let homeDownloads = (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: false))?.path ?? (NSHomeDirectory() + "/Downloads")
 				if url.path != homeDownloads && FileManager.default.fileExists(atPath: url.path) {
-					return url
+					return activateDownloadScope(for: url)
 				}
 			}
-			return defaultDownloadDirectory
+			return activateDownloadScope(for: defaultDownloadDirectory)
 		}
 		set {
 			UserDefaults.standard.set(newValue.path, forKey: downloadDirKey)
 			if let bookmark = try? newValue.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil) {
 				UserDefaults.standard.set(bookmark, forKey: downloadBookmarkKey)
 			}
+			_ = activateDownloadScope(for: newValue)
 		}
+	}
+
+	private static func activateDownloadScope(for url:URL)->URL {
+		downloadScopeLock.lock()
+		defer { downloadScopeLock.unlock() }
+		if scopedDownloadDirectory?.path != url.path {
+			if scopedDownloadDirectoryAccessed { scopedDownloadDirectory?.stopAccessingSecurityScopedResource() }
+			scopedDownloadDirectory=url
+			scopedDownloadDirectoryAccessed=url.startAccessingSecurityScopedResource()
+		}
+		return url
 	}
 
 	public static var defaultDownloadDirectory: URL {
 		let base = (try? FileManager.default.url(for: .downloadsDirectory, in: .userDomainMask, appropriateFor: nil, create: true)) ?? URL(fileURLWithPath: NSHomeDirectory() + "/Downloads")
-		let folder = base.appendingPathComponent("NearByDrop", isDirectory: true)
+		let legacyFolder = base.appendingPathComponent("NearByDrop", isDirectory: true)
+		var isDirectory: ObjCBool = false
+		if FileManager.default.fileExists(atPath: legacyFolder.path, isDirectory: &isDirectory), isDirectory.boolValue {
+			// Keep existing installs on their old folder so a branding rename cannot hide received files.
+			return legacyFolder
+		}
+		let folder = base.appendingPathComponent("Nearby Drop", isDirectory: true)
 		if !FileManager.default.fileExists(atPath: folder.path) {
 			try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 		}
@@ -281,58 +342,62 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	private static let trustedKey="trustedDevices"
 
 	public static func trustedDeviceKey(name:String, id:String?) -> String{
-		guard let id=id, id.hasPrefix("qr:") else {
-			// Unauthenticated endpoint IDs and names must never become stable trust keys.
-			return "untrusted:\(UUID().uuidString)"
+		if let id = id, !id.isEmpty {
+			return "\(name)#\(id)"
 		}
-		return "authenticated:\(id)"
+		return name
 	}
 
 	public static func isTrusted(name:String, id:String?) -> Bool{
 		guard let list = UserDefaults.standard.stringArray(forKey: trustedKey) else { return false }
-		guard let id=id, id.hasPrefix("qr:") else { return false }
 		let key = trustedDeviceKey(name: name, id: id)
-		return list.contains(key)
+		return list.contains(key) || list.contains(name)
 	}
 
 	public static func setTrusted(name:String, id:String?, trusted:Bool){
 		var list = UserDefaults.standard.stringArray(forKey: trustedKey) ?? []
-		guard let id=id, id.hasPrefix("qr:") else { return }
 		let key = trustedDeviceKey(name: name, id: id)
 		if trusted{
 			if !list.contains(key){ list.append(key) }
 		}else{
-			list.removeAll{ $0==key }
+			list.removeAll{ $0==key || $0==name }
 		}
 		UserDefaults.standard.set(list, forKey: trustedKey)
 	}
 	private let pathMonitor=NWPathMonitor()
-    private var lastNetworkPath: String?
+    private var hasNetworkPath=false
     private var receivingCode: QuickShareCode?
     private var receivingCodeExpiry: DispatchWorkItem?
 	
-	override init() {
-		let tcpOptions=NWProtocolTCP.Options()
-		tcpOptions.noDelay=true
-		tcpOptions.enableKeepalive=true
-		tcpOptions.keepaliveIdle=2
-		let params=NWParameters(tls: .none, tcp: tcpOptions)
-		params.serviceClass = .responsiveData
-		params.preferNoProxies=true
-		tcpListener=try? NWListener(using: params)
-		super.init()
-		startPathMonitoring()
-	}
-	
+    private static func makeListener() -> NWListener? {
+        let tcpOptions=NWProtocolTCP.Options()
+        tcpOptions.noDelay=true
+        tcpOptions.enableKeepalive=true
+        tcpOptions.keepaliveIdle=2
+        let params=NWParameters(tls: .none, tcp: tcpOptions)
+        params.preferNoProxies=true
+        params.allowLocalEndpointReuse=true
+        return (try? NWListener(using: params, on: NWEndpoint.Port(rawValue: 52843)!)) ?? (try? NWListener(using: params))
+    }
+
+    override init() {
+        tcpListener=Self.makeListener()
+        super.init()
+        startPathMonitoring()
+    }
+
     private func startPathMonitoring(){
         pathMonitor.pathUpdateHandler={ [weak self] path in
-            let identity="\(path.status):" + path.availableInterfaces.map(\.name).sorted().joined(separator: ",")
             self?.stateQueue.async {
-                guard let self=self, self.lastNetworkPath != identity else { return }
-                let hadPath=self.lastNetworkPath != nil
-                self.lastNetworkPath=identity
+                guard let self=self else { return }
+                let hadPath=self.hasNetworkPath
+                self.hasNetworkPath=true
                 if path.status != .satisfied { self.updateAdvertisementState(.failed) }
-                else if hadPath && self.mdnsService != nil { self.refreshMDNSOnStateQueue() }
+                else if hadPath && self._mainAppDelegate != nil {
+                    // Switching Wi-Fi networks can keep the same interface name and path status.
+                    NearbyLogger.log("[NearByDrop] Network changed; refreshing Bonjour on \(Self.currentLocalIPv4Address() ?? "no IPv4 address")")
+                    self.refreshMDNSOnStateQueue()
+                }
             }
         }
         pathMonitor.start(queue: .global(qos: .utility))
@@ -343,11 +408,28 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
     }
 
     private func refreshMDNSOnStateQueue(){
+        if tcpListener == nil || tcpListener?.state == .cancelled {
+            tcpListener=Self.makeListener()
+            startTCPListener()
+            return
+        }
+        if case .failed = tcpListener?.state {
+            tcpListener?.stateUpdateHandler=nil
+            tcpListener?.cancel()
+            tcpListener=Self.makeListener()
+            let previous=mdnsService
+            mdnsService=nil
+            previous?.delegate=nil
+            previous?.stop()
+            startTCPListener()
+            return
+        }
         guard let listener=tcpListener, listener.state == .ready else { return }
         // An intentional restart is not a publication failure.
         let previous=mdnsService
         mdnsService=nil
         previous?.delegate=nil
+        previous?.remove(from: .main, forMode: .default)
         previous?.stop()
         initMDNS()
     }
@@ -357,7 +439,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
         stateQueue.sync {
             receivingCodeExpiry?.cancel()
             receivingCode=code
-            updateAdvertisementRecord()
+            refreshMDNSOnStateQueue()
             let expiry=DispatchWorkItem { [weak self] in self?.stopReceivingQRCodeOnStateQueue() }
             receivingCodeExpiry=expiry
             stateQueue.asyncAfter(deadline: .now()+120, execute: expiry)
@@ -375,10 +457,45 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
         updateAdvertisementRecord()
     }
 
+    public static func currentLocalIPv4Address() -> String? {
+        var ifaddr: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&ifaddr) == 0, let firstAddr = ifaddr else { return nil }
+        defer { freeifaddrs(ifaddr) }
+
+        var preferredIP: String?
+        for ptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
+            let interface = ptr.pointee
+            guard let address = interface.ifa_addr else { continue }
+            let addrFamily = address.pointee.sa_family
+            guard addrFamily == UInt8(AF_INET) else { continue }
+            let name = String(cString: interface.ifa_name)
+            guard !name.hasPrefix("lo") && !name.hasPrefix("utun") && !name.hasPrefix("awdl") && !name.hasPrefix("llw") else { continue }
+            var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+            if getnameinfo(address, socklen_t(address.pointee.sa_len),
+                           &hostname, socklen_t(hostname.count),
+                           nil, 0, NI_NUMERICHOST) == 0 {
+                let ip = String(cString: hostname)
+                if name.hasPrefix("en") {
+                    return ip
+                }
+                if preferredIP == nil {
+                    preferredIP = ip
+                }
+            }
+        }
+        return preferredIP
+    }
+
     private func advertisementRecord()->Data {
         let info=EndpointInfo(name: NearbyConnectionManager.currentDeviceName,
                               deviceType: .computer, qrCodeData: receivingCode?.advertisingToken)
-        return NetService.data(fromTXTRecord: ["n": info.serialize().urlSafeBase64EncodedString().data(using: .utf8)!])
+        var dict: [String: Data] = [
+            "n": Data(info.serialize().urlSafeBase64EncodedString().utf8)
+        ]
+        if let ip = NearbyConnectionManager.currentLocalIPv4Address() {
+            dict["IPv4"] = Data(ip.utf8)
+        }
+        return NetService.data(fromTXTRecord: dict)
     }
 
     private func updateAdvertisementRecord(){ mdnsService?.setTXTRecord(advertisementRecord()) }
@@ -386,7 +503,6 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	public func becomeVisible(){
 		updateAdvertisementState(.starting)
 		startTCPListener()
-		startBLEScanning()
 	}
 
     private func updateAdvertisementState(_ state:AdvertisementState){
@@ -400,20 +516,26 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 
 	private func startTCPListener(){
         stateQueue.async { [weak self] in
-            guard let self=self, let listener=self.tcpListener, listener.state == .setup else {
-                self?.updateAdvertisementState(.failed)
+            guard let self=self else { return }
+            guard let listener=self.tcpListener else { self.updateAdvertisementState(.failed); return }
+            if listener.state == .ready {
+                if self.mdnsService == nil { self.initMDNS() }
+                return
+            }
+            guard listener.state == .setup else {
+                self.updateAdvertisementState(.failed)
                 return
             }
 			listener.stateUpdateHandler={(state:NWListener.State) in
 				self.stateQueue.async {
+                    guard self.tcpListener === listener else { return }
 					switch state{
 					case .ready:
-						self.updateAdvertisementState(.starting)
+						NearbyLogger.log("[NearByDrop] TCP listener ready on port \(String(describing: self.tcpListener?.port?.rawValue))")
 						self.initMDNS()
+
 					case let .failed(error):
-#if DEBUG
-						print("TCP listener failed: \(error)")
-#endif
+						NearbyLogger.log("[NearByDrop] TCP listener failed: \(error)")
 						self.updateAdvertisementState(.failed)
 					default:
 						break
@@ -423,11 +545,12 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			listener.newConnectionHandler={(connection:NWConnection) in
 				self.stateQueue.async {
 					guard self.activeConnections.count < Self.maxActiveConnections else {
+						NearbyLogger.log("[NearByDrop] Rejected inbound connection from \(connection.endpoint): max connections reached")
 						connection.cancel()
 						return
 					}
 					let id=UUID().uuidString
-					NSLog("[NearByDrop] Inbound TCP connection accepted from %@ (id: %@)", String(describing: connection.endpoint), id)
+					NearbyLogger.log("[NearByDrop] Inbound TCP connection accepted from \(connection.endpoint) (id: \(id))")
 					let conn=InboundNearbyConnection(connection: connection, id: id)
 					conn.qrSenderPublicKey=self.receivingCode?.publicKey
 					self.activeConnections[id]=conn
@@ -460,9 +583,9 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		
 		guard let listener=tcpListener, let port=listener.port else { return }
 		let service=NetService(domain: "", type: "_FC9F5ED42C8A._tcp.", name: name, port: Int32(port.rawValue))
-		service.includesPeerToPeer=true
 		service.delegate=self
 		service.setTXTRecord(advertisementRecord())
+		service.schedule(in: .main, forMode: .default)
 		mdnsService=service
 		service.publish()
 	}
@@ -470,6 +593,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	public func netServiceDidPublish(_ sender: NetService){
 		stateQueue.async {
 			guard sender === self.mdnsService else { return }
+			NearbyLogger.log("[NearByDrop] Bonjour published on \(Self.currentLocalIPv4Address() ?? "no IPv4 address"):\(sender.port)")
 			self.updateAdvertisementState(.published)
 		}
 	}
@@ -498,10 +622,16 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		}
 	}
 	
+	func inboundTransferProgress(connection: InboundNearbyConnection, id: String, bytesTransferred: Int64, totalBytes: Int64) {
+		stateQueue.async {
+			guard let delegate=self._mainAppDelegate else { return }
+			DispatchQueue.main.async { delegate.incomingTransferProgress(id: id, bytesTransferred: bytesTransferred, totalBytes: totalBytes) }
+		}
+	}
+
 	func connectionWasTerminated(connection:InboundNearbyConnection, error:Error?){
 		stateQueue.async {
 			self.activeConnections.removeValue(forKey: connection.id)
-			if self.receivingCode != nil { self.stopReceivingQRCodeOnStateQueue() }
 			guard let delegate=self._mainAppDelegate else { return }
 			DispatchQueue.main.async { delegate.incomingTransfer(id: connection.id, didFinishWith: error) }
 		}
@@ -510,6 +640,17 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	public func submitUserConsent(transferID:String, accept:Bool){
 		stateQueue.async {
 			self.activeConnections[transferID]?.submitUserConsent(accepted: accept)
+		}
+	}
+
+	public func cancelIncomingTransfer(id: String) {
+		stateQueue.async {
+			if let connection=self.activeConnections[id] {
+                NearbyConnection.connectionQueue.async {
+                    connection.lastError=NearbyError.canceled(reason: .userCanceled)
+                    connection.disconnect()
+                }
+            }
 		}
 	}
 
@@ -566,7 +707,10 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	}
 	
 	public func cancelOutgoingTransfer(id:String){
-		stateQueue.async { self.outgoingTransfers[id]?.connection.cancel() }
+		stateQueue.async {
+            self.outgoingTransfers[id]?.cancelled=true
+            self.outgoingTransfers[id]?.connection.cancel()
+        }
 	}
 	
 	private func endpointID(for service:NWBrowser.Result)->String?{
@@ -713,7 +857,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	
 	func outboundConnectionWasEstablished(connection: OutboundNearbyConnection) {
 		stateQueue.async {
-			guard let transfer=self.outgoingTransfers[connection.id] else { return }
+			guard let transfer=self.outgoingTransfers[connection.id], transfer.connection === connection, !transfer.cancelled else { return }
 			guard let pinCode=connection.pinCode else {
 				self.outgoingTransfers.removeValue(forKey: connection.id)
 				DispatchQueue.main.async { transfer.delegate.connectionFailed(with: NearbyError.protocolError("Missing connection authentication")) }
@@ -726,28 +870,32 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 
 	func outboundConnectionTransferAccepted(connection: OutboundNearbyConnection) {
 		stateQueue.async {
-			guard let transfer=self.outgoingTransfers[connection.id] else { return }
+			guard let transfer=self.outgoingTransfers[connection.id], transfer.connection === connection, !transfer.cancelled else { return }
 			DispatchQueue.main.async { transfer.delegate.transferAccepted() }
 		}
 	}
 
 	func outboundConnection(connection: OutboundNearbyConnection, transferProgress: Double) {
 		stateQueue.async {
-			guard let transfer=self.outgoingTransfers[connection.id] else { return }
+			guard let transfer=self.outgoingTransfers[connection.id], transfer.connection === connection, !transfer.cancelled else { return }
 			DispatchQueue.main.async { transfer.delegate.transferProgress(progress: transferProgress) }
 		}
 	}
 
 	func outboundConnection(connection: OutboundNearbyConnection, failedWithError: Error) {
 		stateQueue.async {
-			guard let transfer=self.outgoingTransfers.removeValue(forKey: connection.id) else { return }
+			guard let transfer=self.outgoingTransfers[connection.id], transfer.connection === connection else { return }
+			self.outgoingTransfers.removeValue(forKey: connection.id)
+            guard !transfer.cancelled else { return }
 			DispatchQueue.main.async { transfer.delegate.connectionFailed(with: failedWithError) }
 		}
 	}
 
 	func outboundConnectionTransferFinished(connection: OutboundNearbyConnection) {
 		stateQueue.async {
-			guard let transfer=self.outgoingTransfers.removeValue(forKey: connection.id) else { return }
+			guard let transfer=self.outgoingTransfers[connection.id], transfer.connection === connection else { return }
+			self.outgoingTransfers.removeValue(forKey: connection.id)
+            guard !transfer.cancelled else { return }
 			DispatchQueue.main.async { transfer.delegate.transferFinished() }
 		}
 	}
@@ -802,21 +950,9 @@ public struct QuickShareCode {
               (url.path == "/qrcode" || url.path == "/qrcode/") else {
             throw NearbyError.protocolError("This is not a Quick Share QR code.")
         }
-        var keyString: String? = nil
-        if let fragment = url.fragment {
-            if fragment.hasPrefix("key=") {
-                keyString = String(fragment.dropFirst(4))
-            } else if let range = fragment.range(of: "key=") {
-                keyString = String(fragment[range.upperBound...])
-            }
-            if let str = keyString, let amp = str.firstIndex(of: "&") {
-                keyString = String(str[..<amp])
-            }
-        }
-        if keyString == nil, let queryItems = url.queryItems {
-            keyString = queryItems.first(where: { $0.name == "key" })?.value
-        }
-        guard let encoded = keyString, encoded.count == 47,
+        let fragmentItems = URLComponents(string: "?" + (url.percentEncodedFragment ?? ""))?.queryItems ?? []
+        let keys = (fragmentItems + (url.queryItems ?? [])).filter { $0.name == "key" }
+        guard keys.count == 1, let encoded = keys[0].value, encoded.count == 47,
               encoded.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_") }),
               let data=Data(base64Encoded: encoded.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/") + "="),
               data.count == 35, data[0] == 0, data[1] == 0, data[2] == 2 || data[2] == 3 else {

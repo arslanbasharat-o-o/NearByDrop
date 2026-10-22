@@ -6,6 +6,7 @@
 
 import Foundation
 import Cocoa
+import UniformTypeIdentifiers
 import NearbyShare
 import QRCode
 
@@ -67,7 +68,7 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 			var loadError:Error?
 			for attachment in attachments {
 				let provider=attachment
-				provider.loadItem(forTypeIdentifier: kUTTypeURL as String) { data, err in
+				provider.loadItem(forTypeIdentifier: UTType.url.identifier) { data, err in
 					DispatchQueue.main.async {
 						completedCount+=1
 						if let err=err {

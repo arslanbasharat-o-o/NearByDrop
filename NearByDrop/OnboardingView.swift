@@ -1,6 +1,5 @@
 import Cocoa
 import SwiftUI
-import UserNotifications
 import AVFoundation
 
 final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
@@ -18,6 +17,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
         }
         let controller = OnboardingWindowController(onFinished: onFinished)
         current = controller
+        controller.window?.positionOnInteractionScreen()
         controller.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
         controller.window?.makeKeyAndOrderFront(nil)
@@ -31,7 +31,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Welcome to NearByDrop"
+        window.title = "Welcome to Nearby Drop"
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
@@ -44,7 +44,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
         }))
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    required init?(coder: NSCoder) { return nil }
 
     func finish() {
         guard !hasFinished else { return }
@@ -64,7 +64,6 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
 struct OnboardingView: View {
     let onFinish: () -> Void
     @ObservedObject private var theme = ThemeManager.shared
-    @State private var notificationsAllowed: Bool = false
     @State private var cameraAllowed: Bool = false
 
     var body: some View {
@@ -80,7 +79,7 @@ struct OnboardingView: View {
                         .foregroundStyle(theme.currentAccent.color)
                 }
 
-                Text("Welcome to NearByDrop")
+                Text("Welcome to Nearby Drop")
                     .font(.title2.weight(.bold))
 
                 Text("Fast file sharing between your Mac and Android devices.")
@@ -120,28 +119,6 @@ struct OnboardingView: View {
             // Permissions
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Image(systemName: "bell.badge.fill")
-                        .foregroundStyle(notificationsAllowed ? Color.green : theme.currentAccent.color)
-                        .frame(width: 20)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Notifications")
-                            .font(.subheadline.weight(.medium))
-                        Text("Alerts for incoming transfers and PIN codes")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    if notificationsAllowed {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    } else {
-                        Button("Allow", action: requestNotifications)
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                    }
-                }
-
-                HStack {
                     Image(systemName: "camera.fill")
                         .foregroundStyle(cameraAllowed ? Color.green : theme.currentAccent.color)
                         .frame(width: 20)
@@ -170,10 +147,9 @@ struct OnboardingView: View {
 
             // Action
             Button(action: {
-                requestAllPermissions()
                 onFinish()
             }) {
-                Text(notificationsAllowed && cameraAllowed ? "Get Started" : "Allow & Get Started")
+                Text("Get Started")
                     .font(.body.weight(.semibold))
                     .frame(maxWidth: .infinity)
             }
@@ -209,25 +185,7 @@ struct OnboardingView: View {
     }
 
     private func checkPermissions() {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            DispatchQueue.main.async {
-                self.notificationsAllowed = (settings.authorizationStatus == .authorized)
-            }
-        }
         cameraAllowed = (AVCaptureDevice.authorizationStatus(for: .video) == .authorized)
-    }
-
-    private func requestAllPermissions() {
-        requestNotifications()
-        requestCamera()
-    }
-
-    private func requestNotifications() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-            DispatchQueue.main.async {
-                self.notificationsAllowed = granted
-            }
-        }
     }
 
     private func requestCamera() {

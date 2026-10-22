@@ -23,12 +23,13 @@ final class SettingsWindowController: NSWindowController, ObservableObject {
         window.contentView = NSHostingView(rootView: SettingsView(model: model, controller: self))
     }
 
-    required init?(coder: NSCoder) { fatalError() }
+    required init?(coder: NSCoder) { return nil }
 
     func show(tab: SettingsTab? = nil) {
         if let tab = tab {
             selectedTab = tab
         }
+        window?.positionOnInteractionScreen()
         showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
         window?.makeKeyAndOrderFront(nil)
@@ -54,6 +55,10 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 }
 
 struct SettingsView: View {
+    @State private var checkingUpdates = false
+    @State private var releaseAvailable = false
+    @State private var updateMessage = ""
+
     @ObservedObject var model: TransferModel
     @ObservedObject var controller: SettingsWindowController
     @ObservedObject private var theme = ThemeManager.shared
@@ -164,7 +169,7 @@ struct SettingsView: View {
                 }
                 Spacer()
                 Button("Change…") {
-                    model.chooseDownloadDirectory()
+                    model.chooseDownloadDirectory(relativeTo: controller.window)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(theme.currentAccent.color)
@@ -179,29 +184,19 @@ struct SettingsView: View {
             .padding(12)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
 
-            sectionHeader(title: "Options", subtitle: "System startup, menu bar, and Dock preferences.")
+            sectionHeader(title: "Options", subtitle: "System startup preferences.")
             VStack(alignment: .leading, spacing: 10) {
-                Toggle("Run as Menu Bar Only", isOn: $model.menuBarOnly)
-                    .toggleStyle(.checkbox)
-                Text("Operate NearByDrop directly from the menu bar without opening the main window.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 18)
-
                 Toggle("Launch at Login", isOn: Binding(
                     get: { model.launchAtLogin },
                     set: { model.toggleLaunchAtLogin(enabled: $0) }
                 ))
                 .toggleStyle(.checkbox)
-
-                Toggle("Show NearByDrop in Dock", isOn: $theme.showInDock)
-                    .toggleStyle(.checkbox)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
 
-            sectionHeader(title: "Feedback & Notifications", subtitle: "Audio artifacts, haptics, and transfer notifications.")
+            sectionHeader(title: "Feedback", subtitle: "Transfer status appears in the menu bar dropdown.")
             VStack(alignment: .leading, spacing: 10) {
                 Toggle("Play Sound Effects", isOn: $feedback.soundEnabled)
                     .toggleStyle(.checkbox)
@@ -209,24 +204,7 @@ struct SettingsView: View {
                 Toggle("Trackpad Vibration (Haptics)", isOn: $feedback.hapticsEnabled)
                     .toggleStyle(.checkbox)
 
-                Divider()
 
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Transfer Notifications")
-                            .font(.subheadline)
-                        Text("Show a sample transfer notification banner.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("Preview Notification") {
-                        FeedbackManager.shared.vibrateClick()
-                        TransferNotificationManager.shared.showPreview()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -342,7 +320,8 @@ struct SettingsView: View {
             } else {
                 VStack(spacing: 6) {
                     ForEach(list, id: \.self) { key in
-                        let displayName = key.contains("|") ? String(key.split(separator: "|", maxSplits: 1).last ?? "") : key
+                        let parts = key.split(separator: "#", omittingEmptySubsequences: false)
+                        let displayName = parts.count > 1 ? parts.dropLast().joined(separator: "#") : (key.contains("|") ? String(key.split(separator: "|", maxSplits: 1).last ?? "") : key)
                         HStack {
                             Image(systemName: "iphone")
                                 .foregroundStyle(theme.currentAccent.color)
@@ -388,9 +367,9 @@ struct SettingsView: View {
             }
 
             VStack(spacing: 2) {
-                Text("NearByDrop")
+                Text("Nearby Drop")
                     .font(.title2.weight(.bold))
-                Text("Version 2.2.2")
+                Text(AppRelease.versionDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text("Created by Arslan Basharat")
@@ -398,17 +377,43 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Button(checkingUpdates ? "Checking…" : "Check for Updates") {
+                checkingUpdates = true
+                let url = URL(string: "https://api.github.com/repos/arslanbasharat-o-o/NearByDrop/releases/latest")!
+                var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
+                request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+                URLSession.shared.dataTask(with: request) { data, response, _ in
+                    let json = data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+                    let installed = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+                    let message = AppRelease.updateMessage(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0,
+                        tag: json?["tag_name"] as? String,
+                        installed: installed)
+                    DispatchQueue.main.async {
+                        updateMessage = message
+                        releaseAvailable = (response as? HTTPURLResponse)?.statusCode == 200 && (json?["tag_name"] as? String).map { AppRelease.isNewerRelease(tag: $0, installed: installed) } == true
+                        checkingUpdates = false
+                    }
+                }.resume()
+            }
+            .disabled(checkingUpdates)
+            if !updateMessage.isEmpty {
+                Text(updateMessage).font(.caption).foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("What’s New").font(.subheadline.weight(.semibold))
+                Text("Inline QR scanning, improved Quick Share handshakes, and safer transfer cancellation.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
             Divider()
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Open Source Attribution")
+                Text("Open Source Licenses")
                     .font(.subheadline.weight(.semibold))
 
-                Text("• Built upon the Nearby Share protocol from Grishka's open-source NearDrop project.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text("• Bundles libmtp and libusb under LGPL v2.1/v3. Licenses and rebuild instructions located in Vendor/USB/licenses/.")
+                Text("Includes libmtp and libusb under LGPL 2.1 or later. Licenses ship inside the app’s ThirdPartyLicenses resources; corresponding USB sources are included with each GitHub release.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -418,12 +423,17 @@ struct SettingsView: View {
 
             HStack(spacing: 12) {
                 Button("View on GitHub") {
-                    if let url = URL(string: "https://github.com/arslanbasharat/NearByDrop") {
+                    if let url = URL(string: "https://github.com/arslanbasharat-o-o/NearByDrop") {
                         NSWorkspace.shared.open(url)
                     }
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(theme.currentAccent.color)
+
+                if releaseAvailable {
+                    Button("Releases…") { NSWorkspace.shared.open(AppRelease.releasesURL) }
+                        .buttonStyle(.bordered)
+                }
 
                 Button("Welcome Tour…") {
                     OnboardingWindowController.showOnboarding()

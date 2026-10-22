@@ -1,6 +1,6 @@
 # Google's Nearby Share protocol
 
-This document describes the Nearby Share protocol as understood by me (@grishka) from Chromium sources (that are way too convoluted) and decompiled Google Services Framework apk (that, despite being a decompilation of obfuscated code, is still more helpful than Chromium sources).
+This document describes the Nearby Share protocol specification, frame formats, and encryption flow based on Google Quick Share implementation details.
 
 The protocol is peer-to-peer, end-to-end encrypted. Overall, it appears like it was mostly designed to run over an unreliable medium like UDP, but I've only observed it over TCP.
 
@@ -199,7 +199,7 @@ Payload transfer frames are wrapped into offline frames of type `PAYLOAD_TRANSFE
 	* **flags**: if `LAST_CHUNK` (bit 0) is set, the transfer is complete and this is the last chunk
 	* **body**: the data bytes themselves
 
-Android does this thing where it sends 2 payload transfer frames in succession for each negotiation message: the first contains the entire message, the second contains 0 bytes but has the `LAST_CHUNK` flag set. I replicated this behavior in NearByDrop Created by Arslan Basharat.
+Android does this thing where it sends 2 payload transfer frames in succession for each negotiation message: the first contains the entire message, the second contains 0 bytes but has the `LAST_CHUNK` flag set. Nearby Drop replicates this behavior.
 
 ### The "paired key encryption", whatever that is
 
