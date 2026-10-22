@@ -47,5 +47,15 @@ minimum=$(/usr/libexec/PlistBuddy -c 'Print LSMinimumSystemVersion' "$app/Conten
 test "$minimum" = 14.0
 archive="$output/NearbyDrop-$version-universal.zip"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
-(cd "$output" && shasum -a 256 "$(basename "$archive")" > SHA256SUMS.txt)
-printf 'Packaged %s (macOS %s+, arm64 + x86_64, ad hoc signed)\n' "$archive" "$minimum"
+
+# Build installer DMG with Applications shortcut
+dmg_staging="$(mktemp -d "${TMPDIR:-/tmp}/nearbydrop-dmg.XXXXXX")"
+ditto "$app" "$dmg_staging/Nearby Drop.app"
+ln -s /Applications "$dmg_staging/Applications"
+dmg="$output/Nearbydrop-$version.dmg"
+rm -f "$dmg"
+hdiutil create -volname "Nearbydrop" -srcfolder "$dmg_staging" -ov -format UDZO "$dmg"
+rm -rf "$dmg_staging"
+
+(cd "$output" && shasum -a 256 "$(basename "$dmg")" "$(basename "$archive")" > SHA256SUMS.txt)
+printf 'Packaged %s and %s (macOS %s+, arm64 + x86_64, ad hoc signed)\n' "$dmg" "$archive" "$minimum"
