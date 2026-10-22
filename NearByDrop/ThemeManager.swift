@@ -126,13 +126,13 @@ final class ThemeManager: ObservableObject {
                 return img
             }
             let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            return NSImage(systemSymbolName: "antenna.radiowaves.left.and.right", accessibilityDescription: "Nearbydrop")?.withSymbolConfiguration(config)
+            return NSImage(systemSymbolName: "antenna.radiowaves.left.and.right", accessibilityDescription: "Nearby Drop")?.withSymbolConfiguration(config)
         case .antenna:
             let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            return NSImage(systemSymbolName: "dot.radiowaves.left.and.right", accessibilityDescription: "Nearbydrop")?.withSymbolConfiguration(config)
+            return NSImage(systemSymbolName: "dot.radiowaves.left.and.right", accessibilityDescription: "Nearby Drop")?.withSymbolConfiguration(config)
         case .paperplane:
             let config = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            return NSImage(systemSymbolName: "paperplane.fill", accessibilityDescription: "Nearbydrop")?.withSymbolConfiguration(config)
+            return NSImage(systemSymbolName: "paperplane.fill", accessibilityDescription: "Nearby Drop")?.withSymbolConfiguration(config)
         }
     }
 }

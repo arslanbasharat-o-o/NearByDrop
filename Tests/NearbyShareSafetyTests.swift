@@ -2,6 +2,14 @@ import XCTest
 @testable import NearbyShare
 
 final class NearbyShareSafetyTests: XCTestCase {
+    func testWindowsBinaryEndpointNameIsPreserved() throws {
+        // Field 2 is length-delimited even though Google labels it as a string.
+        let wire=Data([0x12, 0x03, 0x06, 0xFF, 0x80])
+        let request=try Location_Nearby_Connections_ConnectionRequestFrame(serializedData: wire)
+        XCTAssertEqual(request.endpointName, Data([0x06, 0xFF, 0x80]))
+        XCTAssertEqual(try request.serializedData(), wire)
+    }
+
     func testFrameLengthRejectsMalformedHeaders() {
         XCTAssertNil(NearbyConnection.frameLength(from: Data()))
         XCTAssertNil(NearbyConnection.frameLength(from: Data([0, 0, 0])))
@@ -36,11 +44,21 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
     private var lastReceivedBytes: Int64 = 0
     private var cancelAfterAcceptance = false
     private var rejectQR = false
+    private var safeDisconnectOnly = false
+    private var legacyCloseOnly = false
     private var dataTransferStarted: Date?
     private var dataTransferFinished: Date?
 
     func testEncryptedFilesAndEmptyFileRoundTrip() throws { try runRoundTrip() }
     func testLargeEncryptedTransferThroughput() throws { try runRoundTrip(payloadSize: 64 * 1024 * 1024) }
+    func testReceiverCanCompleteWithCleanSocketClose() throws {
+        legacyCloseOnly = true
+        try runRoundTrip()
+    }
+    func testReceiverCanConfirmThroughSafeDisconnect() throws {
+        safeDisconnectOnly = true
+        try runRoundTrip()
+    }
     func testQRAuthenticatedRoundTrip() throws { try runRoundTrip(qr: true) }
     func testQRRejectsADifferentSenderKey() throws {
         rejectQR = true
@@ -74,8 +92,14 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         let listener = try NWListener(using: .tcp, on: .any)
         defer { listener.cancel(); inbound = nil; outbound = nil }
         listener.newConnectionHandler = { connection in
-            let inbound = InboundNearbyConnection(connection: connection, id: "test-incoming")
+            let inbound = IndexedInboundConnection(connection: connection, id: "test-incoming")
+            inbound.safeDisconnectOnly = self.safeDisconnectOnly
+            inbound.legacyCloseOnly = self.legacyCloseOnly
             inbound.qrSenderPublicKey = self.rejectQR ? P256.Signing.PrivateKey().publicKey : qrKey?.publicKey
+            if let qrKey {
+                let keyData=Data([0, 0])+qrKey.publicKey.compressedRepresentation
+                inbound.qrReceiverCode=try! QuickShareCode("https://quickshare.google/qrcode#key=\(keyData.urlSafeBase64EncodedString())")
+            }
             inbound.delegate = self
             self.inbound = inbound
             inbound.start()
@@ -109,7 +133,16 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
 
     func obtainUserConsent(for transfer: TransferMetadata, from device: RemoteDeviceInfo, connection: InboundNearbyConnection) {
         destinations = transfer.files.compactMap(\.destinationURL)
-        connection.submitUserConsent(accepted: true)
+        NearbyConnection.connectionQueue.async {
+            var acknowledgement = Location_Nearby_Connections_OfflineFrame()
+            acknowledgement.version = .v1
+            acknowledgement.v1.type = .payloadTransfer
+            acknowledgement.v1.payloadTransfer.packetType = .payloadAck
+            acknowledgement.v1.payloadTransfer.payloadHeader.id = 0
+            do { try connection.encryptAndSendOfflineFrame(acknowledgement) }
+            catch { XCTFail(error.localizedDescription) }
+            connection.submitUserConsent(accepted: true)
+        }
     }
     func inboundTransferProgress(connection: InboundNearbyConnection, id: String, bytesTransferred: Int64, totalBytes: Int64) {
         XCTAssertLessThanOrEqual(bytesTransferred, totalBytes)
@@ -259,6 +292,13 @@ import Vision
 final class QuickShareCodeTests: XCTestCase {
     private let key = "AAADaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpY"
 
+    func testReceiverQRProofMatchesAndroidFormat() throws {
+        let code=try QuickShareCode("https://quickshare.google/qrcode#key=\(key)")
+        let proof=code.receiverHandshakeData(authToken: Data(0..<32))
+        XCTAssertEqual(proof.hexEncodedString(), "1a875b60edd48c0342b475727d56f238")
+        XCTAssertNotEqual(proof, code.receiverHandshakeData(authToken: Data(1...32)))
+    }
+
     func testKnownCodeAndAdvertisingToken() throws {
         let code = try QuickShareCode("https://quickshare.google/qrcode#key=\(key)")
         XCTAssertEqual(code.advertisingToken.hexEncodedString(), "b81f9de8c5eca923f12b153bcaf4a068")
@@ -305,5 +345,73 @@ final class QuickShareCodeTests: XCTestCase {
         scanner.handleCode("same-code")
         XCTAssertEqual(attempts, 2)
         XCTAssertEqual(scanner.message, "Try again")
+    }
+}
+
+final class PayloadControlTests: XCTestCase {
+    func testAcknowledgementsDoNotRequireDataChunks() throws {
+        var frame = Location_Nearby_Connections_PayloadTransferFrame()
+        frame.packetType = .payloadAck
+        XCTAssertTrue(try NearbyConnection.isPayloadControl(frame))
+        frame.packetType = .control
+        frame.controlMessage.event = .payloadReceivedAck
+        XCTAssertTrue(try NearbyConnection.isPayloadControl(frame))
+        frame.controlMessage.event = .payloadError
+        XCTAssertThrowsError(try NearbyConnection.isPayloadControl(frame))
+        frame.controlMessage.event = .payloadCanceled
+        XCTAssertThrowsError(try NearbyConnection.isPayloadControl(frame))
+        frame.packetType = .data
+        XCTAssertFalse(try NearbyConnection.isPayloadControl(frame))
+    }
+}
+
+private final class IndexedInboundConnection: InboundNearbyConnection {
+    var safeDisconnectOnly = false
+    var legacyCloseOnly = false
+    override func sendTransferSetupFrame(_ frame: Sharing_Nearby_Frame, completion: (() -> Void)? = nil, failure: ((Error) -> Void)? = nil) throws {
+        if frame.v1.type == .pairedKeyEncryption, let code=qrReceiverCode {
+            XCTAssertEqual(frame.v1.pairedKeyEncryption.qrCodeHandshakeData, code.receiverHandshakeData(authToken: try XCTUnwrap(authKey).data()))
+        }
+        try super.sendTransferSetupFrame(frame, completion: completion, failure: failure)
+    }
+
+    override func processTransferSetupFrame(_ frame: Sharing_Nearby_Frame) throws {
+        if frame.v1.type == .introduction {
+            XCTAssertTrue(frame.v1.introduction.startTransfer)
+            XCTAssertEqual(frame.v1.introduction.useCase, .nearbyShare)
+            let ids = frame.v1.introduction.fileMetadata.map(\.id)
+            XCTAssertEqual(Set(ids).count, ids.count)
+            XCTAssertFalse(ids.contains(0))
+        }
+        try super.processTransferSetupFrame(frame)
+    }
+    override func acknowledgePayload(_ header: Location_Nearby_Connections_PayloadTransferFrame.PayloadHeader) throws {
+        if !safeDisconnectOnly && !legacyCloseOnly { try super.acknowledgePayload(header) }
+    }
+    override func sendDisconnectionAndDisconnect(completion: (() -> Void)? = nil) throws {
+        guard safeDisconnectOnly else { try super.sendDisconnectionAndDisconnect(completion: completion); return }
+        var frame = Location_Nearby_Connections_OfflineFrame()
+        frame.version = .v1
+        frame.v1.type = .disconnection
+        frame.v1.disconnection.requestSafeToDisconnect = true
+        try encryptAndSendOfflineFrame(frame, completion: completion)
+    }
+
+    private var nextIndex: [Int64: Int32] = [:]
+    override func processFileChunk(frame: Location_Nearby_Connections_PayloadTransferFrame) throws {
+        let id = frame.payloadHeader.id
+        XCTAssertTrue(frame.payloadHeader.hasFileName)
+        XCTAssertFalse(frame.payloadHeader.fileName.isEmpty)
+        XCTAssertTrue(frame.payloadChunk.hasIndex)
+        XCTAssertEqual(frame.payloadChunk.index, nextIndex[id, default: 0])
+        nextIndex[id, default: 0] += 1
+        if frame.payloadChunk.flags == 1 {
+            var update = Sharing_Nearby_Frame()
+            update.version = .v1
+            update.v1.type = .progressUpdate
+            update.v1.progressUpdate.progress = 1
+            try sendTransferSetupFrame(update)
+        }
+        try super.processFileChunk(frame: frame)
     }
 }

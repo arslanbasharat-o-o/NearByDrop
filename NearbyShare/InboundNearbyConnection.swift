@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import os
 import Network
 import CryptoKit
 import CommonCrypto
@@ -18,7 +19,11 @@ import BigInt
 class InboundNearbyConnection: NearbyConnection{
 	
 	var qrSenderPublicKey: P256.Signing.PublicKey?
-	private var currentState:State = .initial
+    var qrReceiverCode: QuickShareCode?
+	private static let logger = Logger(subsystem: "com.arslanbasharat.NearByDrop", category: "IncomingTransfer")
+	private var currentState:State = .initial {
+		didSet { Self.logger.notice("Incoming stage: \(String(describing: self.currentState), privacy: .public)") }
+	}
 	public var delegate:InboundNearbyConnectionDelegate?
 	private var cipherCommitment:Data?
 	
@@ -160,6 +165,7 @@ class InboundNearbyConnection: NearbyConnection{
 			}
 		}catch{
 			lastError=error
+			Self.logger.error("Incoming protocol error: \(String(describing: error), privacy: .public)")
 			NearbyLogger.log("[NearByDrop] Inbound error: \(error) in state: \(currentState)")
 			print("Deserialization error: \(error) in state \(currentState)")
 			protocolError()
@@ -247,6 +253,7 @@ class InboundNearbyConnection: NearbyConnection{
 				close(transferredFiles[id]!.fd)
 				transferredFiles[id]!.fd = -1
 			}
+			try acknowledgePayload(frame.payloadHeader)
 			completedFilesBytes += fileInfo.meta.size
 			transferredFiles.removeValue(forKey: id)
 			notifyProgressIfNeeded(force: true)
@@ -407,6 +414,7 @@ class InboundNearbyConnection: NearbyConnection{
 			resp.v1.connectionResponse=Location_Nearby_Connections_ConnectionResponseFrame()
 			resp.v1.connectionResponse.response = .accept
 			resp.v1.connectionResponse.status=0
+            resp.v1.connectionResponse.safeToDisconnectVersion=6
 			resp.v1.connectionResponse.osInfo=Location_Nearby_Connections_OsInfo()
 			resp.v1.connectionResponse.osInfo.type = .apple
 			sendFrameAsync(try resp.serializedData())
@@ -422,6 +430,10 @@ class InboundNearbyConnection: NearbyConnection{
 			// Presumably used for all the phone number stuff that no one needs anyway
 			pairedEncryption.v1.pairedKeyEncryption.secretIDHash=try Data.randomData(length: 6)
 			pairedEncryption.v1.pairedKeyEncryption.signedData=try Data.randomData(length: 72)
+            if let code=qrReceiverCode {
+                guard let authKey=authKey else { throw NearbyError.protocolError("Missing QR connection authentication") }
+                pairedEncryption.v1.pairedKeyEncryption.qrCodeHandshakeData=code.receiverHandshakeData(authToken: authKey.data())
+            }
 			try sendTransferSetupFrame(pairedEncryption)
 			setState(.sentConnectionResponse)
 		} else {

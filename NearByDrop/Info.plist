@@ -7,10 +7,10 @@
 		<string>_FC9F5ED42C8A._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Nearbydrop needs camera access to scan Quick Share QR codes.</string>
+	<string>Nearby Drop needs camera access to scan Quick Share QR codes.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Nearbydrop uses Bluetooth to detect nearby Android devices sharing via Quick Share.</string>
+	<string>Nearby Drop uses Bluetooth to detect nearby Android devices sharing via Quick Share.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Nearbydrop needs access to the local network to discover and transfer files with nearby devices via Wi-Fi.</string>
+	<string>Nearby Drop needs access to the local network to discover and transfer files with nearby devices via Wi-Fi.</string>
 </dict>
 </plist>

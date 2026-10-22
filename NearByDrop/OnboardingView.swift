@@ -31,7 +31,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Welcome to Nearbydrop"
+        window.title = "Welcome to Nearby Drop"
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
         window.isMovableByWindowBackground = true
@@ -79,7 +79,7 @@ struct OnboardingView: View {
                         .foregroundStyle(theme.currentAccent.color)
                 }
 
-                Text("Welcome to Nearbydrop")
+                Text("Welcome to Nearby Drop")
                     .font(.title2.weight(.bold))
 
                 Text("Fast file sharing between your Mac and Android devices.")
