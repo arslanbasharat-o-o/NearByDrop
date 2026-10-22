@@ -1,103 +1,168 @@
-# Launch & Distribution Guide: Driving Immediate Traffic and Stars
+# Launch & Distribution Guide: Nearby Drop v2.3.0
 
-This guide provides ready-to-copy launch material designed to generate immediate inbound traffic, Google search indexing, and GitHub stars.
-
----
-
-## 1. Google Search Console: Instant Indexing (Do this first)
-
-Google's search bots take days or weeks to discover new repositories without manual submission. You can force Google to index Nearbydrop within hours:
-
-1. Go to [Google Search Console](https://search.google.com/search-console).
-2. Click **Add Property** and enter `https://arslanbasharat-o-o.github.io/NearByDrop/` as a **URL prefix**.
-3. Verify ownership via HTML file (or GitHub Pages meta tag).
-4. Go to **Sitemaps** in the left menu and submit:
-   ```
-   https://arslanbasharat-o-o.github.io/NearByDrop/sitemap.xml
-   ```
-5. Paste `https://arslanbasharat-o-o.github.io/NearByDrop/` and `https://github.com/arslanbasharat-o-o/NearByDrop` into the top search bar and click **Request Indexing**.
+Complete launch and distribution kit with ready-to-post copy for Reddit, X (Twitter), Discord, Hacker News, and Product Hunt. Formatted for high engagement, genuine technical credibility, zero false claims, and immediate traffic to the repository.
 
 ---
 
-## 2. Hacker News Launch ("Show HN")
+## 1. Quick Links
 
-**Submit URL**: https://news.ycombinator.com/submit  
-**Title**: `Show HN: Nearbydrop – AirDrop-like zero-cloud file transfers between Mac and Android`  
-**URL**: `https://github.com/arslanbasharat-o-o/NearByDrop` (or `https://arslanbasharat-o-o.github.io/NearByDrop/`)
+- **Repository**: `https://github.com/arslanbasharat-o-o/NearByDrop`
+- **Landing Page**: `https://arslanbasharat-o-o.github.io/NearByDrop/`
+- **Latest Universal DMG (v2.3.0)**: `https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/Nearbydrop-2.3.0.dmg`
+- **Terminal 1-Line Installer**:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/arslanbasharat-o-o/NearByDrop/main/scripts/install.sh | sh
+  ```
 
-**Text (Optional or as first comment)**:
+---
+
+## 2. Reddit Posts
+
+### Post A: For `r/macapps` & `r/mac`
+**Title**: `I built an open-source macOS menu bar daemon to receive files from Android via Quick Share (AirDrop alternative)`
+
+**Body**:
+```markdown
+Hey r/macapps,
+
+If you daily drive an Android phone alongside a Mac, you know how annoying file transfers can be. Apple keeps AirDrop exclusive, Google's Android File Transfer app is abandoned, and uploading to Google Drive or Telegram burns bandwidth and compresses video.
+
+I built **Nearby Drop** to solve this properly: https://github.com/arslanbasharat-o-o/NearByDrop
+
+### How it works:
+- **Native Quick Share**: Uses Android's built-in Quick Share sheet. No companion app required on your phone.
+- **Local P2P Wi-Fi**: Streams directly over your local router or hotspot using raw TCP sockets (typically 25–80 MB/s on 5GHz Wi-Fi).
+- **USB-C MTP Explorer**: When Wi-Fi is unavailable or you have huge video folders, plug in a USB cable and browse phone storage with drag-and-drop.
+- **Zero Cloud & Private**: Mutual cryptographic UKEY2 ECDH (P-256) handshake with on-screen 6-digit confirmation PIN.
+- **Pure Native macOS**: Lightweight AppKit/SwiftUI menu bar resident daemon with near-zero idle CPU and memory consumption.
+- **100% Free & Open Source**: Licensed under GPL-3.0. No accounts, no paywalls, zero telemetry.
+
+Universal DMG for macOS 14 Sonoma and Sequoia (Apple Silicon M1–M4 & Intel):
+https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest
+
+Live site & specifications: https://arslanbasharat-o-o.github.io/NearByDrop/
+
+Would love your feedback and bug reports on GitHub!
 ```
+
+---
+
+### Post B: For `r/Android` & `r/opensource`
+**Title**: `Nearby Drop: Open-source macOS daemon to receive Quick Share / Nearby Share files from any Android device`
+
+**Body**:
+```markdown
+Hey everyone,
+
+One of the biggest friction points when switching between Android and Mac is sending photos, raw videos, and folders without cables or cloud uploads.
+
+I built **Nearby Drop** (https://github.com/arslanbasharat-o-o/NearByDrop), a free and open-source menu bar daemon for macOS that implements Google's Quick Share wire protocol.
+
+### Key Details:
+- **Zero phone apps needed**: Uses the native Quick Share button pre-installed on Samsung, Pixel, OnePlus, Xiaomi, and other modern Android devices.
+- **Real-world local Wi-Fi speeds**: Direct socket streaming (typically 25–80 MB/s over 5GHz Wi-Fi depending on your router).
+- **Offline operation**: Works completely offline on local Wi-Fi, airplane hotspots, or direct USB-C via libmtp.
+- **Security**: Cryptographically verified via UKEY2 (ECDH P-256) matching PINs before any bytes are transmitted.
+- **Open source**: GPL-3.0 licensed, full source code public, universal binary.
+
+Website: https://arslanbasharat-o-o.github.io/NearByDrop/
+GitHub: https://github.com/arslanbasharat-o-o/NearByDrop
+
+PRs and issues are welcome!
+```
+
+---
+
+## 3. X / Twitter Launch Posts
+
+### Main Tweet (Hook + Call to Action):
+```text
+Tired of emailing yourself files or uploading 4K videos to Google Drive just to get them from Android to your Mac?
+
+I built Nearby Drop — an open-source macOS menu bar daemon that brings AirDrop-like wireless transfers to Android via Quick Share.
+
+⚡ Direct local Wi-Fi (25–80 MB/s)
+🔌 Wired USB-C MTP storage mode
+🔒 UKEY2 ECDH encryption • 100% offline
+🍎 Universal binary (Apple Silicon + Intel)
+🆓 Free & Open Source (GPL-3.0)
+
+GitHub: https://github.com/arslanbasharat-o-o/NearByDrop
+Website: https://arslanbasharat-o-o.github.io/NearByDrop/
+
+#Android #macOS #OpenSource #AirDrop #SwiftUI #Developer
+```
+
+### Follow-up Reply (Installation & Terminal):
+```text
+Install in seconds with one terminal command:
+
+curl -fsSL https://raw.githubusercontent.com/arslanbasharat-o-o/NearByDrop/main/scripts/install.sh | sh
+
+Or grab the official .DMG release on GitHub:
+https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest
+
+Star the repo if you find it useful! ⭐
+```
+
+---
+
+## 4. Discord Community Announcements
+
+**Ideal channels**: `#showcase`, `#projects`, `#general-dev` in developer, Mac, Android, and self-hosted communities.
+
+```markdown
+**Nearby Drop v2.3.0 — Native Quick Share Daemon for macOS**
+Hey everyone! Just launched **Nearby Drop**, an open-source macOS menu bar application that lets you receive files from Android devices via Google Quick Share.
+
+- **No phone app required**: Uses native Android Quick Share.
+- **Local P2P transfer**: Fast Wi-Fi streaming (25–80 MB/s) + USB-C MTP mode.
+- **Zero cloud**: UKEY2 ECDH encryption with 6-digit confirmation PIN.
+- **Free & Open Source**: Universal Mach-O for Apple Silicon & Intel.
+
+Check it out:
+- GitHub: https://github.com/arslanbasharat-o-o/NearByDrop
+- Web: https://arslanbasharat-o-o.github.io/NearByDrop/
+- Download: https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest
+```
+
+---
+
+## 5. Hacker News ("Show HN")
+
+**Submit URL**: `https://news.ycombinator.com/submit`  
+**Title**: `Show HN: Nearby Drop – Native macOS Quick Share daemon for Android transfers`  
+**URL**: `https://github.com/arslanbasharat-o-o/NearByDrop`
+
+**Text / First Comment**:
+```text
 Hey HN,
 
-I built Nearbydrop (https://github.com/arslanbasharat-o-o/NearByDrop) to solve one of the most annoying pain points for Mac + Android users: fast, private, wireless file sharing without cloud relays.
+I built Nearby Drop (https://github.com/arslanbasharat-o-o/NearByDrop) to solve the cross-platform file transfer friction between Android and macOS.
 
-Apple's AirDrop doesn't talk to Android, Google's Android File Transfer for Mac is dead and unreliable, and cloud drives require uploading your files twice.
+Apple's AirDrop is strictly Apple-only, and Google's official Android File Transfer app for Mac has long been discontinued. Cloud relays require uploading payloads twice and burn bandwidth.
 
-Nearbydrop is a native macOS menu bar app written in SwiftUI that implements Google's Quick Share protocol:
-- Local peer-to-peer Wi-Fi transfers at full hardware speed (up to 500+ MB/s)
-- Inline optical QR code camera pairing directly in the menu bar dropdown
-- Built-in USB MTP storage explorer for wired transfers
-- Zero cloud servers: UKEY2 elliptic-curve cryptographic handshakes ensure data never leaves your local network
+Nearby Drop is an open-source AppKit/SwiftUI daemon that runs in the macOS menu bar and implements Google's Quick Share protocol:
+- Discovers Android devices via mDNS (_FC9F5ED42C8A._tcp.local.)
+- Negotiates mutual cryptographic handshakes via UKEY2 (ECDH P-256)
+- Streams files directly over local Wi-Fi TCP sockets (real-world 25–80 MB/s on 5GHz LAN)
+- Features a built-in USB-C MTP storage browser via libmtp for wired transfers
+- Zero external servers, zero telemetry, 100% offline
 
-Pre-built universal DMG (Apple silicon & Intel) available here:
+Pre-built universal binary (macOS 14+ Sonoma & Sequoia):
 https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest
 
-Would love feedback on performance and device compatibility!
+Feedback on device compatibility and network edge cases is very welcome!
 ```
 
 ---
 
-## 3. Reddit Launch
+## 6. Product Hunt Launch Copy
 
-Post to **r/macapps**, **r/Android**, **r/mac**, and **r/apple**.
-
-### Post for `r/macapps`
-**Title**: `I made Nearbydrop: a lightweight native Mac menu bar app for high-speed Android to Mac file transfer (AirDrop alternative)`  
-**Post Content**:
-```markdown
-Hi everyone,
-
-Like many of you who use a Mac alongside an Android phone, I was frustrated with the lack of an AirDrop equivalent that just works. Uploading files to Google Drive or Telegram ruins quality and takes forever on large video files.
-
-So I created **Nearbydrop**: https://github.com/arslanbasharat-o-o/NearByDrop
-
-### Highlights:
-- **Native Quick Share**: Tap Quick Share on your Android phone and beam photos/videos straight to your Mac.
-- **Speeds up to 500+ MB/s**: Streams directly over local Wi-Fi 6 sockets without internet.
-- **Inline QR Camera Scanner**: Scan a sender's Quick Share QR code directly with your Mac's camera from the menu bar.
-- **Direct USB Explorer**: Fast MTP manager for wired folder downloads.
-- **Native SwiftUI Menu Bar App**: Runs quietly in the menu bar with zero bloat.
-- **Zero Cloud & Private**: End-to-end UKEY2 encryption; data stays strictly local.
-
-Universal installer (.dmg) for macOS 14 Sonoma and newer (Apple silicon & Intel):
-https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest
-
-If you find it useful, I'd appreciate a star on GitHub! Let me know if you run into any device compatibility issues.
-```
-
----
-
-## 4. Product Hunt Launch
-
-**Name**: Nearbydrop  
-**Tagline**: High-speed, zero-cloud AirDrop alternative for Mac & Android  
-**Website**: https://arslanbasharat-o-o.github.io/NearByDrop/  
-**Pricing**: Free  
-**Description**: Nearbydrop is a native macOS menu bar application that bridges the gap between Apple Mac computers and Android devices. It enables wireless local Wi-Fi file transfers via Google Quick Share, instant QR camera pairing, and direct USB storage browsing without cloud servers or accounts.
-
----
-
-## 5. Twitter / X Launch Post
-
-```
-Tired of slow Bluetooth or uploading files to Google Drive just to send photos from Android to your Mac?
-
-I built Nearbydrop: a native macOS menu bar app that brings AirDrop-like wireless transfers to Android via Quick Share.
-
-⚡ Up to 500+ MB/s local Wi-Fi
-📷 Inline QR pairing
-🔒 100% zero-cloud
-
-Try it here:
-https://github.com/arslanbasharat-o-o/NearByDrop
-```
+- **Product Name**: Nearby Drop
+- **Tagline**: Native AirDrop-like Quick Share daemon for Mac & Android
+- **Category**: Developer Tools, Open Source, macOS, Utilities
+- **Website URL**: `https://arslanbasharat-o-o.github.io/NearByDrop/`
+- **Pricing**: Free / Open Source
+- **Short Description**:
+  Nearby Drop is an open-source macOS menu bar resident daemon that implements Google's Quick Share protocol. Wirelessly beam photos, 4K videos, and directories directly from any modern Android phone to your Mac at local Wi-Fi speeds with zero cloud servers or third-party accounts. Includes integrated USB-C MTP storage management for wired transfers.
