@@ -1,3 +1,8 @@
+# 2.3.4 (18)
+
+- Polish the menu-bar experience with clearer settings, transfer, QR, and USB surfaces.
+- Smooth onboarding and keep update actions inside the app.
+
 # 2.3.3 (17)
 
 - Add automatic background update checks and an update indicator in the menu bar.
