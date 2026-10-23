@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quick Share Between Mac and Windows | Nearby Drop</title>
-  <meta name="description" content="Use Nearby Drop on a Mac to send and receive files with a Windows Quick Share PC. Setup, compatibility, and v2.3.1 test results.">
+  <meta name="description" content="Set up two-way Quick Share between Nearby Drop for Mac and one tested Windows PC. Current app is v2.3.4; the packaged Windows workflow has not been separately device-tested.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
   <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html">
@@ -75,12 +75,21 @@
     <section class="mb-8 border border-theme-border bg-theme-black p-6 sm:p-8">
       <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">What has been tested</h2>
       <p class="mb-4 text-sm leading-relaxed text-neutral-300">Both directions passed in a final Debug test build with one Windows PC. For Windows-to-Mac, the received 65,678-byte test file matched its expected SHA-256 and Nearby Drop showed Transfer Complete. For Mac-to-Windows, the user confirmed arrival and the Mac showed Sent; the Windows file hash was not independently checked.</p>
-      <p class="text-sm leading-relaxed text-neutral-400">The v2.3.1 release includes these protocol changes, but the packaged release was not separately device-tested. This verifies one Windows device and one test setup; it does not establish compatibility with every Windows PC, Quick Share version, or network. Nearby Drop runs on macOS only and is not a Windows app.</p>
+      <p class="text-sm leading-relaxed text-neutral-400">The protocol changes first shipped in v2.3.1. The current v2.3.4 packaged app has not been separately device-tested for this Windows flow. This verifies one Windows device and one test setup; it does not establish compatibility with every Windows PC, Quick Share version, or network. Nearby Drop runs on macOS only and is not a Windows app.</p>
     </section>
 
     <section class="mb-10 border border-theme-border bg-theme-surface p-6 sm:p-8">
       <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">If discovery fails</h2>
       <p class="text-sm leading-relaxed text-neutral-300">Keep both devices on a reachable local network. Guest Wi-Fi, client isolation, firewall settings, or local-network permission can stop devices from appearing. LTE-only phone-hotspot discovery has not been verified. File data transfers directly over the local connection; Nearby Drop does not use a cloud relay.</p>
+    </section>
+
+    <section class="mb-10 border border-theme-border bg-theme-black p-6 sm:p-8" aria-labelledby="related-guides">
+      <h2 id="related-guides" class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Related transfer guides</h2>
+      <ul class="space-y-3 text-sm leading-relaxed text-neutral-300">
+        <li><a class="underline hover:text-white" href="mac-to-android-quick-share.html">Send files from Mac to Android with Quick Share</a></li>
+        <li><a class="underline hover:text-white" href="how-to-transfer-files-mac-android.html">Transfer files from Android to Mac with Quick Share or USB MTP</a></li>
+        <li><a class="underline hover:text-white" href="airdrop-alternative-for-android.html">Compare Android-to-Mac file transfer options</a></li>
+      </ul>
     </section>
 
     <div class="flex flex-wrap gap-4">
