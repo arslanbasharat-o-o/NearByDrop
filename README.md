@@ -38,7 +38,7 @@ Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-
 
 **macOS 14 Sonoma or newer · Apple silicon and Intel**
 
-1. Download the installer: [**Nearby-Drop-2.3.2.dmg**](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/Nearby-Drop-2.3.2.dmg).
+1. Download the installer: [**Nearby-Drop-2.3.3.dmg**](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/Nearby-Drop-2.3.3.dmg).
 2. Open the disk image and drag **Nearby Drop** into your `/Applications` folder.
 3. The DMG includes native universal binaries (`arm64` and `x86_64`), the Finder Share Extension, and USB dynamic libraries.
 
@@ -116,3 +116,7 @@ Dependencies retain their respective open-source licenses:
 - USB support dynamically links [libmtp](https://github.com/libmtp/libmtp) and [libusb](https://github.com/libusb/libusb) under LGPL 2.1 or later. License texts and source archives are documented in [Vendor/USB](Vendor/USB/README.md).
 
 Nearby Drop is an independent project and is not affiliated with Google LLC or Apple Inc. Quick Share, Android, macOS, and AirDrop are trademarks of their respective owners.
+
+### App updates
+
+Starting with 2.3.3, Nearby Drop checks for updates at launch and hourly. An indicator in the menu bar and an inline notice appear when an update is available. Click **Update & Restart** to download, verify, install, and reopen the app. Installation waits until active transfers finish. Updates and the release feed are signed with Ed25519; Sparkle verifies signatures before extraction. Versions 2.3.2 and earlier require one manual installation of 2.3.3 to gain this updater.

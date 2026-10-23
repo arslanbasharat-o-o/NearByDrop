@@ -29,25 +29,12 @@ extension Notification.Name {
 }
 
 enum AppRelease {
-    static let releasesURL = URL(string: "https://github.com/arslanbasharat-o-o/NearByDrop/releases")!
     static var versionDescription: String {
         let info = Bundle.main.infoDictionary ?? [:]
         return "Version \(info["CFBundleShortVersionString"] as? String ?? "—") (\(info["CFBundleVersion"] as? String ?? "—"))"
     }
 
-    static func isNewerRelease(tag: String, installed: String) -> Bool {
-        let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-        return !version.isEmpty && version.compare(installed, options: .numeric) == .orderedDescending
-    }
 
-    static func updateMessage(statusCode: Int, tag: String?, installed: String) -> String {
-        guard statusCode != 404 else { return "No stable release is available yet." }
-        guard statusCode == 200, let tag, !tag.isEmpty else { return "Could not check for updates. Try again later." }
-        let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
-        return isNewerRelease(tag: tag, installed: installed)
-            ? "Version \(version) is available. Open Releases to download it."
-            : "You’re up to date."
-    }
 }
 
 // Create a fresh folder so a phone name can never traverse or merge into existing data.

@@ -18,7 +18,7 @@ cp LICENSE "$notices/Nearby-Drop-LICENSE.txt"
 cp Vendor/USB/licenses/*.txt "$notices/"
 cp Vendor/USB/README.md "$notices/USB.md"
 cp README.md "$notices/Nearby-Drop-README.md"
-for dependency in ASN1 BigInt SwiftECC swift-qrcode-generator QRCode swift-protobuf SwiftImageReadWrite; do
+for dependency in ASN1 BigInt SwiftECC swift-qrcode-generator QRCode swift-protobuf SwiftImageReadWrite Sparkle; do
     checkout="$derived/SourcePackages/checkouts/$dependency"
     if [ ! -d "$checkout" ] && [ "$dependency" = QRCode ]; then
         checkout="$derived/SourcePackages/checkouts/qrcode"
@@ -38,6 +38,10 @@ while IFS= read -r -d '' binary; do
         esac
     fi
 done < <(find "$app/Contents" -type f -print0)
+# Sparkle's nested installer tools must retain valid signatures after packaging.
+if [ -d "$app/Contents/Frameworks/Sparkle.framework" ]; then
+    codesign --force --deep --sign - --timestamp=none "$app/Contents/Frameworks/Sparkle.framework"
+fi
 codesign --force --sign - --timestamp=none --entitlements ShareExtension/ShareExtension.entitlements \
     "$app/Contents/PlugIns/ShareExtension.appex"
 codesign --force --sign - --timestamp=none --options runtime --entitlements NearByDrop/NearByDrop.entitlements "$app"
@@ -59,3 +63,15 @@ rm -rf "$dmg_staging"
 
 (cd "$output" && shasum -a 256 "$(basename "$dmg")" "$(basename "$archive")" > SHA256SUMS.txt)
 printf 'Packaged %s and %s (macOS %s+, arm64 + x86_64, ad hoc signed)\n' "$dmg" "$archive" "$minimum"
+
+# Sparkle signs the archive using the local Keychain or the CI signing secret.
+sparkle_bin="${SPARKLE_BIN_DIR:-$derived/SourcePackages/artifacts/sparkle/Sparkle/bin}"
+feed_staging="$(mktemp -d "${TMPDIR:-/tmp}/nearby-drop-feed.XXXXXX")"
+cp "$archive" "$feed_staging/"
+if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
+    printf '%s' "$SPARKLE_PRIVATE_KEY" | "$sparkle_bin/generate_appcast" --ed-key-file - --maximum-deltas 0 --download-url-prefix "https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v$version/" "$feed_staging"
+else
+    "$sparkle_bin/generate_appcast" --maximum-deltas 0 --download-url-prefix "https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v$version/" "$feed_staging"
+fi
+cp "$feed_staging/appcast.xml" "$output/appcast.xml"
+rm -rf "$feed_staging"

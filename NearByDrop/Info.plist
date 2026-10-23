@@ -2,6 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>SUFeedURL</key><string>https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/appcast.xml</string>
+    <key>SUPublicEDKey</key><string>1TqpRsU8jS73PWVgvzEQiHjWM7VqV3JX9LGQdJBtGPo=</string>
+    <key>SUEnableAutomaticChecks</key><true/>
+    <key>SUScheduledCheckInterval</key><integer>3600</integer>
+    <key>SUAutomaticallyUpdate</key><false/>
+    <key>SUVerifyUpdateBeforeExtraction</key><true/>
+    <key>SURequireSignedFeed</key><true/>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_FC9F5ED42C8A._tcp</string>

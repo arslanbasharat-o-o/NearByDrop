@@ -65,6 +65,8 @@ jobs:
             -configuration Release -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO build | tee build.log
       - name: Verify and package
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: scripts/package-release.sh build dist
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -80,5 +82,6 @@ jobs:
             dist/*.dmg
             dist/*.zip
             dist/SHA256SUMS.txt
+            dist/appcast.xml
           generate_release_notes: true
 
