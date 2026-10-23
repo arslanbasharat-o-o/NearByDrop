@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Share Between Mac and Windows | Nearby Drop</title>
+  <meta name="description" content="Use Nearby Drop on a Mac to send and receive files with a Windows Quick Share PC. Setup, compatibility, and v2.3.1 test results.">
+  <meta name="author" content="Arslan Basharat">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Nearby Drop">
+  <meta property="og:title" content="Quick Share Between Mac and Windows | Nearby Drop">
+  <meta property="og:description" content="A practical setup guide for two-way Quick Share transfers between a Mac running Nearby Drop and a compatible Windows PC.">
+  <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/icon.png">
+  <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Quick Share Between Mac and Windows | Nearby Drop">
+  <meta name="twitter:description" content="Setup and test notes for transferring between Nearby Drop on Mac and a compatible Windows Quick Share PC.">
+  <meta name="twitter:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/icon.png">
+  <link rel="icon" type="image/png" href="../assets/icon.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Quick Share Between Mac and Windows",
+    "description": "Setup and test notes for sending files both ways between Nearby Drop on macOS and a compatible Windows Quick Share PC.",
+    "author": {"@type": "Person", "name": "Arslan Basharat"},
+    "datePublished": "2026-10-23",
+    "dateModified": "2026-10-23",
+    "mainEntityOfPage": "https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'], display: ['"Space Grotesk"', 'sans-serif'], sans: ['Inter', 'sans-serif'] }, colors: { theme: { black: '#070707', surface: '#0e0e0e', border: '#222222' } } } };
+  </script>
+  <style>body{background:#070707;color:#e4e4e7}.grid-lines{background-size:40px 40px;background-image:linear-gradient(to right,rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.03) 1px,transparent 1px)}::selection{background:#fff;color:#000}</style>
+</head>
+<body class="font-sans antialiased">
+  <div class="fixed inset-0 pointer-events-none grid-lines opacity-60"></div>
+  <div class="relative z-10 border-b border-theme-border bg-theme-black/90 px-5 py-3 font-mono text-xs text-neutral-400">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+      <a class="font-semibold text-white" href="../index.html">NEARBY DROP</a>
+      <span>VERSION 2.3.1 · macOS 14+ · APPLE SILICON &amp; INTEL</span>
+      <a class="text-white underline" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">DOWNLOAD THE MAC APP</a>
+    </div>
+  </div>
+  <main class="relative z-10 mx-auto max-w-4xl px-5 py-14 sm:px-8 sm:py-20">
+    <p class="mb-5 font-mono text-xs uppercase tracking-widest text-emerald-400">MAC ↔ WINDOWS · QUICK SHARE GUIDE</p>
+    <h1 class="mb-6 font-display text-3xl font-bold uppercase leading-tight tracking-tight text-white sm:text-5xl">Quick Share Between Mac and Windows</h1>
+    <p class="mb-10 text-base leading-relaxed text-neutral-300 sm:text-lg">Nearby Drop is a macOS menu bar app that can send and receive files with compatible Windows Quick Share devices. It adds a Mac endpoint to a local Quick Share workflow; the Windows PC uses its own compatible Quick Share client.</p>
+
+    <section class="mb-8 border border-theme-border bg-theme-surface p-6 sm:p-8">
+      <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Mac to Windows</h2>
+      <ol class="list-inside list-decimal space-y-3 text-sm leading-relaxed text-neutral-300">
+        <li>Connect the Mac and Windows PC to a local network that allows device discovery.</li>
+        <li>Open Nearby Drop from the Mac menu bar, choose files, and select the Windows PC when it appears.</li>
+        <li>Accept the transfer in the Windows Quick Share client.</li>
+      </ol>
+    </section>
+
+    <section class="mb-8 border border-theme-border bg-theme-surface p-6 sm:p-8">
+      <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Windows to Mac</h2>
+      <ol class="list-inside list-decimal space-y-3 text-sm leading-relaxed text-neutral-300">
+        <li>Open the compatible Quick Share client on Windows and select the files to send.</li>
+        <li>Choose the visible Nearby Drop Mac, then review and accept the request in the Mac menu bar app.</li>
+        <li>Find received files in the download folder selected in Nearby Drop.</li>
+      </ol>
+    </section>
+
+    <section class="mb-8 border border-theme-border bg-theme-black p-6 sm:p-8">
+      <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">What has been tested</h2>
+      <p class="mb-4 text-sm leading-relaxed text-neutral-300">Both directions passed in a final Debug test build with one Windows PC. For Windows-to-Mac, the received 65,678-byte test file matched its expected SHA-256 and Nearby Drop showed Transfer Complete. For Mac-to-Windows, the user confirmed arrival and the Mac showed Sent; the Windows file hash was not independently checked.</p>
+      <p class="text-sm leading-relaxed text-neutral-400">The v2.3.1 release includes these protocol changes, but the packaged release was not separately device-tested. This verifies one Windows device and one test setup; it does not establish compatibility with every Windows PC, Quick Share version, or network. Nearby Drop runs on macOS only and is not a Windows app.</p>
+    </section>
+
+    <section class="mb-10 border border-theme-border bg-theme-surface p-6 sm:p-8">
+      <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">If discovery fails</h2>
+      <p class="text-sm leading-relaxed text-neutral-300">Keep both devices on a reachable local network. Guest Wi-Fi, client isolation, firewall settings, or local-network permission can stop devices from appearing. LTE-only phone-hotspot discovery has not been verified. File data transfers directly over the local connection; Nearby Drop does not use a cloud relay.</p>
+    </section>
+
+    <div class="flex flex-wrap gap-4">
+      <a class="bg-white px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-black" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">GET NEARBY DROP</a>
+      <a class="border border-theme-border px-6 py-3 font-mono text-xs uppercase tracking-wider text-white" href="../index.html#compare">SEE ALL TRANSFER STATUS</a>
+    </div>
+  </main>
+  <footer class="relative z-10 border-t border-theme-border px-5 py-6 font-mono text-xs text-neutral-500">
+    <div class="mx-auto flex max-w-6xl flex-wrap justify-between gap-3"><span>NEARBY DROP · INDEPENDENT MACOS APP</span><a class="text-neutral-300 underline" href="../index.html">BACK TO THE TRANSFER GUIDE</a></div>
+  </footer>
+</body>
+</html>
