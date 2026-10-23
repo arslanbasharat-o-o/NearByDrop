@@ -25,6 +25,7 @@ class InboundNearbyConnection: NearbyConnection{
 		didSet { Self.logger.notice("Incoming stage: \(String(describing: self.currentState), privacy: .public)") }
 	}
 	public var delegate:InboundNearbyConnectionDelegate?
+	private var earlyConnectionResponse: Location_Nearby_Connections_OfflineFrame?
 	private var cipherCommitment:Data?
 	
 	private var textPayloadID:Int64=0
@@ -126,7 +127,8 @@ class InboundNearbyConnection: NearbyConnection{
 						return
 					}
 					if offline.hasV1 && offline.v1.hasType && offline.v1.type == .connectionResponse {
-						// Client sent connectionResponse before or interleaved with clientFinish
+						// Preserve the response until UKEY2 authenticates the peer.
+                        earlyConnectionResponse=offline
 						NearbyLogger.log("[NearByDrop] sentUkeyServerInit received early connectionResponse")
 						return
 					}
@@ -402,6 +404,10 @@ class InboundNearbyConnection: NearbyConnection{
 		try finalizeKeyExchange(peerKey: clientKey)
 		
 		setState(.receivedUkeyClientFinish)
+        if let response=earlyConnectionResponse {
+            earlyConnectionResponse=nil
+            try processConnectionResponseFrame(response)
+        }
 	}
 	
 	private func processConnectionResponseFrame(_ frame:Location_Nearby_Connections_OfflineFrame) throws{

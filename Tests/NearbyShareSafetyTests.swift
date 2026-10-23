@@ -44,6 +44,7 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
     private var lastReceivedBytes: Int64 = 0
     private var cancelAfterAcceptance = false
     private var rejectQR = false
+    private var earlyResponse = false
     private var safeDisconnectOnly = false
     private var legacyCloseOnly = false
     private var dataTransferStarted: Date?
@@ -58,6 +59,10 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
     func testReceiverCanConfirmThroughSafeDisconnect() throws {
         safeDisconnectOnly = true
         try runRoundTrip()
+    }
+    func testEarlyQRConnectionResponseRoundTrip() throws {
+        earlyResponse = true
+        try runRoundTrip(qr: true)
     }
     func testQRAuthenticatedRoundTrip() throws { try runRoundTrip(qr: true) }
     func testQRRejectsADifferentSenderKey() throws {
@@ -93,6 +98,7 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         defer { listener.cancel(); inbound = nil; outbound = nil }
         listener.newConnectionHandler = { connection in
             let inbound = IndexedInboundConnection(connection: connection, id: "test-incoming")
+            inbound.reorderHandshake = self.earlyResponse
             inbound.safeDisconnectOnly = self.safeDisconnectOnly
             inbound.legacyCloseOnly = self.legacyCloseOnly
             inbound.qrSenderPublicKey = self.rejectQR ? P256.Signing.PrivateKey().publicKey : qrKey?.publicKey
@@ -292,6 +298,19 @@ import Vision
 final class QuickShareCodeTests: XCTestCase {
     private let key = "AAADaxfR8uEsQkf4vOblY6RA8ncDfYEt6zOg9KE5RdiYwpY"
 
+    func testQRScanRefreshesDiscoveryIdentity() throws {
+        let manager=NearbyConnectionManager.shared
+        let previous=manager.endpointID
+        defer { manager.stopReceivingQRCode() }
+        try manager.receiveQRCode("https://quickshare.google/qrcode#key=\(key)")
+        XCTAssertNotEqual(manager.endpointID, previous)
+    }
+    func testQRAdvertisementUsesVersionOneAndPreservesToken() throws {
+        let token=try QuickShareCode("https://quickshare.google/qrcode#key=\(key)").advertisingToken
+        let data=EndpointInfo(name: "Mac", deviceType: .computer, qrCodeData: token).serialize()
+        XCTAssertEqual(data[0] >> 5, 1)
+        XCTAssertEqual(EndpointInfo(data: data)?.qrCodeData, token)
+    }
     func testReceiverQRProofMatchesAndroidFormat() throws {
         let code=try QuickShareCode("https://quickshare.google/qrcode#key=\(key)")
         let proof=code.receiverHandshakeData(authToken: Data(0..<32))
@@ -366,6 +385,23 @@ final class PayloadControlTests: XCTestCase {
 }
 
 private final class IndexedInboundConnection: InboundNearbyConnection {
+    var reorderHandshake = false
+    private var heldClientFinish: Data?
+    override func processReceivedFrame(frameData: Data) {
+        if reorderHandshake,
+           let frame=try? Securegcm_Ukey2Message(serializedData: frameData),
+           frame.hasMessageType, frame.messageType == .clientFinish {
+            heldClientFinish=frameData
+            return
+        }
+        super.processReceivedFrame(frameData: frameData)
+        if let held=heldClientFinish {
+            heldClientFinish=nil
+            reorderHandshake=false
+            super.processReceivedFrame(frameData: held)
+        }
+    }
+
     var safeDisconnectOnly = false
     var legacyCloseOnly = false
     override func sendTransferSetupFrame(_ frame: Sharing_Nearby_Frame, completion: (() -> Void)? = nil, failure: ((Error) -> Void)? = nil) throws {
