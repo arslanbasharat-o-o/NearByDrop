@@ -7,12 +7,12 @@ LATEST_RELEASE_JSON=$(curl -s "https://api.github.com/repos/${REPO}/releases/lat
 DOWNLOAD_URL=$(echo "$LATEST_RELEASE_JSON" | grep -o "https://github.com/${REPO}/releases/download/[^\"']*\.dmg" | head -n 1 || true)
 
 if [ -z "$DOWNLOAD_URL" ]; then
-    DOWNLOAD_URL="https://github.com/${REPO}/releases/download/v2.3.1/Nearby-Drop-2.3.1.dmg"
+    DOWNLOAD_URL="https://github.com/${REPO}/releases/download/v2.3.2/Nearby-Drop-2.3.2.dmg"
 fi
 
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
-TMP_DMG="$TMP_DIR/Nearby-Drop-2.3.1.dmg"
+TMP_DMG="$TMP_DIR/Nearby-Drop-2.3.2.dmg"
 
 echo "==> Downloading $DOWNLOAD_URL..."
 curl -fL -o "$TMP_DMG" "$DOWNLOAD_URL"
