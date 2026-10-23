@@ -1,3 +1,11 @@
+# 2.3.3 (17)
+
+- Add automatic background update checks and an update indicator in the menu bar.
+- Install signed updates and restart directly from the menu dropdown or About page.
+- Verify signed feeds and archives before extraction using Sparkle.
+- Defer installation while a transfer is active and report download or installation errors in the app.
+- Generate a signed appcast with every packaged release.
+
 # 2.3.2 (16)
 
 - Fix Android-generated QR receiving with the receiver authentication proof, version 1 QR advertisements, and a fresh discovery identity for each scan.
