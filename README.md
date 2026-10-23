@@ -14,7 +14,7 @@ Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-
 
 ## Key Features
 
-- **Wireless Quick Share Transfers**: Send and receive files with compatible Android devices over a reachable local network. Mac-to-Windows and Windows-to-Mac transfers are included in v2.3.1 and passed with one Windows PC. Device and network compatibility varies, and transfer speed depends on the hardware and connection.
+- **Wireless Quick Share Transfers**: Send and receive files with compatible Android devices over a reachable local network. Two-way Windows Quick Share is included in v2.3.1 and passed in a final Debug test build with one PC; the packaged release was not separately device-tested. Compatibility varies, and speed depends on the hardware and connection.
 - **In-app QR Camera and Code Generator**: The camera preview is inside Nearby Drop's Receive interface, and the Mac can display a Quick Share code for Android. Mac-generated QR sending passed with a Pixel 8 Pro in a Debug test build. Android-generated QR scanning reads the code, but its receive handshake did not complete in the physical Pixel test; use the regular Quick Share device list for that direction.
 - **Direct Android USB Storage (MTP)**: Browse phone storage, upload and download files, and use Finder drag-and-drop over USB. Physical Pixel/Nexus browse, upload, and download checks passed.
 - **macOS Finder Share Menu**: Send files, folders, or web links directly to nearby Android phones from Finder via the native Share Extension.
@@ -26,7 +26,7 @@ Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-
 | Workflow | Status |
 | :--- | :--- |
 | **Android ↔ Mac Quick Share** | Available; physically tested with a Pixel 8 Pro on a local network |
-| **Mac ↔ Windows Quick Share** | Included in v2.3.1; both directions passed with one Windows PC |
+| **Mac ↔ Windows Quick Share** | Included in v2.3.1; both directions passed in a Debug test with one Windows PC |
 | **Mac-generated QR → Android** | Passed with Pixel 8 Pro in a Debug test build |
 | **Android-generated QR → Mac** | In-app camera scans the code; receive handshake did not complete in the Pixel test |
 | **Android ↔ Mac USB MTP** | Physical browse, upload, and download checks passed |
@@ -52,7 +52,7 @@ Settings → About displays the active version and provides manual update checks
 2. Open Nearby Drop from the menu bar:
    - **Send to Android**: Click **Send**, pick files, and select your phone from discovered nearby devices.
    - **Receive from Android**: On your phone, select files and tap **Quick Share**. Accept the transfer prompt in the Nearby Drop dropdown and verify the pairing code.
-   - **Windows Quick Share**: Nearby Drop runs on the Mac; select a discovered Windows PC to send, or select the Mac from the compatible Windows Quick Share client to send back. Both directions passed with one Windows PC.
+   - **Windows Quick Share**: Nearby Drop runs on the Mac; select a discovered Windows PC to send, or select the Mac from the compatible Windows Quick Share client to send back. Both directions passed in a Debug test with one Windows PC.
    - **QR code**: The Receive interface opens the camera scanner for an Android Quick Share QR code. The tested Pixel receive handshake did not complete, so use the Quick Share device list for Android-to-Mac transfers. Mac-generated QR sending is a separate path.
 
 ### USB Storage Transfer (MTP)
