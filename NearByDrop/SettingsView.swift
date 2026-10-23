@@ -55,9 +55,6 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 }
 
 struct SettingsView: View {
-    @State private var checkingUpdates = false
-    @State private var releaseAvailable = false
-    @State private var updateMessage = ""
 
     @ObservedObject var model: TransferModel
     @ObservedObject var controller: SettingsWindowController
@@ -377,28 +374,8 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Button(checkingUpdates ? "Checking…" : "Check for Updates") {
-                checkingUpdates = true
-                let url = URL(string: "https://api.github.com/repos/arslanbasharat-o-o/NearByDrop/releases/latest")!
-                var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
-                request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-                URLSession.shared.dataTask(with: request) { data, response, _ in
-                    let json = data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
-                    let installed = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
-                    let message = AppRelease.updateMessage(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0,
-                        tag: json?["tag_name"] as? String,
-                        installed: installed)
-                    DispatchQueue.main.async {
-                        updateMessage = message
-                        releaseAvailable = (response as? HTTPURLResponse)?.statusCode == 200 && (json?["tag_name"] as? String).map { AppRelease.isNewerRelease(tag: $0, installed: installed) } == true
-                        checkingUpdates = false
-                    }
-                }.resume()
-            }
-            .disabled(checkingUpdates)
-            if !updateMessage.isEmpty {
-                Text(updateMessage).font(.caption).foregroundStyle(.secondary)
-            }
+            Button("Check for Updates") { AppUpdater.shared.check() }
+            AppUpdateView()
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("What’s New").font(.subheadline.weight(.semibold))
@@ -430,10 +407,7 @@ struct SettingsView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(theme.currentAccent.color)
 
-                if releaseAvailable {
-                    Button("Releases…") { NSWorkspace.shared.open(AppRelease.releasesURL) }
-                        .buttonStyle(.bordered)
-                }
+
 
                 Button("Welcome Tour…") {
                     OnboardingWindowController.showOnboarding()

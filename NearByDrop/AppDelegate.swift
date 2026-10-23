@@ -12,6 +12,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     private var localClickMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        AppUpdater.shared.canInstall = { [weak self] in
+            guard let model=self?.model else { return false }
+            return !model.sending && model.incoming.isEmpty && !model.usb.transferring
+        }
+        AppUpdater.shared.onAvailabilityChanged = { [weak self] available in
+            self?.statusItem?.button?.title = available ? " •" : ""
+            self?.statusItem?.button?.setAccessibilityLabel(available ? "Nearby Drop, update available" : "Nearby Drop")
+        }
         model.onConsent = { [weak self] id, accept in self?.consent(id, accept: accept) }
         NSApp.setActivationPolicy(.accessory)
         setupMainMenu()
@@ -37,6 +45,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         popover.behavior = .applicationDefined
         popover.delegate = self
 
+        AppUpdater.shared.start()
         NearbyConnectionManager.shared.mainAppDelegate = self
         NearbyConnectionManager.shared.becomeVisible()
 
@@ -299,7 +308,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         popover.performClose(nil)
         settingsWindow.show(tab: .about)
     }
-    @objc func openUpdates(_ sender: Any?) { openAbout(sender) }
+    @objc func openUpdates(_ sender: Any?) { openAbout(sender); AppUpdater.shared.check() }
     @objc func openGitHub(_ sender: Any?) {
         if let url = URL(string: "https://github.com/arslanbasharat-o-o/NearByDrop") {
             NSWorkspace.shared.open(url)
@@ -336,6 +345,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         return true
     }
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if AppUpdater.shared.busy && !AppUpdater.shared.canInstall() {
+            AppUpdater.shared.deferInstallationForTransfer()
+            return .terminateCancel
+        }
+        return .terminateNow
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     private func consent(_ id: String, accept: Bool) {
@@ -601,6 +618,8 @@ struct MenuView: View {
             .labelsHidden()
             .padding(.horizontal, 14)
             .padding(.bottom, 10)
+
+            AppUpdateView().padding(.horizontal, 14)
 
             // Tab Content
             Group {

@@ -188,19 +188,6 @@ final class AppSupportTests: XCTestCase {
         XCTAssertNil(ReceiveProgress().fraction)
     }
 
-    func testUpdateStates() {
-        XCTAssertEqual(AppRelease.updateMessage(statusCode: 404, tag: nil, installed: "2.2.2"), "No stable release is available yet.")
-        XCTAssertEqual(AppRelease.updateMessage(statusCode: 200, tag: "v2.2.2", installed: "2.2.2"), "You’re up to date.")
-        XCTAssertTrue(AppRelease.updateMessage(statusCode: 200, tag: "v2.10.0", installed: "2.2.2").contains("available"))
-        XCTAssertTrue(AppRelease.updateMessage(statusCode: 403, tag: nil, installed: "2.2.2").contains("Could not"))
-    }
-
-    func testOnlyNewerReleasesOfferAnUpdate() {
-        XCTAssertTrue(AppRelease.isNewerRelease(tag: "v2.10.0", installed: "2.3.0"))
-        XCTAssertFalse(AppRelease.isNewerRelease(tag: "v2.3.0", installed: "2.3.0"))
-        XCTAssertFalse(AppRelease.isNewerRelease(tag: "v2.2.3", installed: "2.3.0"))
-        XCTAssertFalse(AppRelease.isNewerRelease(tag: "", installed: "2.3.0"))
-    }
 
     func testPhoneFoldersCannotEscapeOrMerge() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -449,5 +436,48 @@ private final class IndexedInboundConnection: InboundNearbyConnection {
             try sendTransferSetupFrame(update)
         }
         try super.processFileChunk(frame: frame)
+    }
+}
+
+
+final class AppUpdaterTests: XCTestCase {
+    func testInstallationWaitsForTransferThenResumes() {
+        let updater = AppUpdater()
+        updater.canInstall = { false }
+        var installations = 0
+        updater.showReady(toInstallAndRelaunch: { _ in installations += 1 })
+        XCTAssertEqual(installations, 0)
+        XCTAssertFalse(updater.busy)
+        updater.install()
+        XCTAssertEqual(installations, 0)
+        updater.canInstall = { true }
+        updater.install()
+        XCTAssertEqual(installations, 1)
+        updater.install()
+        XCTAssertEqual(installations, 1)
+    }
+    func testTerminationCanBeRetriedAfterTransferFinishes() {
+        let updater = AppUpdater()
+        updater.canInstall = { false }
+        var retries = 0
+        updater.showInstallingUpdate(withApplicationTerminated: false, retryTerminatingApplication: { retries += 1 })
+        XCTAssertFalse(updater.busy)
+        updater.install()
+        XCTAssertEqual(retries, 0)
+        updater.canInstall = { true }
+        updater.install()
+        XCTAssertEqual(retries, 1)
+        XCTAssertTrue(updater.busy)
+    }
+    func testFailureClearsBusyStateAndAcknowledges() {
+        let updater = AppUpdater()
+        updater.showDownloadInitiated(cancellation: {})
+        XCTAssertTrue(updater.busy)
+        var acknowledged = false
+        updater.showUpdaterError(NSError(domain: "test", code: 1), acknowledgement: { acknowledged = true })
+        XCTAssertTrue(acknowledged)
+        XCTAssertFalse(updater.busy)
+        XCTAssertNil(updater.version)
+        XCTAssertTrue(updater.message.hasPrefix("Update failed:"))
     }
 }

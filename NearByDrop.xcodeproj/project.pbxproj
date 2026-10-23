@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        AD0000000000000000000006 = {isa = PBXBuildFile; fileRef = AD0000000000000000000004; };
+        AD0000000000000000000007 = {isa = PBXBuildFile; productRef = AD0000000000000000000008; };
+        AD0000000000000000000001 = {isa = PBXBuildFile; productRef = AD0000000000000000000002; };
+        AD0000000000000000000003 = {isa = PBXBuildFile; fileRef = AD0000000000000000000004; };
         AB0000000000000000000002 /* QRCodeScanner.swift in Tests */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000002; };
         AB0000000000000000000003 /* ThemeManager.swift in Tests */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000010; };
         AB0000000000000000000001 /* AppSupport.swift in Tests */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000014; };
@@ -139,6 +143,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        AD0000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		AA0000000000000000000002 /* NearbyShareSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyShareSafetyTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000004 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		AA0000000000000000000007 /* NearbyShareTests.xctest */ = {isa = PBXFileReference; explicitFileType = "wrapper.cfbundle.xctest"; includeInIndex = 0; path = NearbyShareTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -196,6 +201,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA0000000000000000000003 /* XCTest.framework in Frameworks */,
+                AD0000000000000000000007,
 				AA0000000000000000000005 /* libNearbyShare.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -214,6 +220,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				69DCF4942AB8BF7B00CBE2CC /* libNearbyShare.dylib in Frameworks */,
+                AD0000000000000000000001,
 				69E000022E44000100000005 /* libmtp.9.dylib in Frameworks */,
 				69E000022E44000100000006 /* libusb-1.0.0.dylib in Frameworks */,
 			);
@@ -303,6 +310,7 @@
 				69E000012E44000100000011 /* SettingsView.swift */,
 				69E000012E44000100000012 /* OnboardingView.swift */,
 				69E000012E44000100000014 /* AppSupport.swift */,
+                AD0000000000000000000004,
 				69DA9A1329E0BF5200A442DA /* Assets.xcassets */,
 				697DDF122E44AAFB00B4749C /* Localizable.xcstrings */,
 				69DA9A1829E0BF5200A442DA /* NearByDrop.entitlements */,
@@ -366,6 +374,7 @@
 				AA0000000000000000000015 /* PBXTargetDependency */,
 			);
 			name = NearbyShareTests;
+            packageProductDependencies = (AD0000000000000000000008,);
 			productName = NearbyShareTests;
 			productReference = AA0000000000000000000007 /* NearbyShareTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -408,6 +417,7 @@
 			);
 			name = "NearByDrop";
 			packageProductDependencies = (
+                AD0000000000000000000002,
 			);
 			productName = "NearByDrop";
 			productReference = 69DA9A0E29E0BF5100A442DA /* Nearby Drop.app */;
@@ -486,6 +496,7 @@
 			);
 			mainGroup = 69DA9A0529E0BF5100A442DA;
 			packageReferences = (
+                AD0000000000000000000005,
 				69DA9A2429E189EF00A442DA /* XCRemoteSwiftPackageReference "swift-protobuf" */,
 				69DA9A3429E1994C00A442DA /* XCRemoteSwiftPackageReference "SwiftECC" */,
 				693D8DCA2E43771D00E8E7F4 /* XCRemoteSwiftPackageReference "qrcode" */,
@@ -534,6 +545,7 @@
 			files = (
 				AA0000000000000000000001 /* NearbyShareSafetyTests.swift in Sources */,
                 AB0000000000000000000001 /* AppSupport.swift in Tests */,
+                AD0000000000000000000006,
                 AB0000000000000000000002 /* QRCodeScanner.swift in Tests */,
                 AB0000000000000000000003 /* ThemeManager.swift in Tests */,
 			);
@@ -561,6 +573,7 @@
 				69E000022E44000100000011 /* SettingsView.swift in Sources */,
 				69E000022E44000100000012 /* OnboardingView.swift in Sources */,
 				69E000022E44000100000014 /* AppSupport.swift in Sources */,
+                AD0000000000000000000003,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -670,7 +683,7 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
@@ -682,7 +695,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.2;
+				MARKETING_VERSION = 2.3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -697,7 +710,7 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
@@ -709,7 +722,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.2;
+				MARKETING_VERSION = 2.3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -856,7 +869,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -884,7 +897,7 @@
 					"$(PROJECT_DIR)/Vendor/USB/lib",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.2;
+				MARKETING_VERSION = 2.3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop;
 				PRODUCT_MODULE_NAME = NearByDrop;
 				PRODUCT_NAME = "Nearby Drop";
@@ -907,7 +920,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -935,7 +948,7 @@
 					"$(PROJECT_DIR)/Vendor/USB/lib",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.2;
+				MARKETING_VERSION = 2.3.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop;
 				PRODUCT_MODULE_NAME = NearByDrop;
 				PRODUCT_NAME = "Nearby Drop";
@@ -1031,6 +1044,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+        AD0000000000000000000005 = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/sparkle-project/Sparkle"; requirement = {kind = exactVersion; version = 2.10.0; }; };
 		693D8DCA2E43771D00E8E7F4 /* XCRemoteSwiftPackageReference "qrcode" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/dagronf/qrcode.git";
@@ -1058,6 +1072,8 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+        AD0000000000000000000008 = {isa = XCSwiftPackageProductDependency; package = AD0000000000000000000005; productName = Sparkle; };
+        AD0000000000000000000002 = {isa = XCSwiftPackageProductDependency; package = AD0000000000000000000005; productName = Sparkle; };
 		693D8DCB2E43771D00E8E7F4 /* QRCode */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 693D8DCA2E43771D00E8E7F4 /* XCRemoteSwiftPackageReference "qrcode" */;
