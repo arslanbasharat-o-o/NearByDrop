@@ -1,122 +1,72 @@
-# Nearby Drop
+<p align="center">
+  <img src="docs/assets/icon.png" alt="Nearby Drop app icon" width="112">
+</p>
 
-[![Build](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg)](https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml)
-[![Release](https://img.shields.io/github/v/release/arslanbasharat-o-o/NearByDrop?color=blue)](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)
-[![Platform](https://img.shields.io/badge/platform-macOS%2014%2B%20%7C%20Apple%20Silicon%20%26%20Intel-green.svg)](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)
-[![Website](https://img.shields.io/badge/website-live-brightgreen)](https://arslanbasharat-o-o.github.io/NearByDrop/)
-[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+<h1 align="center">Nearby Drop</h1>
+<p align="center"><strong>Move files between your Mac, Android, and compatible Windows devices.</strong></p>
 
-[**Website & Guides**](https://arslanbasharat-o-o.github.io/NearByDrop/) · [**Download DMG**](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest) · [**Report Issue**](https://github.com/arslanbasharat-o-o/NearByDrop/issues) · [**Contributing**](CONTRIBUTING.md)
+<p align="center">
+  <a href="https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml"><img alt="Build status" src="https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/arslanbasharat-o-o/NearByDrop?color=blue"></a>
+  <img alt="macOS 14 or newer" src="https://img.shields.io/badge/macOS-14%2B-black">
+  <img alt="Proprietary license" src="https://img.shields.io/badge/license-proprietary-red">
+</p>
 
-Nearby Drop is an independent macOS menu bar app for transferring files between a Mac, compatible Android devices, and Windows Quick Share clients. It includes wireless sending and receiving, an in-app QR camera scanner and code generator, an Android USB MTP file browser, and Finder sharing. It is free to download and distributed under a proprietary license.
+<p align="center">
+  <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest"><strong>Download</strong></a> ·
+  <a href="https://arslanbasharat-o-o.github.io/NearByDrop/">Guides</a> ·
+  <a href="https://github.com/arslanbasharat-o-o/NearByDrop/issues">Report a problem</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-o).
+Nearby Drop is a native macOS menu bar app for sharing files with Android phones and compatible Windows Quick Share clients. Send over Wi-Fi, scan or show a QR code, connect by USB, or use Finder’s Share menu.
 
-## Key Features
+## Pick your path
 
-- **Wireless Quick Share Transfers**: Send files from Mac to compatible Android or Windows Quick Share devices, and receive files back on the Mac. Android transfer directions were physically tested with a Pixel 8 Pro on a local network. Both Windows directions passed in a final Debug test build with one PC; the packaged release was not separately device-tested. Compatibility varies, and speed depends on the hardware and connection.
-- **In-app QR Camera and Code Generator**: The camera preview is inside Nearby Drop's Receive interface, and the Mac can display a Quick Share code for Android. Both QR directions passed with a Pixel 8 Pro; Android-generated QR receiving passed during v2.3.2 validation and is included in the current release.
-- **Direct Android USB Storage (MTP)**: Browse phone storage, upload Mac files, download individual files or folder trees, select multiple phone items, save a file to a chosen Mac location, and use Finder drag-and-drop to upload. Physical Pixel/Nexus browse, upload, and download checks passed.
-- **macOS Finder Share Menu**: Send files, folders, or web links directly to nearby Android phones from Finder via the native Share Extension.
-- **Transfer Controls and History**: Select multiple files or folders, drag items into the app, follow transfer progress and available speed or time estimates, cancel an active transfer, review recent transfers, and reveal saved files in Finder.
-- **Mac Preferences**: Change the Mac's nearby device name and receive folder, trust devices for automatic acceptance, launch at login, choose appearance, accent color and menu bar icon, and enable or disable transfer sounds and haptics.
-- **Zero-Cloud Privacy**: Wirelessly encrypted with the UKEY2 handshake and AES-GCM cipher. Your file data stays strictly on your local Wi-Fi or USB connection — no Google account, Apple ID, or third-party servers required.
-- **Universal Architecture**: Native performance on both Apple silicon (`arm64`) and Intel (`x86_64`) Macs running macOS 14 Sonoma or newer.
+| Quick Share | QR codes | USB MTP | Finder |
+| --- | --- | --- | --- |
+| Send and receive files over a reachable local network. | Scan a phone’s code in the app, or show a code for the phone to scan. | Browse Android storage and move files over a cable. | Share files, folders, and links from the Finder menu. |
 
-## Comparison
+## Get started
 
-| Workflow | Status |
-| :--- | :--- |
-| **Android ↔ Mac Quick Share** | Available; physically tested with a Pixel 8 Pro on a local network |
-| **Mac ↔ Windows Quick Share** | Included in v2.3.1; both directions passed in a Debug test with one Windows PC |
-| **Mac-generated QR → Android** | Passed with Pixel 8 Pro in a Debug test build |
-| **Android-generated QR → Mac** | Passed with Pixel 8 Pro during v2.3.2 validation; included in the current release |
-| **Android ↔ Mac USB MTP** | Physical browse, upload, and download checks passed |
-| **Finder Share Extension** | Included; shares files, folders, and links from Finder |
+1. [Download the latest DMG](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest).
+2. Open it and drag **Nearby Drop** into **Applications**.
+3. Open the app from the menu bar.
 
-## Download
+The app supports macOS 14 or newer on Apple silicon and Intel. Releases are currently ad hoc signed, so macOS may ask you to approve the first launch in **System Settings → Privacy & Security**.
 
-**macOS 14 Sonoma or newer · Apple silicon and Intel**
+Starting with version 2.3.3, the app checks for updates at launch and hourly. When one is ready, choose **Update & Restart** from the menu or About page. Versions 2.3.2 and earlier need one manual update to 2.3.3 first.
 
-1. Download the installer: [**Nearby-Drop-2.3.3.dmg**](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/Nearby-Drop-2.3.3.dmg).
-2. Open the disk image and drag **Nearby Drop** into your `/Applications` folder.
-3. The DMG includes native universal binaries (`arm64` and `x86_64`), the Finder Share Extension, and USB dynamic libraries.
+## Send and receive
 
-> [!NOTE]
-> Builds are currently ad hoc signed. macOS may show a Gatekeeper notice on first launch. If prompted, open **System Settings → Privacy & Security → Open Anyway** to authorize the app.
+- **Mac to phone or PC:** Open **Send**, choose files, then select a nearby device. Both devices need to be on a reachable local network.
+- **Phone to Mac:** Choose files on the phone and share with Quick Share. Accept the request in Nearby Drop, unless that device is trusted for automatic acceptance.
+- **QR:** Use **Receive → Scan QR Code** to scan a phone’s Quick Share code. Choose **QR Share** to show a code from the Mac.
+- **USB:** Connect and unlock the phone, choose **File transfer / Android Auto** in its USB prompt, then open the **USB** tab.
+- **Finder:** Select items, open the Share menu, and choose **Nearby Drop**.
 
-Settings → About displays the active version and provides manual update checks against GitHub Releases.
+## What has been tested
 
-## How to Use
+| Connection | Result |
+| --- | --- |
+| Pixel 8 Pro ↔ Mac over local Wi-Fi | File transfer and both QR directions were manually confirmed. |
+| One Windows PC ↔ Mac | Both directions passed with the Google Quick Share app in a development build; the packaged release was not separately device-tested. |
+| Android USB MTP | Supported. Browse, upload, and download were not reverified in the latest device-test round. |
+| Phone hotspot using LTE | Not verified; use a shared Wi-Fi network or USB if discovery does not work. |
 
-### Wireless Transfer (Quick Share)
-1. Ensure your Mac and Android device are connected to the same local Wi-Fi network. Allow local network access when macOS prompts.
-2. Open Nearby Drop from the menu bar:
-   - **Send to Android**: Click **Send**, pick files, and select your phone from discovered nearby devices.
-   - **Receive from Android**: On your phone, select files and tap **Quick Share**. Accept the transfer prompt in the Nearby Drop dropdown and verify the pairing code.
-   - **Windows Quick Share**: Nearby Drop runs on the Mac; select a discovered Windows PC to send, or select the Mac from the compatible Windows Quick Share client to send back. Both directions passed in a Debug test with one Windows PC.
-   - **QR code**: The Receive interface opens the camera scanner for an Android Quick Share QR code. Pixel-to-Mac QR receiving passed with a Pixel 8 Pro during v2.3.2 validation and is included in the current release. Mac-generated QR sending is a separate path.
+See [device verification notes](docs/DEVICE-VERIFICATION.md) for the tested scope and limitations. Results on one device do not guarantee compatibility with every Android phone or Windows PC.
 
-### USB Storage Transfer (MTP)
-1. Connect your Android phone to your Mac with a USB cable.
-2. Unlock your phone and select **File transfer / Android Auto** in the USB settings prompt.
-3. Open Nearby Drop, switch to the **USB** tab, and browse or drag files directly.
+## Network and privacy
 
-### Share from Finder
-1. In Finder, select files, folders, or a link.
-2. Open the Finder **Share** menu and choose **Nearby Drop** to send to a nearby Android device.
+- Both devices need a reachable local network. Guest Wi-Fi and client isolation can block discovery.
+- Wireless Quick Share sessions are encrypted. Files travel directly between devices; Nearby Drop does not relay them through a cloud service. USB MTP uses the connected cable.
+- The app contacts GitHub to check for signed updates. It does not send transfer history or personal files.
+- Quick Share is a Google trademark. Nearby Drop is independent and is not affiliated with Google or Apple.
 
-## Network and Device Notes
+## For developers
 
-- Wireless speed depends on network capacity. A 5 GHz Wi-Fi or Wi-Fi 6 router delivers the best throughput.
-- Both devices must share a reachable local subnet. Guest networks or router client isolation can prevent discovery.
-- LTE-only phone-hotspot discovery has not been verified and may not show the Mac. Use a shared Wi-Fi network or USB MTP if discovery fails.
-- The Mac advertises itself on your local network while Nearby Drop is active. Google account/contact-restricted discovery is not supported.
-- See [device verification](DEVICE-TEST-2026-10-22.md) for hardware test coverage and limits.
+See [Contributing](CONTRIBUTING.md) for the universal release build and automated test commands. Protocol notes are in [PROTOCOL.md](PROTOCOL.md); USB library notices and source details are in [Vendor/USB](Vendor/USB/README.md).
 
-## Build and Test
+## License
 
-Requirements: Xcode 26 or newer with the macOS SDK. Universal USB libraries and pinned Swift packages are checked into the repository.
-
-```sh
-# Universal Release Build
-xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop \
-  -configuration Release -derivedDataPath build \
-  CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO build
-
-# Run Automated Tests
-xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop \
-  -configuration Debug -destination 'platform=macOS' \
-  -derivedDataPath build-tests CODE_SIGNING_ALLOWED=NO test
-```
-
-Universal packages can be generated using `scripts/package-release.sh build dist`. Protocol definitions are documented in [PROTOCOL.md](PROTOCOL.md).
-
-## Contributing
-
-Contributions, bug fixes, and feature suggestions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, build instructions, and automated testing requirements.
-
-## Privacy and Security
-
-- Camera access is used solely for optical Quick Share QR code scanning.
-- File contents and transfer history remain strictly local on your Mac.
-- The manual update check queries GitHub's public release API and never transmits telemetry or personal files.
-- Report security issues privately through [GitHub Security Advisories](https://github.com/arslanbasharat-o-o/NearByDrop/security/advisories/new).
-
-## Copyright and Licenses
-
-Nearby Drop is proprietary software created and maintained by **Arslan Basharat**.
-Copyright © 2026 Arslan Basharat. All rights reserved.
-
-Unauthorized copying, distribution, modification, reverse engineering, decompilation, public display, or commercial use of this software, in source code or binary form, without express prior written permission is strictly prohibited. See [LICENSE](LICENSE) for details.
-
-### Third-Party Open Source Components
-Dependencies retain their respective open-source licenses:
-- [SwiftECC](https://github.com/leif-ibsen/SwiftECC), [BigInt](https://github.com/leif-ibsen/BigInt), [ASN1](https://github.com/leif-ibsen/ASN1), [SwiftProtobuf](https://github.com/apple/swift-protobuf), [QRCode](https://github.com/dagronf/qrcode), [SwiftImageReadWrite](https://github.com/dagronf/SwiftImageReadWrite), and [swift-qrcode-generator](https://github.com/dagronf/swift-qrcode-generator).
-- USB support dynamically links [libmtp](https://github.com/libmtp/libmtp) and [libusb](https://github.com/libusb/libusb) under LGPL 2.1 or later. License texts and source archives are documented in [Vendor/USB](Vendor/USB/README.md).
-
-Nearby Drop is an independent project and is not affiliated with Google LLC or Apple Inc. Quick Share, Android, macOS, and AirDrop are trademarks of their respective owners.
-
-### App updates
-
-Starting with 2.3.3, Nearby Drop checks for updates at launch and hourly. An indicator in the menu bar and an inline notice appear when an update is available. Click **Update & Restart** to download, verify, install, and reopen the app. Installation waits until active transfers finish. Updates and the release feed are signed with Ed25519; Sparkle verifies signatures before extraction. Versions 2.3.2 and earlier require one manual installation of 2.3.3 to gain this updater.
+Nearby Drop is free to download and proprietary. Third-party components retain their own licenses; see [LICENSE](LICENSE) and [Vendor/USB](Vendor/USB/README.md).
