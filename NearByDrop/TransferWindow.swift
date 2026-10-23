@@ -627,6 +627,7 @@ struct TransferCompletionCard: View {
     @ObservedObject var theme = ThemeManager.shared
     @State private var checkmarkScale: CGFloat = 0.3
     @State private var checkmarkOpacity: Double = 0.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 12) {
@@ -643,7 +644,12 @@ struct TransferCompletionCard: View {
                     .opacity(checkmarkOpacity)
             }
             .onAppear {
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.6)) {
+                guard !reduceMotion else {
+                    checkmarkScale = 1.0
+                    checkmarkOpacity = 1.0
+                    return
+                }
+                withAnimation(.easeOut(duration: 0.2)) {
                     checkmarkScale = 1.0
                     checkmarkOpacity = 1.0
                 }
@@ -725,7 +731,7 @@ struct TransferErrorCard: View {
                 .lineLimit(3)
                 .padding(.horizontal, 20)
 
-            Button("Dismiss") {
+            Button("Dismiss", role: .cancel) {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     model.clearCompletedTransfer()
                 }
@@ -785,7 +791,7 @@ struct IncomingTransferReceivingCard: View {
 
             HStack {
                 Spacer()
-                Button("Cancel") {
+                Button("Cancel", role: .cancel) {
                     model.cancelIncomingTransfer(id)
                 }
                 .buttonStyle(.bordered)

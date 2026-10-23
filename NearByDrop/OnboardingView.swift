@@ -82,7 +82,7 @@ struct OnboardingView: View {
                 Text("Welcome to Nearby Drop")
                     .font(.title2.weight(.bold))
 
-                Text("Fast file sharing between your Mac and Android devices.")
+                Text("Send and receive files between Mac and Android.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -94,22 +94,22 @@ struct OnboardingView: View {
                 featureItem(
                     icon: "arrow.up.and.down.circle.fill",
                     color: theme.currentAccent.color,
-                    title: "Two-Way Transfers",
-                    text: "Send and receive photos, videos, and folders directly with Android Quick Share."
+                    title: "Wireless sharing",
+                    text: "Choose a nearby device or scan a Quick Share code."
                 )
 
                 featureItem(
                     icon: "lock.shield.fill",
                     color: .green,
-                    title: "Direct & Private",
-                    text: "Encrypted transfers happen over your local Wi-Fi. No accounts or cloud servers."
+                    title: "Private transfers",
+                    text: "Files are encrypted over local Wi-Fi. No account or cloud service is needed."
                 )
 
                 featureItem(
                     icon: "cable.connector",
                     color: .orange,
-                    title: "USB File Transfer",
-                    text: "Plug in a USB cable to browse and transfer files in wired MTP mode."
+                    title: "USB transfers",
+                    text: "Connect your phone by cable to browse and transfer files."
                 )
             }
             .padding(.horizontal, 6)

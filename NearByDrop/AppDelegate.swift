@@ -486,34 +486,39 @@ struct SonarWaveRing: View {
     let delay: Double
     let accent: Color
     @State private var isAnimating = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Circle()
             .stroke(accent.opacity(isAnimating ? 0.0 : 0.42), lineWidth: isAnimating ? 1.0 : 2.0)
             .scaleEffect(isAnimating ? 2.3 : 0.35)
             .animation(
-                Animation.easeOut(duration: 2.2)
+                reduceMotion ? nil : Animation.easeOut(duration: 2.2)
                     .repeatForever(autoreverses: false)
                     .delay(delay),
                 value: isAnimating
             )
             .onAppear {
-                isAnimating = true
+                isAnimating = !reduceMotion
             }
+            .onChange(of: reduceMotion) { _, value in isAnimating = !value }
     }
 }
 
 struct RadarScanningView: View {
     @ObservedObject var theme = ThemeManager.shared
     @State private var floating = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 12) {
             Spacer(minLength: 10)
             ZStack {
-                SonarWaveRing(delay: 0.0, accent: theme.currentAccent.color)
-                SonarWaveRing(delay: 0.7, accent: theme.currentAccent.color)
-                SonarWaveRing(delay: 1.4, accent: theme.currentAccent.color)
+                if !reduceMotion {
+                    SonarWaveRing(delay: 0.0, accent: theme.currentAccent.color)
+                    SonarWaveRing(delay: 0.7, accent: theme.currentAccent.color)
+                    SonarWaveRing(delay: 1.4, accent: theme.currentAccent.color)
+                }
 
                 Circle()
                     .fill(theme.currentAccent.color.opacity(0.08))
@@ -531,11 +536,12 @@ struct RadarScanningView: View {
                 Image(systemName: "macbook.and.iphone")
                     .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(theme.currentAccent.color)
-                    .offset(y: floating ? -2 : 2)
-                    .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: floating)
+                    .offset(y: reduceMotion ? 0 : (floating ? -2 : 2))
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: floating)
             }
             .frame(width: 120, height: 100)
-            .onAppear { floating = true }
+            .onAppear { floating = !reduceMotion }
+            .onChange(of: reduceMotion) { _, value in floating = !value }
 
             VStack(spacing: 4) {
                 Text("Looking for Devices")
@@ -553,6 +559,16 @@ struct RadarScanningView: View {
     }
 }
 
+private struct MenuBarUtilityGlass: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.glassEffect(.regular, in: Capsule())
+        } else {
+            content.background(.ultraThinMaterial, in: Capsule())
+        }
+    }
+}
+
 struct MenuView: View {
     @ObservedObject var model: TransferModel
     let send: () -> Void
@@ -561,6 +577,7 @@ struct MenuView: View {
     var guide: (() -> Void)? = nil
     var privacy: (() -> Void)? = nil
     @ObservedObject private var theme = ThemeManager.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isDragging = false
     @State private var lastStagedTitle: String = ""
     @State private var lastStagedBytes: Int64 = 0
@@ -597,10 +614,15 @@ struct MenuView: View {
                             .fill(statusColor)
                             .frame(width: 7, height: 7)
                     }
-                    Text(statusText + " • Visible as \"\(model.deviceName)\"")
+                    Text(statusText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    Text("Visible as \(model.deviceName)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                        .truncationMode(.middle)
                 }
                 Spacer(minLength: 0)
             }
@@ -635,7 +657,10 @@ struct MenuView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.easeInOut(duration: 0.18), value: model.tab)
+            .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: model.tab)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: model.scanning)
+            .transaction { if reduceMotion { $0.animation = nil } }
 
             Divider()
 
@@ -646,8 +671,9 @@ struct MenuView: View {
                 Button(action: TransferModel.openDownloads) {
                     Image(systemName: "folder")
                         .font(.system(size: 13))
+                        .frame(width: 28, height: 28)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .help("Open Downloads: \(model.downloadDirectoryDisplayPath)")
                 .accessibilityLabel("Open Downloads")
@@ -656,8 +682,9 @@ struct MenuView: View {
                     Button(action: settings) {
                         Image(systemName: "gearshape")
                             .font(.system(size: 13))
+                            .frame(width: 28, height: 28)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
                     .foregroundStyle(.secondary)
                     .help("Settings…")
                     .accessibilityLabel("Settings")
@@ -683,14 +710,17 @@ struct MenuView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                         .font(.system(size: 13))
+                        .frame(width: 28, height: 28)
                 }
                 .menuStyle(.borderlessButton)
                 .foregroundStyle(.secondary)
                 .fixedSize()
                 .accessibilityLabel("More options")
             }
+            .padding(4)
+            .modifier(MenuBarUtilityGlass())
             .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
         }
         .frame(width: 360, height: 480)
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
@@ -779,11 +809,12 @@ struct MenuView: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(.secondary)
-                        .frame(width: 20, height: 20)
+                        .frame(width: 28, height: 28)
                         .background(Color.primary.opacity(0.08), in: Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
                 .help("Clear selection")
+                .accessibilityLabel("Remove selected files")
             }
 
             HStack(spacing: 8) {
@@ -889,7 +920,7 @@ struct MenuView: View {
                             .font(.headline)
                             .foregroundStyle(.primary)
                         Spacer()
-                        Button("Cancel", action: model.cancelSend)
+                        Button("Cancel", role: .cancel, action: model.cancelSend)
                             .buttonStyle(.bordered)
                             .controlSize(.small)
                     }
@@ -976,7 +1007,7 @@ struct MenuView: View {
                                         .padding(.vertical, 7)
                                         .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(.borderless)
                                 }
                             }
                         }
@@ -992,9 +1023,9 @@ struct MenuView: View {
             }
         }
         .padding(.horizontal, 14)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.urls.isEmpty)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.sending)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.showingQR)
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: model.urls.isEmpty)
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: model.sending)
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: model.showingQR)
     }
 
     // MARK: - Receive View
@@ -1014,7 +1045,7 @@ struct MenuView: View {
                         } else {
                             ProgressView().controlSize(.small)
                         }
-                        Button("Cancel", action: model.resetQRTransfer)
+                        Button("Cancel", role: .cancel, action: model.resetQRTransfer)
                             .buttonStyle(.bordered)
                             .controlSize(.small)
 
@@ -1034,7 +1065,7 @@ struct MenuView: View {
                         } else {
                             ProgressView().controlSize(.small)
                         }
-                        Button("Cancel", action: model.resetQRTransfer)
+                        Button("Cancel", role: .cancel, action: model.resetQRTransfer)
                             .buttonStyle(.bordered)
                             .controlSize(.small)
 
@@ -1118,11 +1149,11 @@ struct MenuView: View {
                                                     .foregroundStyle(.primary)
                                             }
                                         }
-                                        .buttonStyle(.plain)
+                                        .buttonStyle(.borderless)
 
                                         HStack(spacing: 8) {
                                             Spacer()
-                                            Button("Decline") { model.onConsent?(id, false) }
+                                            Button("Decline", role: .cancel) { model.onConsent?(id, false) }
                                                 .buttonStyle(.bordered)
                                                 .controlSize(.small)
                                             Button("Accept") { model.onConsent?(id, true) }
@@ -1176,8 +1207,8 @@ struct MenuView: View {
             }
         }
         .padding(.horizontal, 14)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.lastCompletedTransfer == nil)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.incoming.isEmpty)
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: model.lastCompletedTransfer == nil)
+        .animation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: model.incoming.isEmpty)
     }
 
     // MARK: - History View
@@ -1188,7 +1219,7 @@ struct MenuView: View {
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 if !model.history.isEmpty {
-                    Button("Clear") { model.clearHistory() }
+                    Button("Clear", role: .destructive) { model.clearHistory() }
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
                 }
@@ -1240,10 +1271,12 @@ struct MenuView: View {
                                     } label: {
                                         Image(systemName: "magnifyingglass")
                                             .font(.caption2)
+                                            .frame(width: 28, height: 28)
                                     }
                                     .buttonStyle(.bordered)
                                     .controlSize(.mini)
                                     .help("Show in Finder")
+                                    .accessibilityLabel("Show in Finder")
                                 }
                             }
                             .padding(8)
