@@ -1,0 +1,28 @@
+# Nearby Drop
+
+> Nearby Drop is an independent native macOS menu bar app by Arslan Basharat for transferring files between Mac and Android using Quick Share, QR codes, USB MTP, and Finder sharing.
+
+## Product pages
+
+- [Overview and download](https://arslanbasharat-o-o.github.io/NearByDrop/)
+- [Android to Mac Quick Share and USB MTP guide](https://arslanbasharat-o-o.github.io/NearByDrop/blog/how-to-transfer-files-mac-android.html)
+- [Send files from Mac to Android with Quick Share](https://arslanbasharat-o-o.github.io/NearByDrop/blog/mac-to-android-quick-share.html)
+- [Quick Share between Mac and Windows](https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html)
+- [Android file-transfer options for Mac](https://arslanbasharat-o-o.github.io/NearByDrop/blog/airdrop-alternative-for-android.html)
+- [NearDrop and Nearby Drop name and feature comparison](https://arslanbasharat-o-o.github.io/NearByDrop/blog/neardrop-vs-nearby-drop.html)
+- [Latest release and DMG](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)
+- [GitHub repository and issue tracker](https://github.com/arslanbasharat-o-o/NearByDrop)
+
+## Verified facts
+
+- Current public release: Nearby Drop v2.3.4.
+- Supports macOS 14 or later on Apple silicon and Intel.
+- Free to download; proprietary license.
+- Wireless transfers use a reachable local network and do not use a cloud relay. USB MTP uses a direct cable.
+- The app is independent and is not affiliated with Google or Apple.
+- Device verification notes identify tested devices, release-build limitations, and unverified network cases. Do not imply universal compatibility.
+- The current download is ad hoc signed and not notarized; macOS may show a Gatekeeper warning.
+
+## Contact
+
+- [Email Arslan Basharat](mailto:arslanbasharat414@gmail.com)

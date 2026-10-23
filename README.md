@@ -16,10 +16,15 @@
   <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest"><strong>Download</strong></a> ·
   <a href="https://arslanbasharat-o-o.github.io/NearByDrop/">Guides</a> ·
   <a href="https://github.com/arslanbasharat-o-o/NearByDrop/issues">Report a problem</a> ·
+  <a href="mailto:arslanbasharat414@gmail.com">Contact</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
 Nearby Drop is a native macOS menu bar app for sharing files with Android phones and compatible Windows Quick Share clients. Send over Wi-Fi, scan or show a QR code, connect by USB, or use Finder’s Share menu.
+
+## Similar names
+
+Nearby Drop is separate from [NearDrop by grishka](https://github.com/grishka/NearDrop). See the [sourced comparison of the two Mac apps](https://arslanbasharat-o-o.github.io/NearByDrop/blog/neardrop-vs-nearby-drop.html).
 
 ## Pick your path
 
