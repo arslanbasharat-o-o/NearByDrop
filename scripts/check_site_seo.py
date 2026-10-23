@@ -24,6 +24,7 @@ class PageMetadata(HTMLParser):
         self.canonical = ""
         self.robots = ""
         self.links = []
+        self.stylesheets = []
         self.capture = None
 
     def handle_starttag(self, tag, attrs):
@@ -39,8 +40,13 @@ class PageMetadata(HTMLParser):
                 self.description = attrs.get("content", "").strip()
             elif name == "robots":
                 self.robots = attrs.get("content", "").lower()
-        elif tag == "link" and "canonical" in attrs.get("rel", "").lower().split():
-            self.canonical = attrs.get("href", "").strip()
+        elif tag == "link":
+            rel = attrs.get("rel", "").lower().split()
+            href = attrs.get("href", "").strip()
+            if "canonical" in rel:
+                self.canonical = href
+            if "stylesheet" in rel:
+                self.stylesheets.append(href)
         elif tag == "a" and attrs.get("href"):
             self.links.append(attrs["href"])
 
@@ -110,10 +116,17 @@ def main():
 
         page = PageMetadata()
         try:
-            page.feed(page_path.read_text(encoding="utf-8"))
+            source = page_path.read_text(encoding="utf-8")
+            page.feed(source)
         except OSError as exc:
             errors.append(f"cannot read sitemap page {page_url}: {exc}")
             continue
+
+        expected_stylesheet = urljoin(page_url, "assets/site.css" if page_url.endswith("/") else "../assets/site.css")
+        if expected_stylesheet not in {urljoin(page_url, href) for href in page.stylesheets}:
+            errors.append(f"missing local site stylesheet: {page_path.relative_to(ROOT)}")
+        if "cdn.tailwindcss.com" in source:
+            errors.append(f"Tailwind Play CDN must not be used in production: {page_path.relative_to(ROOT)}")
 
         title = " ".join(" ".join(page.title).split())
         h1s = [" ".join(" ".join(h1).split()) for h1 in page.h1s]

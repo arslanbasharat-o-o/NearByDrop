@@ -1,4 +1,5 @@
 # Build products
+node_modules/
 DerivedData/
 build/
 build-*/
