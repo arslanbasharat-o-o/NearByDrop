@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nearby Drop for Mac | Android &amp; Windows Quick Share</title>
-  <meta name="description" content="Nearby Drop is a macOS menu bar app for Quick Share file transfers between Mac, Android and Windows, plus USB MTP and Finder sharing.">
+  <meta name="description" content="Transfer files between Mac, Android and Windows with Quick Share. Nearby Drop also includes in-app QR, USB MTP, Finder sharing and transfer history.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/">
@@ -14,13 +14,13 @@
   <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/">
   <meta property="og:site_name" content="Nearby Drop">
   <meta property="og:title" content="Nearby Drop for Mac | Android &amp; Windows Quick Share">
-  <meta property="og:description" content="Transfer files between Mac, Android and Windows with Quick Share, plus USB MTP and Finder sharing. See QR and device test status.">
+  <meta property="og:description" content="Send and receive with Android and Windows Quick Share, scan or show QR codes, browse Android storage over USB, share from Finder and review transfer history.">
   <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/icon.png">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Nearby Drop for Mac | Android &amp; Windows Quick Share">
-  <meta name="twitter:description" content="Send and receive files between Mac, Android and Windows with Quick Share, USB MTP and Finder sharing. Check workflow status.">
+  <meta name="twitter:description" content="Send and receive with Android and Windows Quick Share, scan or show QR codes, browse Android storage over USB, share from Finder and review transfer history.">
   <meta name="twitter:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/icon.png">
 
   <link rel="icon" type="image/png" href="assets/icon.png">
@@ -106,11 +106,14 @@
     "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
     "description": "Independent macOS menu bar app for Quick Share transfers with compatible Android and Windows devices, USB MTP file browsing, and Finder sharing.",
     "featureList": [
-      "Wireless file transfers between Mac and compatible Android devices using Quick Share",
-      "Two-way Quick Share interoperability with Windows, passed in a Debug test build with one PC",
-      "Mac-generated Quick Share QR sharing to Android",
-      "USB MTP browsing and file copies for Android devices",
-      "macOS Finder Share Extension"
+      "Two-way wireless Quick Share file transfers between Mac and compatible Android devices over a reachable local network",
+      "Two-way Quick Share interoperability with Windows, tested in a Debug build with one PC",
+      "Mac-generated Quick Share QR codes for Mac-to-Android sharing",
+      "In-app camera scanning for Android Quick Share QR codes; the receive handshake did not complete in the physical Pixel 8 Pro test",
+      "USB MTP file browser for Android storage, file uploads, and file or folder downloads",
+      "macOS Finder Share Extension for sharing files, folders, and web links",
+      "Multi-file and folder selection, drag-and-drop, transfer progress, speed, ETA, cancellation, and recent transfer history",
+      "Menu bar preferences for device name, download location, launch at login, trusted devices, appearance, and optional feedback"
     ],
     "softwareVersion": "2.3.1",
     "url": "https://arslanbasharat-o-o.github.io/NearByDrop/",
@@ -156,7 +159,7 @@
 
       <!-- Desktop Links -->
       <nav class="hidden md:flex items-center gap-6 font-mono text-xs text-neutral-400 tracking-wider">
-        <a href="#how-it-works" class="hover:text-white transition-colors">// HOW IT WORKS</a>
+        <a href="#features" class="hover:text-white transition-colors">// FEATURES</a>
         <a href="#compatibility" class="hover:text-white transition-colors">// TRANSFER SETUP</a>
         <a href="#troubleshooting" class="hover:text-white transition-colors">// TROUBLESHOOTING</a>
         <a href="#compare" class="hover:text-white transition-colors">// COMPARISON</a>
@@ -235,11 +238,70 @@
     </div>
   </section>
 
+  <section id="features" class="py-20 border-b border-theme-border relative z-10">
+    <div class="max-w-7xl mx-auto px-5 sm:px-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4 border-b border-theme-border pb-6">
+        <div>
+          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 01 THE NEARBY DROP TOOLKIT</span>
+          <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">More than wireless file sharing</h2>
+        </div>
+        <p class="font-mono text-xs text-neutral-400 max-w-md">
+          A Mac menu bar app for nearby transfers, USB file management, QR workflows and Finder sharing. Compatibility and test coverage are called out where they matter.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-theme-border">
+        <article class="bg-theme-surface p-6 sm:p-8">
+          <span class="font-mono text-xs text-emerald-400 block mb-4">[ ANDROID ↔ MAC ]</span>
+          <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Two-way Quick Share</h3>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Send files from the Mac to compatible Android devices, or receive Android files on the Mac. Review incoming requests and confirm the matching PIN; trusted devices can be auto-accepted. The regular device-list flow uses a reachable local network.</p>
+        </article>
+
+        <article class="bg-theme-surface p-6 sm:p-8">
+          <span class="font-mono text-xs text-emerald-400 block mb-4">[ WINDOWS ↔ MAC ]</span>
+          <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Windows Quick Share</h3>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Send to or receive from compatible Windows Quick Share clients while Nearby Drop runs on the Mac. Both directions passed with one PC in a Debug test; the packaged release was not separately device-tested.</p>
+        </article>
+
+        <article class="bg-theme-surface p-6 sm:p-8">
+          <span class="font-mono text-xs text-amber-300 block mb-4">[ QR SHARE + SCAN ]</span>
+          <h3 class="font-display text-lg font-bold text-white uppercase mb-3">QR tools in the app</h3>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Show a Mac-generated Quick Share code for Android, or scan an Android code with the camera inside Nearby Drop. Mac-to-Android QR sending passed in a Pixel 8 Pro Debug test; Android-to-Mac scanning works, but its receive handshake did not complete in the physical test.</p>
+        </article>
+
+        <article class="bg-theme-surface p-6 sm:p-8">
+          <span class="font-mono text-xs text-emerald-400 block mb-4">[ ANDROID ↔ MAC · USB ]</span>
+          <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Android USB file browser</h3>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Browse phone storage over MTP, drag in or choose Mac files to upload, download selected items or whole folder trees, and save a file to a chosen Mac location. Physical Pixel and Nexus browse, upload and download checks passed.</p>
+        </article>
+
+        <article class="bg-theme-surface p-6 sm:p-8">
+          <span class="font-mono text-xs text-neutral-400 block mb-4">[ FINDER SHARE MENU ]</span>
+          <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Share straight from Finder</h3>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Use macOS’s Share menu to send files, folders or web links to a nearby Android device, without first opening the main transfer flow.</p>
+        </article>
+
+        <article class="bg-theme-surface p-6 sm:p-8">
+          <span class="font-mono text-xs text-neutral-400 block mb-4">[ TRANSFER CONTROLS ]</span>
+          <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Progress, cancel and history</h3>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Choose several files or folders, drag items into the app, follow transfer progress and available speed or time estimates, cancel an active transfer, and review recent transfers or reveal saved files in Finder.</p>
+        </article>
+
+        <article class="bg-theme-surface p-6 sm:p-8 md:col-span-2 lg:col-span-3">
+          <span class="font-mono text-xs text-neutral-400 block mb-4">[ MENU BAR PREFERENCES ]</span>
+          <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Make it fit your Mac</h3>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Rename the Mac as nearby devices see it, choose where received files are saved, auto-accept transfers from trusted devices, launch at login, choose light, dark or system appearance and an accent or menu bar icon, and turn transfer sounds or haptics on or off.</p>
+        </article>
+      </div>
+      <p class="mt-5 font-mono text-[11px] text-neutral-500">Wireless speeds vary with the devices and network. See the transfer status table below for the tested directions and current limits.</p>
+    </div>
+  </section>
+
   <section id="compatibility" class="py-20 border-b border-theme-border relative z-10 bg-theme-surface">
     <div class="max-w-7xl mx-auto px-5 sm:px-8">
       <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4 border-b border-theme-border pb-6">
         <div>
-          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 01 WIRELESS AND USB SETUP</span>
+          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 02 WIRELESS AND USB SETUP</span>
           <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">Choose a transfer method</h2>
         </div>
         <p class="font-mono text-xs text-neutral-400 max-w-md">
@@ -284,7 +346,7 @@
       
       <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4 border-b border-theme-border pb-6">
         <div>
-          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 02 PROTOCOL ARCHITECTURE</span>
+          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 03 PROTOCOL ARCHITECTURE</span>
           <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
           How Android Quick Share Works with Nearby Drop
           </h2>
@@ -360,7 +422,7 @@
       
       <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4 border-b border-theme-border pb-6">
         <div>
-          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 03 INTERACTIVE DIAGNOSTIC ASSISTANT</span>
+          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 04 INTERACTIVE DIAGNOSTIC ASSISTANT</span>
           <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
             Troubleshoot Connection Issues
           </h2>
@@ -400,7 +462,7 @@
     <div class="max-w-7xl mx-auto px-5 sm:px-8">
       
       <div class="mb-8 border-b border-theme-border pb-6">
-        <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 04 FILE-TRANSFER OPTIONS</span>
+        <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 05 FILE-TRANSFER OPTIONS</span>
         <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
           Android, Mac and Windows transfer status
         </h2>
@@ -498,7 +560,7 @@
     <div class="max-w-4xl mx-auto px-5 sm:px-8">
       
       <div class="mb-12 border-b border-theme-border pb-6">
-        <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 05 FREQUENTLY ASKED QUESTIONS</span>
+        <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 06 FREQUENTLY ASKED QUESTIONS</span>
         <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
           Android Quick Share and Mac file transfers
         </h2>
