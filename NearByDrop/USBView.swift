@@ -468,7 +468,7 @@ struct USBView: View {
                                             Text(device.name)
                                                 .font(.subheadline.weight(.medium))
                                                 .foregroundStyle(.primary)
-                                            Text("Connected via USB")
+                                            Text("Select to browse files")
                                                 .font(.caption2)
                                                 .foregroundStyle(.secondary)
                                         }
@@ -480,7 +480,7 @@ struct USBView: View {
                                     .padding(10)
                                     .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(.borderless)
                                 .disabled(usb.busy)
                             }
                         }
@@ -493,11 +493,13 @@ struct USBView: View {
                     Button(action: usb.back) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 11, weight: .semibold))
+                            .frame(width: 28, height: 28)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .disabled(usb.path.isEmpty || usb.busy)
                     .help("Back to parent folder")
+                    .accessibilityLabel("Back to parent folder")
 
                     if usb.path.isEmpty {
                         Picker("Storage", selection: $usb.storage) {
@@ -519,7 +521,7 @@ struct USBView: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(.borderless)
 
                                 ForEach(Array(usb.path.enumerated()), id: \.offset) { index, segment in
                                     Image(systemName: "chevron.right")
@@ -532,7 +534,7 @@ struct USBView: View {
                                             .font(.caption.weight(index == usb.path.count - 1 ? .semibold : .regular))
                                             .foregroundStyle(index == usb.path.count - 1 ? .primary : .secondary)
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(.borderless)
                                 }
                             }
                             .padding(.vertical, 2)
@@ -573,9 +575,12 @@ struct USBView: View {
                                     Image(systemName: usb.selectedItemIds.contains(item.id) ? "checkmark.circle.fill" : "circle")
                                         .font(.system(size: 14))
                                         .foregroundStyle(usb.selectedItemIds.contains(item.id) ? theme.currentAccent.color : Color.secondary.opacity(0.4))
+                                        .frame(width: 28, height: 28)
                                 }
-                                .buttonStyle(.plain)
-                                .help("Select item")
+                                .buttonStyle(.borderless)
+                                .help(usb.selectedItemIds.contains(item.id) ? "Deselect item" : "Select item")
+                                .accessibilityLabel(usb.selectedItemIds.contains(item.id) ? "Deselect \(item.name)" : "Select \(item.name)")
+                                .accessibilityValue(usb.selectedItemIds.contains(item.id) ? "Selected" : "Not selected")
 
                                 // Icon
                                 let iconInfo = fileIconInfo(for: item.name, isFolder: item.folder)
@@ -600,10 +605,12 @@ struct USBView: View {
                                     } label: {
                                         Image(systemName: "arrow.down.circle")
                                             .font(.system(size: 12))
+                                            .frame(width: 28, height: 28)
                                     }
                                     .buttonStyle(.bordered)
                                     .controlSize(.small)
                                     .help("Download this folder to Mac")
+                                    .accessibilityLabel("Download folder \(item.name) to Mac")
 
                                     // Chevron to enter folder
                                     Button {
@@ -612,8 +619,11 @@ struct USBView: View {
                                         Image(systemName: "chevron.right")
                                             .font(.caption2.weight(.semibold))
                                             .foregroundStyle(.secondary)
+                                            .frame(width: 28, height: 28)
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(.borderless)
+                                    .help("Open folder")
+                                    .accessibilityLabel("Open folder \(item.name)")
                                 } else {
                                     Text(ByteCountFormatter.string(fromByteCount: Int64(clamping: item.size), countStyle: .file))
                                         .font(.caption2)
@@ -624,10 +634,12 @@ struct USBView: View {
                                     } label: {
                                         Image(systemName: "arrow.down.circle")
                                             .font(.system(size: 12))
+                                            .frame(width: 28, height: 28)
                                     }
                                     .buttonStyle(.bordered)
                                     .controlSize(.small)
                                     .help("Download to Mac")
+                                    .accessibilityLabel("Download \(item.name) to Mac")
                                 }
                             }
                             .padding(.vertical, 5)
@@ -789,7 +801,7 @@ struct USBView: View {
                             .font(.caption)
                             .lineLimit(1)
                         Spacer()
-                        Button("Cancel", action: usb.cancel)
+                        Button("Cancel", role: .cancel, action: usb.cancel)
                             .buttonStyle(.bordered)
                             .controlSize(.small)
                     }

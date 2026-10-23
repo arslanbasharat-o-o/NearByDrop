@@ -127,7 +127,7 @@ struct QRScannerView: View {
             HStack {
                 Text("Scan QR Code").font(.headline)
                 Spacer()
-                Button("Cancel") {
+                Button("Cancel", role: .cancel) {
                     scanner.stop()
                     onCancel()
                 }
@@ -138,7 +138,7 @@ struct QRScannerView: View {
                 .overlay { Image(systemName: "viewfinder").font(.system(size: 96, weight: .ultraLight)).foregroundStyle(.white.opacity(0.8)).accessibilityHidden(true) }
             Text(scanner.message).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).frame(minHeight: 34)
             if scanner.denied {
-                Button("Open Camera Settings") {
+                Button("Open Camera Settings…") {
                     guard let settingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") else { return }
                     NSWorkspace.shared.open(settingsURL)
                 }
