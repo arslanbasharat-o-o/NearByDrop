@@ -111,11 +111,15 @@ final class AppUpdater: NSObject, ObservableObject, SPUUserDriver {
 
 struct AppUpdateView: View {
     @ObservedObject private var updater = AppUpdater.shared
+    @ObservedObject private var theme = ThemeManager.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if !updater.message.isEmpty { Text(updater.message).font(.caption).accessibilityAddTraits(.updatesFrequently) }
             if updater.version != nil {
                 Button(updater.busy ? "Updating…" : "Update & Restart") { updater.install() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(theme.currentAccent.color)
+                    .controlSize(.small)
                     .disabled(updater.busy)
             }
         }
