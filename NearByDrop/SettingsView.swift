@@ -36,7 +36,7 @@ final class SettingsWindowController: NSWindowController, ObservableObject {
     }
 }
 
-enum SettingsTab: String, CaseIterable, Identifiable {
+enum SettingsTab: String, CaseIterable, Identifiable, Hashable {
     case general = "General"
     case appearance = "Appearance"
     case devices = "Devices"
@@ -89,7 +89,8 @@ struct SettingsView: View {
                             in: RoundedRectangle(cornerRadius: 8)
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
+                    .controlSize(.regular)
                 }
                 Spacer()
             }
@@ -235,7 +236,9 @@ struct SettingsView: View {
                                 .stroke(theme.currentTheme == t ? theme.currentAccent.color : Color.primary.opacity(0.08), lineWidth: theme.currentTheme == t ? 1.5 : 1)
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(t.rawValue)
+                    .accessibilityValue(theme.currentTheme == t ? "Selected" : "Not selected")
                 }
             }
 
@@ -258,9 +261,13 @@ struct SettingsView: View {
                                     .foregroundStyle(.white)
                                     .opacity(theme.currentAccent == opt ? 1 : 0)
                             )
+                            .frame(width: 32, height: 32)
+                            .contentShape(Circle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
                     .help(opt.rawValue)
+                    .accessibilityLabel(opt.rawValue)
+                    .accessibilityValue(theme.currentAccent == opt ? "Selected" : "Not selected")
                 }
             }
 
@@ -287,7 +294,9 @@ struct SettingsView: View {
                                 .stroke(theme.menuBarIconStyle == style ? theme.currentAccent.color : Color.primary.opacity(0.08), lineWidth: theme.menuBarIconStyle == style ? 1.5 : 1)
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel(style.rawValue)
+                    .accessibilityValue(theme.menuBarIconStyle == style ? "Selected" : "Not selected")
                 }
             }
         }
@@ -298,7 +307,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionHeader(title: "Trusted Devices", subtitle: "Transfers from these devices are accepted automatically.")
 
-            let list = UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? []
+            let list = Array(Set(UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? [])).sorted()
             if list.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "shield.slash")
@@ -319,17 +328,26 @@ struct SettingsView: View {
                     ForEach(list, id: \.self) { key in
                         let parts = key.split(separator: "#", omittingEmptySubsequences: false)
                         let displayName = parts.count > 1 ? parts.dropLast().joined(separator: "#") : (key.contains("|") ? String(key.split(separator: "|", maxSplits: 1).last ?? "") : key)
+                        let identitySuffix = parts.count > 1 ? String(parts.last ?? "").suffix(6) : nil
                         HStack {
                             Image(systemName: "iphone")
                                 .foregroundStyle(theme.currentAccent.color)
-                            Text(displayName)
-                                .font(.subheadline)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(displayName)
+                                    .font(.subheadline)
+                                if let identitySuffix, !identitySuffix.isEmpty {
+                                    Text("Connection ID · …\(identitySuffix)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
                             Spacer()
-                            Button("Remove") {
+                            Button("Remove", role: .destructive) {
                                 removeTrusted(key)
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
+                            .help("Remove trust for \(displayName)")
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -338,7 +356,7 @@ struct SettingsView: View {
 
                     HStack {
                         Spacer()
-                        Button("Revoke All") {
+                        Button("Revoke All", role: .destructive) {
                             UserDefaults.standard.removeObject(forKey: "trustedDevices")
                             model.trustedDevices.removeAll()
                         }
@@ -353,50 +371,62 @@ struct SettingsView: View {
 
     // MARK: - About Tab
     private var aboutTab: some View {
-        VStack(alignment: .center, spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(theme.currentAccent.color.opacity(0.12))
-                    .frame(width: 68, height: 68)
-                Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(.system(size: 32, weight: .semibold))
-                    .foregroundStyle(theme.currentAccent.color)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(theme.currentAccent.color.opacity(0.12))
+                        .frame(width: 54, height: 54)
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .font(.system(size: 25, weight: .semibold))
+                        .foregroundStyle(theme.currentAccent.color)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Nearby Drop")
+                        .font(.title2.weight(.bold))
+                    Text(AppRelease.versionDescription)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("By Arslan Basharat")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
             }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
 
-            VStack(spacing: 2) {
-                Text("Nearby Drop")
-                    .font(.title2.weight(.bold))
-                Text(AppRelease.versionDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("Created by Arslan Basharat")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                sectionHeader(title: "Updates", subtitle: "Keep Nearby Drop up to date.")
+                HStack(alignment: .top, spacing: 12) {
+                    Button("Check for Updates") { AppUpdater.shared.check() }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    AppUpdateView()
+                }
             }
-
-            Button("Check for Updates") { AppUpdater.shared.check() }
-            AppUpdateView()
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("What’s New").font(.subheadline.weight(.semibold))
                 Text("Inline QR scanning, improved Quick Share handshakes, and safer transfer cancellation.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.callout).foregroundStyle(.secondary)
             }
+            .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-
-            Divider()
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 6) {
                 Text("Open Source Licenses")
                     .font(.subheadline.weight(.semibold))
 
-                Text("Includes libmtp and libusb under LGPL 2.1 or later. Licenses ship inside the app’s ThirdPartyLicenses resources; corresponding USB sources are included with each GitHub release.")
-                    .font(.caption)
+                Text("libmtp and libusb are distributed under LGPL 2.1 or later. Licenses and matching USB source are included with each release.")
+                    .font(.callout)
                     .foregroundStyle(.secondary)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
 
             HStack(spacing: 12) {
                 Button("View on GitHub") {
@@ -415,7 +445,7 @@ struct SettingsView: View {
                 .buttonStyle(.bordered)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func sectionHeader(title: String, subtitle: String) -> some View {
