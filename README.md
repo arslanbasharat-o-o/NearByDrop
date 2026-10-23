@@ -14,10 +14,12 @@ Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-
 
 ## Key Features
 
-- **Wireless Quick Share Transfers**: Send and receive files with compatible Android devices over a reachable local network. Two-way Windows Quick Share is included in v2.3.1 and passed in a final Debug test build with one PC; the packaged release was not separately device-tested. Compatibility varies, and speed depends on the hardware and connection.
+- **Wireless Quick Share Transfers**: Send files from Mac to compatible Android or Windows Quick Share devices, and receive files back on the Mac. Android transfer directions were physically tested with a Pixel 8 Pro on a local network. Both Windows directions passed in a final Debug test build with one PC; the packaged release was not separately device-tested. Compatibility varies, and speed depends on the hardware and connection.
 - **In-app QR Camera and Code Generator**: The camera preview is inside Nearby Drop's Receive interface, and the Mac can display a Quick Share code for Android. Mac-generated QR sending passed with a Pixel 8 Pro in a Debug test build. Android-generated QR scanning reads the code, but its receive handshake did not complete in the physical Pixel test; use the regular Quick Share device list for that direction.
-- **Direct Android USB Storage (MTP)**: Browse phone storage, upload and download files, and use Finder drag-and-drop over USB. Physical Pixel/Nexus browse, upload, and download checks passed.
+- **Direct Android USB Storage (MTP)**: Browse phone storage, upload Mac files, download individual files or folder trees, select multiple phone items, save a file to a chosen Mac location, and use Finder drag-and-drop to upload. Physical Pixel/Nexus browse, upload, and download checks passed.
 - **macOS Finder Share Menu**: Send files, folders, or web links directly to nearby Android phones from Finder via the native Share Extension.
+- **Transfer Controls and History**: Select multiple files or folders, drag items into the app, follow transfer progress and available speed or time estimates, cancel an active transfer, review recent transfers, and reveal saved files in Finder.
+- **Mac Preferences**: Change the Mac's nearby device name and receive folder, trust devices for automatic acceptance, launch at login, choose appearance, accent color and menu bar icon, and enable or disable transfer sounds and haptics.
 - **Zero-Cloud Privacy**: Wirelessly encrypted with the UKEY2 handshake and AES-GCM cipher. Your file data stays strictly on your local Wi-Fi or USB connection — no Google account, Apple ID, or third-party servers required.
 - **Universal Architecture**: Native performance on both Apple silicon (`arm64`) and Intel (`x86_64`) Macs running macOS 14 Sonoma or newer.
 
