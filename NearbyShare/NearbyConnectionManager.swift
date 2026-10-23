@@ -183,7 +183,7 @@ struct EndpointInfo{
 	func serialize()->Data{
 		// 1 byte: Version(3 bits)|Visibility(1 bit)|Device Type(3 bits)|Reserved(1 bits)
 		// Device types: unknown=0, phone=1, tablet=2, laptop=3
-		var endpointInfo:[UInt8]=[UInt8(deviceType.rawValue << 1)]
+		var endpointInfo:[UInt8]=[UInt8(deviceType.rawValue << 1) | (qrCodeData == nil ? 0 : 0x20)]
 		// 16 bytes: unknown random bytes
 		for _ in 0...15{
 			endpointInfo.append(UInt8.random(in: 0...255))
@@ -234,7 +234,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	private var tcpListener:NWListener?
 	private let stateQueue=DispatchQueue(label: "com.arslanbasharat.NearByDrop.manager-state", qos: .userInitiated)
 	private static let maxActiveConnections=8
-	public let endpointID:[UInt8]=generateEndpointID()
+	public private(set) var endpointID:[UInt8]=generateEndpointID()
 	private var mdnsService:NetService?
 	public private(set) var advertisementState:AdvertisementState = .idle
 	private var activeConnections:[String:InboundNearbyConnection]=[:]
@@ -438,6 +438,8 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
         let code=try QuickShareCode(value)
         stateQueue.sync {
             receivingCodeExpiry?.cancel()
+            // Android caches endpoint metadata by ID; a QR session needs fresh discovery.
+            endpointID=Self.generateEndpointID()
             receivingCode=code
             refreshMDNSOnStateQueue()
             let expiry=DispatchWorkItem { [weak self] in self?.stopReceivingQRCodeOnStateQueue() }

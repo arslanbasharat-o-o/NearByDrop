@@ -200,7 +200,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     }
 
     private func shouldPreventPopoverDismissal() -> Bool {
-        if model.isChoosingDirectory || model.isChoosingFiles || model.usb.isChoosingFiles {
+        if model.scanning || model.isChoosingDirectory || model.isChoosingFiles || model.usb.isChoosingFiles {
             return true
         }
         if NSApp.windows.contains(where: { ($0 is NSOpenPanel || $0 is NSSavePanel) && $0.isVisible }) {

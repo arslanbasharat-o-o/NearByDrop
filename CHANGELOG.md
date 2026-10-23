@@ -1,3 +1,10 @@
+# 2.3.2 (16)
+
+- Fix Android-generated QR receiving with the receiver authentication proof, version 1 QR advertisements, and a fresh discovery identity for each scan.
+- Preserve early connection responses until key exchange completes.
+- Keep the camera scanner open when clicking outside the menu dropdown.
+- Verify Pixel 8 Pro QR receiving on real hardware and add discovery and handshake regression coverage.
+
 # 2.3.1 (15)
 
 - Preserve binary endpoint information in connection request frames to ensure compatibility with Windows and Android senders.
