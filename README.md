@@ -15,7 +15,7 @@ Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-
 ## Key Features
 
 - **Wireless Quick Share Transfers**: Send files from Mac to compatible Android or Windows Quick Share devices, and receive files back on the Mac. Android transfer directions were physically tested with a Pixel 8 Pro on a local network. Both Windows directions passed in a final Debug test build with one PC; the packaged release was not separately device-tested. Compatibility varies, and speed depends on the hardware and connection.
-- **In-app QR Camera and Code Generator**: The camera preview is inside Nearby Drop's Receive interface, and the Mac can display a Quick Share code for Android. Mac-generated QR sending passed with a Pixel 8 Pro in a Debug test build. Android-generated QR receiving also passed with the Pixel 8 Pro in the updated local Debug build on October 23, 2026; this fix has not been verified in a packaged public release.
+- **In-app QR Camera and Code Generator**: The camera preview is inside Nearby Drop's Receive interface, and the Mac can display a Quick Share code for Android. Both QR directions passed with a Pixel 8 Pro; Android-generated QR receiving passed during v2.3.2 validation and is included in the current release.
 - **Direct Android USB Storage (MTP)**: Browse phone storage, upload Mac files, download individual files or folder trees, select multiple phone items, save a file to a chosen Mac location, and use Finder drag-and-drop to upload. Physical Pixel/Nexus browse, upload, and download checks passed.
 - **macOS Finder Share Menu**: Send files, folders, or web links directly to nearby Android phones from Finder via the native Share Extension.
 - **Transfer Controls and History**: Select multiple files or folders, drag items into the app, follow transfer progress and available speed or time estimates, cancel an active transfer, review recent transfers, and reveal saved files in Finder.
@@ -30,7 +30,7 @@ Created and maintained by [Arslan Basharat](https://github.com/arslanbasharat-o-
 | **Android ↔ Mac Quick Share** | Available; physically tested with a Pixel 8 Pro on a local network |
 | **Mac ↔ Windows Quick Share** | Included in v2.3.1; both directions passed in a Debug test with one Windows PC |
 | **Mac-generated QR → Android** | Passed with Pixel 8 Pro in a Debug test build |
-| **Android-generated QR → Mac** | Passed with Pixel 8 Pro in the October 23 local Debug build; public release not verified |
+| **Android-generated QR → Mac** | Passed with Pixel 8 Pro during v2.3.2 validation; included in the current release |
 | **Android ↔ Mac USB MTP** | Physical browse, upload, and download checks passed |
 | **Finder Share Extension** | Included; shares files, folders, and links from Finder |
 
@@ -55,7 +55,7 @@ Settings → About displays the active version and provides manual update checks
    - **Send to Android**: Click **Send**, pick files, and select your phone from discovered nearby devices.
    - **Receive from Android**: On your phone, select files and tap **Quick Share**. Accept the transfer prompt in the Nearby Drop dropdown and verify the pairing code.
    - **Windows Quick Share**: Nearby Drop runs on the Mac; select a discovered Windows PC to send, or select the Mac from the compatible Windows Quick Share client to send back. Both directions passed in a Debug test with one Windows PC.
-   - **QR code**: The Receive interface opens the camera scanner for an Android Quick Share QR code. Pixel-to-Mac QR receiving passed in the updated local Debug build; the packaged public release has not been verified with this fix. Mac-generated QR sending is a separate path.
+   - **QR code**: The Receive interface opens the camera scanner for an Android Quick Share QR code. Pixel-to-Mac QR receiving passed with a Pixel 8 Pro during v2.3.2 validation and is included in the current release. Mac-generated QR sending is a separate path.
 
 ### USB Storage Transfer (MTP)
 1. Connect your Android phone to your Mac with a USB cable.
@@ -72,7 +72,7 @@ Settings → About displays the active version and provides manual update checks
 - Both devices must share a reachable local subnet. Guest networks or router client isolation can prevent discovery.
 - LTE-only phone-hotspot discovery has not been verified and may not show the Mac. Use a shared Wi-Fi network or USB MTP if discovery fails.
 - The Mac advertises itself on your local network while Nearby Drop is active. Google account/contact-restricted discovery is not supported.
-- See [release verification](RELEASE-VERIFICATION.md) for full hardware test coverage and limits.
+- See [device verification](DEVICE-TEST-2026-10-22.md) for hardware test coverage and limits.
 
 ## Build and Test
 
