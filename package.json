@@ -1,0 +1,13 @@
+{
+  "name": "nearby-drop-site",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./scripts/tailwind.css -o ./docs/assets/site.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  },
+  "overrides": {
+    "postcss-selector-parser": "7.1.7"
+  }
+}

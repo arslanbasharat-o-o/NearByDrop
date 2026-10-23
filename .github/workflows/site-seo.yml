@@ -5,12 +5,20 @@ on:
     branches: [main, beta]
     paths:
       - "docs/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tailwind.config.js"
+      - "scripts/tailwind.css"
       - "scripts/check_site_seo.py"
       - ".github/workflows/site-seo.yml"
   pull_request:
     branches: [main, beta]
     paths:
       - "docs/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tailwind.config.js"
+      - "scripts/tailwind.css"
       - "scripts/check_site_seo.py"
       - ".github/workflows/site-seo.yml"
   workflow_dispatch:
@@ -23,5 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install site CSS dependency
+        run: npm ci
+      - name: Verify committed site stylesheet
+        run: |
+          cp docs/assets/site.css /tmp/site.css
+          npm run build:css
+          cmp /tmp/site.css docs/assets/site.css
       - name: Validate sitemap and crawl paths
         run: python3 scripts/check_site_seo.py
