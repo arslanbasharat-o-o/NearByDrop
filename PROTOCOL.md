@@ -11,7 +11,7 @@ If you want to build your own Nearby Share *thing*, you will need:
 1. An implementation of multicast DNS (most modern OSes have it built-in)
 2. A cryptography library that is capable of ECDSA key exchange, AES-CBC, HMAC, and SHA256. OpenSSL will do but is definitely an overkill.
 3. A Protobuf library
-4. [These Protobuf files](/NearbyShare/ProtobufSource) I collected from the Chromium sources so you don't have to
+4. [These Protobuf files](NearbyShare/ProtobufSource/) collected from Chromium sources
 
 It is also very helpful to read logcat on your Android device if you're having any trouble. The logging of the Android implementation of Nearby Share is very verbose.
 
@@ -184,8 +184,6 @@ The device to device message contains a sequence number and a message. The messa
 
 ### The payload layer
 
-![yo dawg, I heard you like protobuf...](/images/YoDawg.jpg)
-
 This layer allows the transfer of arbitrarily large payloads in chunks. Payloads come in two types: bytes and files. All negotiation uses bytes payloads with protobuf messages inside. The file payloads are used for actual files.
 
 Payload transfer frames are wrapped into offline frames of type `PAYLOAD_TRANSFER`. These are then encrypted as described above. Meaning of the important payload transfer frame fields is as follows:
@@ -207,7 +205,7 @@ The client and the server send each other a "paired key encryption" frame, wrapp
 
 After that, the client and the server send each other a "paired key result" frame. Both have `status` set to `UNABLE`. Whatever.
 
-These and following protobuf messages are specific to Nearby Share and [are defined here](/NearbyShare/ProtobufSource/wire_format.proto).
+These and following protobuf messages are specific to Nearby Share and [are defined here](NearbyShare/ProtobufSource/wire_format.proto).
 
 ### The transfer metadata aka introduction
 
