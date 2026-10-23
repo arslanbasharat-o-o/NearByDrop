@@ -1,0 +1,27 @@
+name: Site SEO
+
+on:
+  push:
+    branches: [main, beta]
+    paths:
+      - "docs/**"
+      - "scripts/check_site_seo.py"
+      - ".github/workflows/site-seo.yml"
+  pull_request:
+    branches: [main, beta]
+    paths:
+      - "docs/**"
+      - "scripts/check_site_seo.py"
+      - ".github/workflows/site-seo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  site-seo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate sitemap and crawl paths
+        run: python3 scripts/check_site_seo.py
