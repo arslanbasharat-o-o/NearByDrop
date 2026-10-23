@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest"><strong>Download</strong></a> ·
-  <a href="https://arslanbasharat-o-o.github.io/NearByDrop/">Guides</a> ·
+  <a href="https://arslanbasharat-o-o.github.io/NearByDrop/#guides">Guides</a> ·
   <a href="https://github.com/arslanbasharat-o-o/NearByDrop/issues">Report a problem</a> ·
   <a href="mailto:arslanbasharat414@gmail.com">Contact</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
@@ -31,6 +31,14 @@ Nearby Drop is separate from [NearDrop by grishka](https://github.com/grishka/Ne
 | Quick Share | QR codes | USB MTP | Finder |
 | --- | --- | --- | --- |
 | Send and receive files over a reachable local network. | Scan a phone’s code in the app, or show a code for the phone to scan. | Browse Android storage and move files over a cable. | Share files, folders, and links from the Finder menu. |
+
+## Transfer guides
+
+- [Receive Android files on a Mac with Quick Share or USB MTP](https://arslanbasharat-o-o.github.io/NearByDrop/blog/how-to-transfer-files-mac-android.html)
+- [Send files from a Mac to Android with Quick Share](https://arslanbasharat-o-o.github.io/NearByDrop/blog/mac-to-android-quick-share.html)
+- [Compare Android-to-Mac file transfer options](https://arslanbasharat-o-o.github.io/NearByDrop/blog/airdrop-alternative-for-android.html)
+- [Use Quick Share between Mac and Windows](https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html)
+- [Compare NearDrop and Nearby Drop](https://arslanbasharat-o-o.github.io/NearByDrop/blog/neardrop-vs-nearby-drop.html)
 
 ## Get started
 
