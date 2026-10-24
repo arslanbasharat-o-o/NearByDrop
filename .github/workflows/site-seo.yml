@@ -54,22 +54,14 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          pages_workflow=$(gh api "repos/${GH_REPOSITORY}/actions/workflows" --jq '.workflows[] | select(.name == "pages build and deployment") | .id' | head -n 1) || {
-            echo "IndexNow skipped: GitHub Actions workflow lookup failed."
-            exit 0
-          }
-          if [[ -z "$pages_workflow" ]]; then
-            echo "IndexNow skipped: GitHub Pages workflow was not found."
-            exit 0
-          fi
           published=false
           for _ in $(seq 1 36); do
-            runs=$(gh api "repos/${GH_REPOSITORY}/actions/workflows/${pages_workflow}/runs?branch=main&per_page=20") || {
+            runs=$(gh run list --repo "$GH_REPOSITORY" --branch main --limit 100 --json name,headSha,status,conclusion) || {
               echo "IndexNow skipped: GitHub Pages run lookup failed."
               exit 0
             }
-            status=$(jq -r --arg sha "$HEAD_SHA" '[.workflow_runs[] | select(.head_sha == $sha)][0].status // empty' <<< "$runs")
-            conclusion=$(jq -r --arg sha "$HEAD_SHA" '[.workflow_runs[] | select(.head_sha == $sha)][0].conclusion // empty' <<< "$runs")
+            status=$(jq -r --arg sha "$HEAD_SHA" '[.[] | select(.headSha == $sha and .name == "pages build and deployment")][0].status // empty' <<< "$runs")
+            conclusion=$(jq -r --arg sha "$HEAD_SHA" '[.[] | select(.headSha == $sha and .name == "pages build and deployment")][0].conclusion // empty' <<< "$runs")
             if [[ "$status" == completed ]]; then
               if [[ "$conclusion" == success ]]; then published=true; fi
               break
