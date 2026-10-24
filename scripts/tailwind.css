@@ -2,64 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root,
-:root[data-theme="light"],
-:root[data-theme="system"] {
-  color-scheme: light;
-  --page: #f8f7fa;
-  --page-rgb: 248 247 250;
-  --surface: #ffffff;
-  --surface-rgb: 255 255 255;
-  --surface-soft: #f0edf3;
-  --surface-soft-rgb: 240 237 243;
-  --content: #211d26;
-  --muted: #625b68;
-  --line: #e3dfe7;
-  --line-rgb: 227 223 231;
-  --accent: #ad1bc0;
-  --accent-rgb: 173 27 192;
-  --accent-hover: #9418a4;
-  --accent-wash: #f4e7f6;
-  --warning: #805800;
-  --inverse: #17141c;
-  --inverse-content: #f4f1f6;
-  --inverse-muted: #b5adb9;
-  --page-width: 1160px;
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --page: #17141c;
-  --page-rgb: 23 20 28;
-  --surface: #211e27;
-  --surface-rgb: 33 30 39;
-  --surface-soft: #292530;
-  --surface-soft-rgb: 41 37 48;
-  --content: #f4f1f6;
-  --muted: #b5adb9;
-  --line: #39333f;
-  --line-rgb: 57 51 63;
-  --accent-wash: #312435;
-  --warning: #f4c96d;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="system"] {
-    color-scheme: dark;
-    --page: #17141c;
-    --page-rgb: 23 20 28;
-    --surface: #211e27;
-    --surface-rgb: 33 30 39;
-    --surface-soft: #292530;
-    --surface-soft-rgb: 41 37 48;
-    --content: #f4f1f6;
-    --muted: #b5adb9;
-    --line: #39333f;
-    --line-rgb: 57 51 63;
-    --accent-wash: #312435;
-    --warning: #f4c96d;
-  }
-}
+:root { --page-width: 1160px; }
+/* Shared light/dark palette: docs/assets/site-appearance.css. */
 
 html { scroll-behavior: smooth; }
 body.site-page {
@@ -92,8 +36,8 @@ body.site-page {
 .site-nav a, .footer-links a { color: var(--muted); font-size: 14px; transition: color 160ms ease; }
 .button {
   min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 12px;
-  padding: 11px 20px; border: 1px solid var(--accent); border-radius: 12px;
-  background: var(--accent); color: #fff !important; font-size: 15px; font-weight: 650;
+  padding: 11px 20px; border: 1px solid var(--accent); border-radius: 0;
+  background: var(--accent); color: var(--on-accent) !important; font-size: 15px; font-weight: 650;
   letter-spacing: -.01em; transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 .button--small { min-height: 40px; padding: 8px 16px; font-size: 14px; }
@@ -194,7 +138,7 @@ body.site-page {
 .guides-list strong span { color: var(--accent); font-size: 18px; }
 .local-section { background: var(--inverse); color: var(--inverse-content); }
 .local-section__inner { display: grid; grid-template-columns: 1fr .7fr; align-items: center; gap: 60px; padding-block: 78px; }
-.local-section .eyebrow { color: #dc8ae5; }
+.local-section .eyebrow { color: var(--inverse-content); }
 .local-section h2 { max-width: 600px; }
 .local-section__inner > p { max-width: 405px; margin: 0; color: var(--inverse-muted); font-size: 16px; }
 .troubleshooting-section { padding-block: 92px 98px; }
@@ -300,7 +244,7 @@ body.site-page {
 
 /* Shared theme for the static article and legal pages. */
 .blog-page { min-height: 100vh; background: var(--page); color: var(--content); }
-.blog-page ::selection { background: var(--accent); color: #fff; }
+.blog-page ::selection { background: var(--accent); color: var(--on-accent); }
 .blog-page .text-white { color: var(--content); }
 .blog-page .text-neutral-300 { color: var(--content); }
 .blog-page .text-neutral-400,
@@ -310,10 +254,10 @@ body.site-page {
 .blog-page .text-emerald-400 { color: var(--accent); }
 .blog-page .bg-emerald-400 { background-color: var(--accent); }
 .blog-page .bg-white { background-color: var(--accent); }
-.blog-page .bg-accent.text-white { color: #fff; }
+.blog-page .bg-accent.text-white { color: var(--on-accent); }
 .blog-page .hover\:text-white:hover { color: var(--accent); }
 .blog-page .hover\:text-emerald-400:hover { color: var(--accent-hover); }
-.blog-page .hover\:bg-neutral-200:hover { background: var(--accent-hover); color: #fff; }
+.blog-page .hover\:bg-neutral-200:hover { background: var(--accent-hover); color: var(--on-accent); }
 .blog-page .hover\:border-neutral-500:hover { border-color: var(--accent); }
 .blog-page .border-white\/10 { border-color: var(--line); }
 .blog-page .grid-lines {

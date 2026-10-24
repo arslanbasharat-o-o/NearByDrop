@@ -35,6 +35,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
+  <meta name="theme-color" content="#070707">
+  <script src="assets/site-theme.js?v=3"></script>
   <link rel="stylesheet" href="assets/site-oled.css">
   <style>
     body {
@@ -68,11 +70,70 @@
       font-size: 14px;
       color: rgba(255, 255, 255, 0.25);
     }
+    .hero-proof-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2rem;
+    }
+    .hero-screenshot-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.75rem;
+    }
+    .hero-screenshot-grid > figure {
+      min-width: 0;
+    }
+    .hero-screenshot-grid img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    @media (min-width: 640px) {
+      .hero-screenshot-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (min-width: 1024px) {
+      .hero-proof-layout {
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        align-items: center;
+      }
+    }
     ::selection {
       background-color: #ffffff;
       color: #000000;
     }
+
+    :focus-visible { outline: 2px solid #fff; outline-offset: 5px; }
+    [id] { scroll-margin-top: 90px; }
+    .skip-link { position: fixed; top: -100px; left: 16px; z-index: 100; background: white; color: black; padding: 12px; }
+    .skip-link:focus { top: 12px; }
+    .hero-proof-layout { display: block; max-width: 850px; }
+    #hwf-canvas { opacity: .35; }
+    .hero-screenshot-grid { max-width: 760px; margin: 32px auto 0; align-items: start; }
+    .hero-screenshot-grid figure { padding: 16px; border-radius: 16px; }
+    .hero-screenshot-grid figcaption { font-size: 12px; text-align: center; }
+    .hero-screenshot-grid img { border-radius: 10px; }
+    .mobile-navigation { display: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+    .mobile-navigation summary { cursor: pointer; padding: 12px 6px; }
+    .mobile-navigation nav { position: absolute; left: 0; right: 0; top: 100%; padding: 16px 24px; background: #111; border-bottom: 1px solid #444; }
+    .mobile-navigation a { display: block; padding: 12px 0; }
+    @media (max-width: 1199px) {
+      header nav.hidden { display: none; }
+      .mobile-navigation { display: block; }
+    }
+    @media (max-width: 639px) {
+      .hero-screenshot-grid { max-width: 300px; gap: 24px; }
+      #site-footer > div:last-child { flex-wrap: wrap; gap: 16px; }
+      header .gap-3 { gap: 8px; }
+      header .font-display { font-size: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto !important; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
   </style>
+  <link rel="stylesheet" href="assets/site-appearance.css?v=3">
 
   <!-- Structured product details; the matching FAQs remain visible in page content. -->
   <script type="application/ld+json">
@@ -106,22 +167,9 @@
 
 <body class="font-sans antialiased selection:bg-white selection:text-black">
 
+  <a class="skip-link" href="#main-content">Skip to content</a>
   <!-- Background Grid -->
   <div class="fixed inset-0 pointer-events-none grid-lines opacity-60 z-0"></div>
-
-  <!-- Top Status Banner -->
-  <div class="border-b border-theme-border bg-theme-black/90 font-mono text-[11px] tracking-wider text-neutral-400 py-2 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-3 relative z-50">
-    <div class="flex items-center gap-2.5">
-      <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-      <span class="text-white font-medium">[ VERSION 2.3.4 AVAILABLE ]</span>
-      <span class="hidden sm:inline text-neutral-600">//</span>
-      <span class="hidden sm:inline">ANDROID ↔ MAC QUICK SHARE TRANSFERS</span>
-    </div>
-    <div class="flex items-center gap-4 text-neutral-500">
-      <span>VERSION: <strong class="text-white font-normal">v2.3.4</strong></span>
-      <span>PLATFORM: <strong class="text-white font-normal">macOS 14+ (ARM64 / x86_64)</strong></span>
-    </div>
-  </div>
 
   <!-- Main Header Navigation -->
   <header class="sticky top-0 z-40 border-b border-theme-border bg-theme-black/90 backdrop-blur-md">
@@ -134,12 +182,20 @@
         </div>
         <div class="flex items-center gap-2">
           <span class="font-display font-bold text-base tracking-tight text-white uppercase">Nearby Drop</span>
-          <span class="font-mono text-[10px] px-1.5 py-0.5 border border-theme-border text-neutral-400">QUICK SHARE FOR MAC</span>
+          <span class="hidden sm:inline font-mono text-[10px] px-1.5 py-0.5 border border-theme-border text-neutral-400">QUICK SHARE FOR MAC</span>
         </div>
       </a>
 
+      <details class="mobile-navigation">
+        <summary>MENU</summary>
+        <nav aria-label="Mobile navigation">
+          <a href="#app-preview">App preview</a><a href="#features">Features</a>
+          <a href="#compatibility">Transfer setup</a><a href="#compare">Transfer status</a>
+          <a href="#faq">FAQ</a><a href="#troubleshooting">Troubleshooting</a>
+        </nav>
+      </details>
       <!-- Desktop Links -->
-      <nav class="hidden md:flex items-center gap-6 font-mono text-xs text-neutral-400 tracking-wider">
+      <nav aria-label="Main navigation" class="hidden md:flex items-center gap-6 font-mono text-xs text-neutral-400 tracking-wider">
         <a href="#features" class="hover:text-white transition-colors">// FEATURES</a>
         <a href="#compatibility" class="hover:text-white transition-colors">// TRANSFER SETUP</a>
         <a href="#troubleshooting" class="hover:text-white transition-colors">// TROUBLESHOOTING</a>
@@ -149,6 +205,35 @@
 
       <!-- Action Buttons -->
       <div class="flex items-center gap-3">
+        <!-- Theme icons: Tabler Icons (MIT); see assets/theme-icons-LICENSE.txt. -->
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch color theme"><svg aria-hidden="true" data-theme-icon="light"
+  xmlns="http://www.w3.org/2000/svg"
+  width="16"
+  height="16"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+  <path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7" />
+</svg>
+<svg aria-hidden="true" data-theme-icon="dark"
+  xmlns="http://www.w3.org/2000/svg"
+  width="16"
+  height="16"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454l0 .008" />
+</svg>
+</button>
         <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener"
            class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 border border-theme-border hover:border-neutral-500 bg-theme-surface text-neutral-300 font-mono text-xs tracking-wider transition-colors">
           <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
@@ -164,58 +249,84 @@
     </div>
   </header>
 
+  <main id="main-content">
   <!-- Hero Section -->
   <section id="hero-section" class="relative pt-8 pb-16 md:pt-12 md:pb-20 border-b border-theme-border overflow-hidden z-10 select-none">
     <!-- Halftone Wordmark Interactive Canvas (21st.dev Component in Hero) -->
     <canvas id="hwf-canvas" class="absolute inset-0 w-full h-full block pointer-events-auto z-0" aria-hidden="true"></canvas>
 
     <div class="max-w-7xl mx-auto px-5 sm:px-8 relative z-10 pointer-events-none">
+      <div class="hero-proof-layout">
+        <div>
+          <div class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-neutral-400 border border-theme-border px-3 py-1 bg-theme-surface mb-6 flex-wrap pointer-events-auto">
+            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-none"></span>
+            <span>QUICK SHARE FOR MAC</span>
+          </div>
 
-      <!-- SEO Category Badge -->
-      <div class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-neutral-400 border border-theme-border px-3 py-1 bg-theme-surface mb-8 flex-wrap pointer-events-auto">
-        <span class="w-1.5 h-1.5 bg-emerald-400 rounded-none"></span>
-        <span>INDEPENDENT QUICK SHARE CLIENT FOR MACOS</span>
-      </div>
+          <h1 class="font-display text-4xl sm:text-6xl font-bold uppercase tracking-tight text-white leading-[1.05] mb-5">
+            Quick Share for<br>Mac.
+          </h1>
 
-      <!-- Main SEO Headline -->
-      <div class="max-w-5xl mb-8">
-        <h1 class="font-display text-4xl sm:text-6xl md:text-7xl font-bold uppercase tracking-tight text-white leading-[1.05]">
-          Nearby Drop: Quick Share for Mac<br>
-          Two-Way Android File Transfers.
-        </h1>
-      </div>
+          <p class="max-w-xl text-neutral-300 font-sans text-base sm:text-lg leading-relaxed mb-8">
+            <strong>Nearby Drop</strong> lets you send files from your Mac to Android or receive them on your Mac, with USB and Finder sharing in the same app.
+          </p>
 
-      <!-- Contextual SEO Subheading -->
-      <div class="max-w-3xl text-neutral-300 font-sans text-base sm:text-lg leading-relaxed mb-10">
-        <strong>Nearby Drop by Arslan Basharat</strong> is an independent macOS menu bar app. Its GitHub project uses the spelling <strong>NearByDrop</strong>; both names refer to this same app. Send files from Mac to Android and receive them on Mac with Quick Share. It also sends to and receives from compatible Windows Quick Share clients; both directions passed in a Debug test with one PC, while the packaged release was not separately device-tested. Use USB MTP to browse Android storage, share through Finder, or exchange Quick Share QR codes. Android-generated QR receiving passed with a Pixel 8 Pro during v2.3.2 validation and is included in the current release. Free to download, proprietary license, and not affiliated with Google or Apple. Nearby Drop is separate from <a href="blog/neardrop-vs-nearby-drop.html" class="underline hover:text-white">NearDrop by grishka</a>, a different Mac app.
-      </div>
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pointer-events-auto">
+            <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg"
+               class="inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-white hover:bg-neutral-200 text-black font-mono text-sm font-semibold tracking-wider transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>DOWNLOAD FOR MAC · V2.3.4</span>
+            </a>
 
-      <!-- CTA Buttons -->
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-10 pointer-events-auto">
-        <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg"
-           class="inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-white hover:bg-neutral-200 text-black font-mono text-sm font-semibold tracking-wider transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span>DOWNLOAD NEARBY DROP-2.3.4.DMG</span>
-        </a>
+            <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener"
+               class="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-theme-border hover:border-neutral-500 bg-theme-surface text-neutral-200 font-mono text-sm tracking-wider transition-colors">
+              <span>VIEW ON GITHUB</span>
+              <span class="text-neutral-500" aria-hidden="true">↗</span>
+            </a>
+          </div>
 
-        <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener"
-           class="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-theme-border hover:border-neutral-500 bg-theme-surface text-neutral-200 font-mono text-sm tracking-wider transition-colors">
-          <span>STAR ON GITHUB</span>
-          <span class="text-neutral-500">★</span>
-        </a>
-      </div>
-
-      <!-- Real 1-Click Terminal Install Snippet (Interactive Copy) -->
-      <div class="max-w-2xl p-4 bg-theme-surface border border-theme-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono text-xs mb-10 pointer-events-auto">
-        <div class="flex items-center gap-2 overflow-x-auto text-neutral-300 w-full sm:w-auto">
-          <span class="text-neutral-600 select-none">$</span>
-          <code id="cmdText" class="text-neutral-200 select-all">curl -fsSL https://raw.githubusercontent.com/arslanbasharat-o-o/NearByDrop/main/scripts/install.sh | sh</code>
+          <details class="mt-6 max-w-2xl font-mono text-xs pointer-events-auto">
+            <summary class="cursor-pointer text-neutral-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">PREFER TERMINAL? SHOW THE INSTALL COMMAND</summary>
+            <div class="mt-3 p-4 bg-theme-surface border border-theme-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-2 overflow-x-auto text-neutral-300 w-full sm:w-auto">
+                <span class="text-neutral-600 select-none">$</span>
+                <code id="cmdText" class="text-neutral-200 select-all">curl -fsSL https://raw.githubusercontent.com/arslanbasharat-o-o/NearByDrop/main/scripts/install.sh | sh</code>
+              </div>
+              <button onclick="copyCmd()" id="copyBtn" aria-label="Copy install command" class="flex-shrink-0 px-3 py-1 border border-theme-border bg-theme-elevated hover:bg-theme-border text-neutral-400 hover:text-white transition-colors text-[11px] tracking-wider uppercase">
+                <span id="copyLabel" role="status">COPY</span>
+              </button>
+            </div>
+          </details>
         </div>
-        <button onclick="copyCmd()" id="copyBtn" class="flex-shrink-0 px-3 py-1 border border-theme-border bg-theme-elevated hover:bg-theme-border text-neutral-400 hover:text-white transition-colors text-[11px] tracking-wider uppercase">
-          <span id="copyLabel">COPY</span>
-        </button>
-      </div>
 
+
+      </div>
+    </div>
+  </section>
+
+  <section id="app-preview" class="py-20 border-b border-theme-border relative z-10" aria-labelledby="preview-title">
+    <div class="max-w-7xl mx-auto px-5 sm:px-8">
+      <p class="font-mono text-xs text-neutral-400 mb-4">// INSIDE THE APP</p>
+      <h2 id="preview-title" class="font-display text-3xl sm:text-4xl font-bold text-white mb-4">Send. Receive. Right from your menu bar.</h2>
+      <p class="text-neutral-400 mb-8">Send, Receive, Transfers, and USB in Nearby Drop. Open an image for a closer look.</p>
+        <div class="hero-screenshot-grid" role="group" aria-label="Nearby Drop app screenshots">
+          <figure class="border border-theme-border bg-theme-surface p-2">
+            <a href="assets/screenshots/send.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/send.jpg" alt="Nearby Drop Send screen, searching for nearby devices" width="772" height="1012" loading="lazy" decoding="async"></a>
+            <figcaption class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400">01 / Send</figcaption>
+          </figure>
+          <figure class="border border-theme-border bg-theme-surface p-2">
+            <a href="assets/screenshots/receive.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/receive.jpg" alt="Nearby Drop Receive screen, ready to receive files" width="772" height="1012" loading="lazy" decoding="async"></a>
+            <figcaption class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400">02 / Receive</figcaption>
+          </figure>
+          <figure class="border border-theme-border bg-theme-surface p-2">
+            <a href="assets/screenshots/transfers.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/transfers.jpg" alt="Nearby Drop Transfers screen with no recent transfers" width="772" height="1012" loading="lazy" decoding="async"></a>
+            <figcaption class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400">03 / Transfers</figcaption>
+          </figure>
+          <figure class="border border-theme-border bg-theme-surface p-2">
+            <a href="assets/screenshots/usb.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/usb.jpg" alt="Nearby Drop USB screen with no device connected" width="772" height="1012" loading="lazy" decoding="async"></a>
+            <figcaption class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400">04 / USB</figcaption>
+          </figure>
+        </div>
     </div>
   </section>
 
@@ -235,43 +346,50 @@
         <article class="bg-theme-surface p-6 sm:p-8">
           <span class="font-mono text-xs text-emerald-400 block mb-4">[ ANDROID ↔ MAC ]</span>
           <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Two-way Quick Share</h3>
-          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Send files from the Mac to compatible Android devices, or receive Android files on the Mac. Review incoming requests and confirm the matching PIN; trusted devices can be auto-accepted. The regular device-list flow uses a reachable local network.</p>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Send files between Mac and Android over your local network.</p>
+          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Send files from the Mac to compatible Android devices, or receive Android files on the Mac. Review incoming requests and confirm the matching PIN; trusted devices can be auto-accepted. The regular device-list flow uses a reachable local network.</p></details>
         </article>
 
         <article class="bg-theme-surface p-6 sm:p-8">
           <span class="font-mono text-xs text-emerald-400 block mb-4">[ WINDOWS ↔ MAC ]</span>
           <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Windows Quick Share</h3>
-          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Send to or receive from compatible Windows Quick Share clients while Nearby Drop runs on the Mac. Both directions passed with one PC in a Debug test; the packaged release was not separately device-tested.</p>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Send to and receive from Windows Quick Share clients. Testing is limited to one PC.</p>
+          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Send to or receive from compatible Windows Quick Share clients while Nearby Drop runs on the Mac. Both directions passed with one PC in a Debug test; the packaged release was not separately device-tested.</p></details>
         </article>
 
         <article class="bg-theme-surface p-6 sm:p-8">
           <span class="font-mono text-xs text-amber-300 block mb-4">[ QR SHARE + SCAN ]</span>
           <h3 class="font-display text-lg font-bold text-white uppercase mb-3">QR tools in the app</h3>
-          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Show a Mac-generated Quick Share code for Android, or scan an Android code with the camera inside Nearby Drop. Both QR directions passed with a Pixel 8 Pro; Android-to-Mac receiving passed during v2.3.2 validation.</p>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Share a QR code from your Mac, or scan an Android code in the app.</p>
+          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Show a Mac-generated Quick Share code for Android, or scan an Android code with the camera inside Nearby Drop. Both QR directions passed with a Pixel 8 Pro; Android-to-Mac receiving passed during v2.3.2 validation.</p></details>
         </article>
 
         <article class="bg-theme-surface p-6 sm:p-8">
           <span class="font-mono text-xs text-emerald-400 block mb-4">[ ANDROID ↔ MAC · USB ]</span>
           <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Android USB file browser</h3>
-          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Browse phone storage over MTP, drag in or choose Mac files to upload, download selected items or whole folder trees, and save a file to a chosen Mac location. Physical Pixel and Nexus browse, upload and download checks passed.</p>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Browse, upload, and download Android files over USB MTP.</p>
+          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Browse phone storage over MTP, drag in or choose Mac files to upload, download selected items or whole folder trees, and save a file to a chosen Mac location. Physical Pixel and Nexus browse, upload and download checks passed.</p></details>
         </article>
 
         <article class="bg-theme-surface p-6 sm:p-8">
           <span class="font-mono text-xs text-neutral-400 block mb-4">[ FINDER SHARE MENU ]</span>
           <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Share straight from Finder</h3>
-          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Use macOS’s Share menu to send files, folders or web links to a nearby Android device, without first opening the main transfer flow.</p>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Share files, folders, or web links straight from Finder.</p>
+          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Use macOS’s Share menu to send files, folders or web links to a nearby Android device, without first opening the main transfer flow.</p></details>
         </article>
 
         <article class="bg-theme-surface p-6 sm:p-8">
           <span class="font-mono text-xs text-neutral-400 block mb-4">[ TRANSFER CONTROLS ]</span>
           <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Progress, cancel and history</h3>
-          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Choose several files or folders, drag items into the app, follow transfer progress and available speed or time estimates, cancel an active transfer, and review recent transfers or reveal saved files in Finder.</p>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Follow progress, cancel a transfer, and revisit recent files.</p>
+          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Choose several files or folders, drag items into the app, follow transfer progress and available speed or time estimates, cancel an active transfer, and review recent transfers or reveal saved files in Finder.</p></details>
         </article>
 
         <article class="bg-theme-surface p-6 sm:p-8 md:col-span-2 lg:col-span-3">
           <span class="font-mono text-xs text-neutral-400 block mb-4">[ MENU BAR PREFERENCES ]</span>
           <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Make it fit your Mac</h3>
-          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Rename the Mac as nearby devices see it, choose where received files are saved, auto-accept transfers from trusted devices, launch at login, choose light, dark or system appearance and an accent or menu bar icon, and turn transfer sounds or haptics on or off.</p>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Set your device name, download folder, trusted devices, and appearance.</p>
+          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Rename the Mac as nearby devices see it, choose where received files are saved, auto-accept transfers from trusted devices, launch at login, choose light, dark or system appearance and an accent or menu bar icon, and turn transfer sounds or haptics on or off.</p></details>
         </article>
       </div>
       <p class="mt-5 font-mono text-[11px] text-neutral-500">Wireless speeds vary with the devices and network. See the transfer status table below for the tested directions and current limits.</p>
@@ -319,123 +437,6 @@
           </ol>
         </div>
       </div>
-    </div>
-  </section>
-
-  <!-- Section 02: Real Architecture & How Nearby Drop Works -->
-  <section id="how-it-works" class="py-20 border-b border-theme-border relative z-10">
-    <div class="max-w-7xl mx-auto px-5 sm:px-8">
-
-      <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4 border-b border-theme-border pb-6">
-        <div>
-          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 03 PROTOCOL ARCHITECTURE</span>
-          <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
-          How Android Quick Share Works with Nearby Drop
-          </h2>
-        </div>
-        <p class="font-mono text-xs text-neutral-400 max-w-md">
-          Nearby Drop is an independent implementation of the Nearby Share / Quick Share transfer protocol. It communicates with compatible Android devices over the local network.
-        </p>
-      </div>
-
-      <!-- Real 4-Stage Technical Flow -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-px bg-theme-border">
-
-        <div class="bg-theme-surface p-6 sm:p-8 flex flex-col justify-between">
-          <div>
-            <span class="font-mono text-xs font-semibold text-neutral-500 mb-4 block">[ 01 / DISCOVERY ]</span>
-            <h3 class="font-display text-lg font-bold text-white uppercase mb-3">mDNS Beacon</h3>
-            <p class="font-sans text-xs text-neutral-400 leading-relaxed mb-6">
-              Nearby Drop advertises its service over local multicast DNS. When both devices can reach one another and network discovery is allowed, the Mac can appear in Android’s Quick Share sheet.
-            </p>
-          </div>
-          <div class="font-mono text-[10px] text-neutral-500 border-t border-theme-border pt-4">
-            DISCOVERY: Zero Cloud Servers
-          </div>
-        </div>
-
-        <div class="bg-theme-surface p-6 sm:p-8 flex flex-col justify-between">
-          <div>
-            <span class="font-mono text-xs font-semibold text-neutral-500 mb-4 block">[ 02 / HANDSHAKE ]</span>
-            <h3 class="font-display text-lg font-bold text-white uppercase mb-3">UKEY2 Verification</h3>
-            <p class="font-sans text-xs text-neutral-400 leading-relaxed mb-6">
-              The UKEY2 handshake uses Elliptic Curve Diffie-Hellman (P-256). A matching confirmation PIN helps users verify the pairing before accepting files.
-            </p>
-          </div>
-          <div class="font-mono text-[10px] text-neutral-500 border-t border-theme-border pt-4">
-            SECURITY: ECDH P-256 + HKDF
-          </div>
-        </div>
-
-        <div class="bg-theme-surface p-6 sm:p-8 flex flex-col justify-between">
-          <div>
-            <span class="font-mono text-xs font-semibold text-neutral-500 mb-4 block">[ 03 / TRANSFER ]</span>
-            <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Direct TCP Sockets</h3>
-            <p class="font-sans text-xs text-neutral-400 leading-relaxed mb-6">
-              File data streams over the local network rather than a cloud relay. Throughput depends on the phone, Mac, signal strength, router, and network configuration; no fixed speed is promised.
-            </p>
-          </div>
-          <div class="font-mono text-[10px] text-neutral-500 border-t border-theme-border pt-4">
-            THROUGHPUT: NETWORK DEPENDENT
-          </div>
-        </div>
-
-        <div class="bg-theme-surface p-6 sm:p-8 flex flex-col justify-between">
-          <div>
-            <span class="font-mono text-xs font-semibold text-neutral-500 mb-4 block">[ 04 / PERSISTENCE ]</span>
-            <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Native Finder Save</h3>
-            <p class="font-sans text-xs text-neutral-400 leading-relaxed mb-6">
-              Transferred photos, 4K videos, and zip files are written directly into your <code class="text-neutral-200 font-mono text-[11px]">~/Downloads/</code> directory. An alert sound plays with a one-click button to reveal files in Finder.
-            </p>
-          </div>
-          <div class="font-mono text-[10px] text-neutral-500 border-t border-theme-border pt-4">
-            DESTINATION: Direct to Downloads
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-  </section>
-
-  <!-- Section 03: Connection troubleshooting -->
-  <section id="troubleshooting" class="py-20 border-b border-theme-border relative z-10 bg-theme-surface">
-    <div class="max-w-7xl mx-auto px-5 sm:px-8">
-
-      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4 border-b border-theme-border pb-6">
-        <div>
-          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// 04 INTERACTIVE DIAGNOSTIC ASSISTANT</span>
-          <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
-            Troubleshoot Connection Issues
-          </h2>
-        </div>
-        <p class="font-mono text-xs text-neutral-400 max-w-md">
-          Select an issue for practical checks that can help identify common local-network problems.
-        </p>
-      </div>
-
-      <!-- Interactive Troubleshooting Tabs -->
-      <div class="border border-theme-border bg-theme-black font-mono">
-        <div class="grid grid-cols-1 md:grid-cols-4 border-b border-theme-border text-xs">
-          <button onclick="showIssue('not-found')" id="tabIssue1" class="p-4 text-left border-b md:border-b-0 md:border-r border-theme-border bg-theme-surface text-white font-semibold">
-            1. Phone Can't See Mac
-          </button>
-          <button onclick="showIssue('blocked-wifi')" id="tabIssue2" class="p-4 text-left border-b md:border-b-0 md:border-r border-theme-border text-neutral-400 hover:text-white">
-            2. Public / Hotel Wi-Fi
-          </button>
-          <button onclick="showIssue('gatekeeper')" id="tabIssue3" class="p-4 text-left border-b md:border-b-0 md:border-r border-theme-border text-neutral-400 hover:text-white">
-            3. "Cannot Be Opened" Warning
-          </button>
-          <button onclick="showIssue('large-files')" id="tabIssue4" class="p-4 text-left text-neutral-400 hover:text-white">
-            4. Massive 50GB+ Transfers
-          </button>
-        </div>
-
-        <div class="p-6 sm:p-8" id="issueContent">
-          <!-- Dynamic Content injected here -->
-        </div>
-      </div>
-
     </div>
   </section>
 
@@ -585,18 +586,18 @@
 
         <!-- FAQ 1 -->
         <div class="border border-theme-border bg-theme-black">
-          <button onclick="toggleFaq(1)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
+          <button aria-expanded="false" aria-controls="faqContent1" onclick="toggleFaq(1)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
             <span>[ Q1 ] WHAT IS NEARBY DROP?</span>
-            <span id="faqArrow1" class="text-neutral-500 text-sm">−</span>
+            <span id="faqArrow1" class="text-neutral-500 text-sm">+</span>
           </button>
-          <div id="faqContent1" class="px-5 pb-5 font-sans text-xs text-neutral-400 leading-relaxed">
-            <strong>Nearby Drop</strong> is an independent macOS menu bar app for Android Quick Share (formerly Nearby Share), USB MTP file browsing, and Finder sharing. Android-to-Mac and Mac-to-Android wireless transfers use a reachable local network. QR receiving and Windows workflows are shown with their current test status below.
+          <div id="faqContent1" class="hidden px-5 pb-5 font-sans text-xs text-neutral-400 leading-relaxed">
+            <strong>Nearby Drop</strong> is an independent macOS menu bar app for Android Quick Share (formerly Nearby Share), USB MTP file browsing, and Finder sharing. The GitHub repository spells the name <strong>NearByDrop</strong>. Android-to-Mac and Mac-to-Android wireless transfers use a reachable local network. QR receiving and Windows workflows are shown with their current test status below.
           </div>
         </div>
 
         <!-- FAQ 2 -->
         <div class="border border-theme-border bg-theme-black">
-          <button onclick="toggleFaq(2)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
+          <button aria-expanded="false" aria-controls="faqContent2" onclick="toggleFaq(2)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
             <span>[ Q2 ] IS QUICK SHARE AVAILABLE ON MAC?</span>
             <span id="faqArrow2" class="text-neutral-500 text-sm">+</span>
           </button>
@@ -607,7 +608,7 @@
 
         <!-- FAQ 3 -->
         <div class="border border-theme-border bg-theme-black">
-          <button onclick="toggleFaq(3)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
+          <button aria-expanded="false" aria-controls="faqContent3" onclick="toggleFaq(3)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
             <span>[ Q3 ] WHAT REAL SPEEDS CAN I EXPECT OVER WI-FI?</span>
             <span id="faqArrow3" class="text-neutral-500 text-sm">+</span>
           </button>
@@ -618,7 +619,7 @@
 
         <!-- FAQ 4 -->
         <div class="border border-theme-border bg-theme-black">
-          <button onclick="toggleFaq(4)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
+          <button aria-expanded="false" aria-controls="faqContent4" onclick="toggleFaq(4)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
             <span>[ Q4 ] WHY DOES MACOS SHOW "APP CANNOT BE CHECKED FOR MALICIOUS SOFTWARE"?</span>
             <span id="faqArrow4" class="text-neutral-500 text-sm">+</span>
           </button>
@@ -629,7 +630,7 @@
 
         <!-- FAQ 5 -->
         <div class="border border-theme-border bg-theme-black">
-          <button onclick="toggleFaq(5)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
+          <button aria-expanded="false" aria-controls="faqContent5" onclick="toggleFaq(5)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
             <span>[ Q5 ] DOES IT WORK ON SAMSUNG, PIXEL, XIAOMI, AND ONEPLUS?</span>
             <span id="faqArrow5" class="text-neutral-500 text-sm">+</span>
           </button>
@@ -639,7 +640,7 @@
         </div>
 
         <div class="border border-theme-border bg-theme-black">
-          <button onclick="toggleFaq(6)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
+          <button aria-expanded="false" aria-controls="faqContent6" onclick="toggleFaq(6)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
             <span>[ Q6 ] DOES NEARBY DROP WORK WITH WINDOWS QUICK SHARE?</span>
             <span id="faqArrow6" class="text-neutral-500 text-sm">+</span>
           </button>
@@ -649,7 +650,7 @@
         </div>
 
         <div class="border border-theme-border bg-theme-black">
-          <button onclick="toggleFaq(7)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
+          <button aria-expanded="false" aria-controls="faqContent7" onclick="toggleFaq(7)" class="w-full p-5 text-left flex items-center justify-between text-white font-semibold">
             <span>[ Q7 ] CAN I SCAN AN ANDROID QR CODE TO RECEIVE ON MY MAC?</span>
             <span id="faqArrow7" class="text-neutral-500 text-sm">+</span>
           </button>
@@ -662,6 +663,135 @@
 
     </div>
   </section>
+
+  <details id="troubleshooting" class="border-b border-theme-border relative z-10 bg-theme-surface">
+    <summary class="max-w-7xl mx-auto px-5 sm:px-8 py-6 cursor-pointer font-mono text-xs text-neutral-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+      <span class="block uppercase tracking-widest mb-1">// OPTIONAL REFERENCE</span>
+      <span class="font-display text-xl font-bold uppercase text-white">Troubleshooting and technical details</span>
+      <span class="block mt-1">Open diagnostics and the transfer architecture overview.</span>
+    </summary>
+    <div class="border-t border-theme-border">
+  <!-- Optional technical reference -->
+  <section id="how-it-works" class="py-20 border-b border-theme-border relative z-10">
+    <div class="max-w-7xl mx-auto px-5 sm:px-8">
+
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4 border-b border-theme-border pb-6">
+        <div>
+          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// PROTOCOL ARCHITECTURE</span>
+          <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
+          How Android Quick Share Works with Nearby Drop
+          </h2>
+        </div>
+        <p class="font-mono text-xs text-neutral-400 max-w-md">
+          Nearby Drop is an independent implementation of the Nearby Share / Quick Share transfer protocol. It communicates with compatible Android devices over the local network.
+        </p>
+      </div>
+
+      <!-- Real 4-Stage Technical Flow -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-px bg-theme-border">
+
+        <div class="bg-theme-surface p-6 sm:p-8 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-xs font-semibold text-neutral-500 mb-4 block">[ 01 / DISCOVERY ]</span>
+            <h3 class="font-display text-lg font-bold text-white uppercase mb-3">mDNS Beacon</h3>
+            <p class="font-sans text-xs text-neutral-400 leading-relaxed mb-6">
+              Nearby Drop advertises its service over local multicast DNS. When both devices can reach one another and network discovery is allowed, the Mac can appear in Android’s Quick Share sheet.
+            </p>
+          </div>
+          <div class="font-mono text-[10px] text-neutral-500 border-t border-theme-border pt-4">
+            DISCOVERY: Zero Cloud Servers
+          </div>
+        </div>
+
+        <div class="bg-theme-surface p-6 sm:p-8 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-xs font-semibold text-neutral-500 mb-4 block">[ 02 / HANDSHAKE ]</span>
+            <h3 class="font-display text-lg font-bold text-white uppercase mb-3">UKEY2 Verification</h3>
+            <p class="font-sans text-xs text-neutral-400 leading-relaxed mb-6">
+              The UKEY2 handshake uses Elliptic Curve Diffie-Hellman (P-256). A matching confirmation PIN helps users verify the pairing before accepting files.
+            </p>
+          </div>
+          <div class="font-mono text-[10px] text-neutral-500 border-t border-theme-border pt-4">
+            SECURITY: ECDH P-256 + HKDF
+          </div>
+        </div>
+
+        <div class="bg-theme-surface p-6 sm:p-8 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-xs font-semibold text-neutral-500 mb-4 block">[ 03 / TRANSFER ]</span>
+            <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Direct TCP Sockets</h3>
+            <p class="font-sans text-xs text-neutral-400 leading-relaxed mb-6">
+              File data streams over the local network rather than a cloud relay. Throughput depends on the phone, Mac, signal strength, router, and network configuration; no fixed speed is promised.
+            </p>
+          </div>
+          <div class="font-mono text-[10px] text-neutral-500 border-t border-theme-border pt-4">
+            THROUGHPUT: NETWORK DEPENDENT
+          </div>
+        </div>
+
+        <div class="bg-theme-surface p-6 sm:p-8 flex flex-col justify-between">
+          <div>
+            <span class="font-mono text-xs font-semibold text-neutral-500 mb-4 block">[ 04 / PERSISTENCE ]</span>
+            <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Native Finder Save</h3>
+            <p class="font-sans text-xs text-neutral-400 leading-relaxed mb-6">
+              Transferred photos, 4K videos, and zip files are written directly into your <code class="text-neutral-200 font-mono text-[11px]">~/Downloads/</code> directory. An alert sound plays with a one-click button to reveal files in Finder.
+            </p>
+          </div>
+          <div class="font-mono text-[10px] text-neutral-500 border-t border-theme-border pt-4">
+            DESTINATION: Direct to Downloads
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Connection troubleshooting -->
+  <section id="troubleshooting-content" class="py-20 border-b border-theme-border relative z-10 bg-theme-surface">
+    <div class="max-w-7xl mx-auto px-5 sm:px-8">
+
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4 border-b border-theme-border pb-6">
+        <div>
+          <span class="font-mono text-xs text-neutral-500 uppercase tracking-widest block mb-2">// CONNECTION DIAGNOSTICS</span>
+          <h2 class="font-display text-2xl sm:text-4xl font-bold uppercase tracking-tight text-white">
+            Troubleshoot Connection Issues
+          </h2>
+        </div>
+        <p class="font-mono text-xs text-neutral-400 max-w-md">
+          Select an issue for practical checks that can help identify common local-network problems.
+        </p>
+      </div>
+
+      <!-- Interactive Troubleshooting Tabs -->
+      <div class="border border-theme-border bg-theme-black font-mono">
+        <div class="grid grid-cols-1 md:grid-cols-4 border-b border-theme-border text-xs">
+          <button onclick="showIssue('not-found')" id="tabIssue1" class="p-4 text-left border-b md:border-b-0 md:border-r border-theme-border bg-theme-surface text-white font-semibold">
+            1. Phone Can't See Mac
+          </button>
+          <button onclick="showIssue('blocked-wifi')" id="tabIssue2" class="p-4 text-left border-b md:border-b-0 md:border-r border-theme-border text-neutral-400 hover:text-white">
+            2. Public / Hotel Wi-Fi
+          </button>
+          <button onclick="showIssue('gatekeeper')" id="tabIssue3" class="p-4 text-left border-b md:border-b-0 md:border-r border-theme-border text-neutral-400 hover:text-white">
+            3. "Cannot Be Opened" Warning
+          </button>
+          <button onclick="showIssue('large-files')" id="tabIssue4" class="p-4 text-left text-neutral-400 hover:text-white">
+            4. Massive 50GB+ Transfers
+          </button>
+        </div>
+
+        <div class="p-6 sm:p-8" id="issueContent" aria-live="polite">
+          <!-- Dynamic Content injected here -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+    </div>
+  </details>
+
+  </main>
 
   <!-- Site Footer -->
   <footer id="site-footer" class="relative w-full bg-theme-black border-t border-theme-border text-neutral-300">
@@ -728,6 +858,8 @@
         const copyLabel = document.getElementById('copyLabel');
         copyLabel.innerText = 'COPIED';
         setTimeout(() => { copyLabel.innerText = 'COPY'; }, 2000);
+      }).catch(() => {
+        document.getElementById('copyLabel').innerText = 'SELECT & COPY COMMAND';
       });
     }
 
@@ -742,6 +874,7 @@
         el.classList.add('hidden');
         arrow.innerText = '+';
       }
+      document.querySelector('[aria-controls="faqContent' + num + '"]').setAttribute('aria-expanded', String(!el.classList.contains('hidden')));
     }
 
     // Transfer setup guide
@@ -826,11 +959,31 @@
     function showIssue(key) {
       document.getElementById('issueContent').innerHTML = issues[key];
       ['tabIssue1', 'tabIssue2', 'tabIssue3', 'tabIssue4'].forEach(id => {
+        document.getElementById(id).setAttribute('aria-pressed', 'false');
         document.getElementById(id).className = 'p-4 text-left border-b md:border-b-0 md:border-r border-theme-border text-neutral-400 hover:text-white';
       });
       const activeTabId = key === 'not-found' ? 'tabIssue1' : key === 'blocked-wifi' ? 'tabIssue2' : key === 'gatekeeper' ? 'tabIssue3' : 'tabIssue4';
+      document.getElementById(activeTabId).setAttribute('aria-pressed', 'true');
       document.getElementById(activeTabId).className = 'p-4 text-left border-b md:border-b-0 md:border-r border-theme-border bg-theme-surface text-white font-semibold';
     }
+
+    function revealAnchor(hash = location.hash) {
+      const target = document.getElementById(hash.slice(1));
+      if (!target) return;
+      let details = target.closest('details');
+      while (details) {
+        details.open = true;
+        details = details.parentElement?.closest('details');
+      }
+    }
+    window.addEventListener('hashchange', () => revealAnchor());
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+      link.addEventListener('click', () => revealAnchor(link.hash));
+    });
+    document.querySelectorAll('.mobile-navigation a').forEach(link => {
+      link.addEventListener('click', () => { link.closest('details').open = false; });
+    });
+    revealAnchor();
 
     // Initialize default issue content on load
     showIssue('not-found');
@@ -852,9 +1005,14 @@
       const radius = 95;
       const crop = 0.08;
       const grain = 0.35;
-      const bg = '#090a0f';
-      const ink = [38, 45, 58]; // subtle dark slate resting dots for razor-sharp text contrast
-      const warm = [16, 185, 129]; // bright neon emerald glow on mouse push
+      let bg, ink, warm;
+      function updatePalette() {
+        const light = document.documentElement.dataset.theme === 'light';
+        bg = light ? '#ffffff' : '#090a0f';
+        ink = light ? [135, 135, 135] : [38, 45, 58];
+        warm = light ? [40, 110, 85] : [16, 185, 129];
+      }
+      updatePalette();
 
       let w = 0, h = 0, dpr = 1;
       let px = -1e5, py = -1e5;
@@ -1019,7 +1177,7 @@
           ctx.globalCompositeOperation = 'source-over';
         }
 
-        awake = moving || ringAge < 900 || px > -1e4;
+        awake = !reduced && (moving || ringAge < 900);
       }
 
       function loop(now) {
@@ -1056,6 +1214,8 @@
         ring = { x: p[0], y: p[1], t: performance.now() };
         wake();
       });
+
+      window.addEventListener('themechange', () => { updatePalette(); wake(); });
 
       layout();
       draw(performance.now());
