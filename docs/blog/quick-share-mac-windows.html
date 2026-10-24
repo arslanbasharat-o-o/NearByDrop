@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quick Share Between Mac and Windows | Nearby Drop</title>
-  <meta name="description" content="Set up two-way Quick Share between Nearby Drop for Mac and one tested Windows PC. Current app is v2.3.4; the packaged Windows workflow has not been separately device-tested.">
+  <meta name="description" content="Set up Quick Share between Nearby Drop for Mac and Windows. See current Windows requirements, setup, one-PC test results, and v2.3.4 limits.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
   <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html">
@@ -31,7 +31,7 @@
     "description": "Setup and test notes for sending files both ways between Nearby Drop on macOS and a compatible Windows Quick Share PC.",
     "author": {"@type": "Person", "name": "Arslan Basharat"},
     "datePublished": "2026-10-23",
-    "dateModified": "2026-10-23",
+    "dateModified": "2026-10-24",
     "mainEntityOfPage": "https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html"
   }
   </script>
@@ -53,7 +53,17 @@
   <main class="relative z-10 mx-auto max-w-4xl px-5 py-14 sm:px-8 sm:py-20">
     <p class="mb-5 font-mono text-xs uppercase tracking-widest text-emerald-400">MAC ↔ WINDOWS · QUICK SHARE GUIDE</p>
     <h1 class="mb-6 font-display text-3xl font-bold uppercase leading-tight tracking-tight text-white sm:text-5xl">Quick Share Between Mac and Windows</h1>
+    <p class="mb-6 font-mono text-xs text-neutral-400">BY ARSLAN BASHARAT · UPDATED <time datetime="2026-10-24">OCTOBER 24, 2026</time></p>
     <p class="mb-10 text-base leading-relaxed text-neutral-300 sm:text-lg">Nearby Drop is a macOS menu bar app that can send and receive files with compatible Windows Quick Share devices. It adds a Mac endpoint to a local Quick Share workflow; the Windows PC uses its own compatible Quick Share client.</p>
+
+    <section class="mb-8 border border-theme-border bg-theme-surface p-6 sm:p-8" aria-labelledby="windows-requirements">
+      <h2 id="windows-requirements" class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Check Windows Quick Share requirements</h2>
+      <ul class="list-inside list-disc space-y-2 text-sm leading-relaxed text-neutral-300">
+        <li>Google Quick Share for Windows requires 64-bit Windows 10 or later; ARM-based PCs require Windows 11 or later. Samsung PCs should use Samsung's Quick Share app.</li>
+        <li>For Google's Windows client, enable Bluetooth and Wi-Fi or Ethernet, connect both devices to the same network, and keep them within 5 metres (16 feet). Set Windows device visibility so the Mac can find it.</li>
+      </ul>
+      <p class="mt-4 text-sm leading-relaxed text-neutral-400">These are Google's client requirements. Nearby Drop is a separate macOS endpoint. See <a class="underline hover:text-white" href="https://support.google.com/android/answer/13801258" target="_blank" rel="noopener">Google's current Windows setup and troubleshooting guidance</a>. This guide's test covers one Windows PC, not every model or network.</p>
+    </section>
 
     <section class="mb-8 border border-theme-border bg-theme-surface p-6 sm:p-8">
       <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Mac to Windows</h2>
@@ -81,7 +91,7 @@
 
     <section class="mb-10 border border-theme-border bg-theme-surface p-6 sm:p-8">
       <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">If discovery fails</h2>
-      <p class="text-sm leading-relaxed text-neutral-300">Keep both devices on a reachable local network. Guest Wi-Fi, client isolation, firewall settings, or local-network permission can stop devices from appearing. LTE-only phone-hotspot discovery has not been verified. File data transfers directly over the local connection; Nearby Drop does not use a cloud relay.</p>
+      <p class="text-sm leading-relaxed text-neutral-300">Keep both devices on a reachable local network and Bluetooth turned on. In Windows Quick Share, check Device visibility so the Mac can see the PC. Guest Wi-Fi, client isolation, firewall settings, or local-network permission can stop devices from appearing. LTE-only phone-hotspot discovery has not been verified. File data transfers directly over the local connection; Nearby Drop does not use a cloud relay.</p>
     </section>
 
     <section class="mb-10 border border-theme-border bg-theme-black p-6 sm:p-8" aria-labelledby="related-guides">
