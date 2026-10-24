@@ -2,12 +2,24 @@
   "name": "nearby-drop-site",
   "private": true,
   "scripts": {
-    "build:css": "tailwindcss -i ./scripts/tailwind.css -o ./docs/assets/site.css --minify"
+    "build:css": "tailwindcss -i ./scripts/tailwind.css -o ./docs/assets/site.css --minify",
+    "build:components": "vite build --config vite.config.mts",
+    "test:site": "node --test scripts/scroll-draw-progress.test.mjs"
   },
   "devDependencies": {
-    "tailwindcss": "3.4.17"
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "3.4.17",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
   },
   "overrides": {
     "postcss-selector-parser": "7.1.7"
+  },
+  "dependencies": {
+    "lucide-react": "^1.61.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }

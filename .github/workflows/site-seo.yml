@@ -8,6 +8,12 @@ on:
       - "package.json"
       - "package-lock.json"
       - "tailwind.config.js"
+      - "components/**"
+      - "lib/**"
+      - "scripts/site-components.tsx"
+      - "scripts/scroll-draw-progress.*"
+      - "vite.config.mts"
+      - "tsconfig.json"
       - "scripts/tailwind.css"
       - "scripts/check_site_seo.py"
       - "scripts/indexnow_payload.py"
@@ -19,6 +25,12 @@ on:
       - "package.json"
       - "package-lock.json"
       - "tailwind.config.js"
+      - "components/**"
+      - "lib/**"
+      - "scripts/site-components.tsx"
+      - "scripts/scroll-draw-progress.*"
+      - "vite.config.mts"
+      - "tsconfig.json"
       - "scripts/tailwind.css"
       - "scripts/check_site_seo.py"
       - "scripts/indexnow_payload.py"
@@ -36,13 +48,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Install site CSS dependency
+      - name: Install site dependencies
         run: npm ci
+      - name: Type-check site components
+        run: npx tsc --noEmit
+      - name: Test scroll drawing progress
+        run: npm run test:site
       - name: Verify committed site stylesheet
         run: |
           cp docs/assets/site.css /tmp/site.css
           npm run build:css
           cmp /tmp/site.css docs/assets/site.css
+      - name: Verify committed site component bundle
+        run: |
+          cp docs/assets/site-components.js /tmp/site-components.js
+          npm run build:components
+          cmp /tmp/site-components.js docs/assets/site-components.js
       - name: Validate sitemap and crawl paths
         run: python3 scripts/check_site_seo.py
       - name: Notify IndexNow after the site is published
