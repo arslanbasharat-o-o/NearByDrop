@@ -135,8 +135,11 @@ def main():
             continue
 
         page_depth = len(page_path.relative_to(ROOT / "docs").parts) - 1
-        expected_stylesheet = urljoin(page_url, "../" * page_depth + "assets/site.css")
-        if expected_stylesheet not in {urljoin(page_url, href) for href in page.stylesheets}:
+        expected_stylesheets = {
+            urljoin(page_url, "../" * page_depth + "assets/site.css"),
+            urljoin(page_url, "../" * page_depth + "assets/site-oled.css"),
+        }
+        if expected_stylesheets.isdisjoint({urljoin(page_url, href) for href in page.stylesheets}):
             errors.append(f"missing local site stylesheet: {page_path.relative_to(ROOT)}")
         if "cdn.tailwindcss.com" in source:
             errors.append(f"Tailwind Play CDN must not be used in production: {page_path.relative_to(ROOT)}")
