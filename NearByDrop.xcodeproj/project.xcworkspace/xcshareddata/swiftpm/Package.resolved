@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/leif-ibsen/SwiftECC",
       "state" : {
-        "revision" : "55493f0609f07b24bf6cd52b90898ed1cefb268e",
-        "version" : "3.5.3"
+        "revision" : "85c529c9c56b649a8d8edcef60aab3925ab0f69f",
+        "version" : "5.5.0"
       }
     },
     {
