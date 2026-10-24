@@ -3,30 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nearby Drop — Quick Share for Mac</title>
-  <meta name="description" content="A native Mac menu bar app for sending and receiving files with Android over Quick Share, QR code, or USB.">
+  <title>Nearby Drop for Mac | Android Quick Share &amp; USB</title>
+  <meta name="description" content="Send files between Mac and Android with Nearby Drop, a free macOS menu bar app for Quick Share, QR codes, USB MTP, transfer history and Finder sharing.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/">
-  <link rel="icon" type="image/png" href="assets/icon.png">
-  <link rel="preload" as="image" href="assets/nearby-drop-receive.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/icon-128.png">
+  <link rel="preload" as="image" href="assets/nearby-drop-receive.webp" type="image/webp">
   <link rel="stylesheet" href="assets/site.css">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/">
   <meta property="og:site_name" content="Nearby Drop">
-  <meta property="og:title" content="Nearby Drop — Quick Share for Mac">
-  <meta property="og:description" content="Send and receive files between your Mac and Android from the menu bar.">
+  <meta property="og:title" content="Nearby Drop for Mac | Android Quick Share &amp; USB">
+  <meta property="og:description" content="Send files between Mac and Android with Quick Share, QR codes, USB MTP and Finder sharing.">
   <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:alt" content="Nearby Drop for Mac">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Nearby Drop — Quick Share for Mac">
-  <meta name="twitter:description" content="Send and receive files between your Mac and Android from the menu bar.">
+  <meta name="twitter:title" content="Nearby Drop for Mac | Android Quick Share &amp; USB">
+  <meta name="twitter:description" content="Send files between Mac and Android with Quick Share, QR codes, USB MTP and Finder sharing.">
   <meta name="twitter:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
+  <meta name="twitter:image:alt" content="Nearby Drop for Mac, with Quick Share, QR, USB MTP and Finder sharing">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -34,9 +33,20 @@
     "name": "Nearby Drop",
     "applicationCategory": "UtilitiesApplication",
     "operatingSystem": "macOS 14 or later",
+    "image": "https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg",
+    "screenshot": [
+      "https://arslanbasharat-o-o.github.io/NearByDrop/assets/nearby-drop-send.webp",
+      "https://arslanbasharat-o-o.github.io/NearByDrop/assets/nearby-drop-receive.webp"
+    ],
     "downloadUrl": "https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "url": "https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest"
+    },
     "author": { "@type": "Person", "name": "Arslan Basharat" },
-    "description": "A native Mac menu bar app for sending and receiving files with Android over Quick Share, QR code, or USB."
+    "description": "A native macOS menu bar app for sending and receiving files with Android using Quick Share, QR codes, USB MTP and Finder sharing."
   }
   </script>
 </head>
@@ -45,12 +55,13 @@
   <header class="site-header">
     <div class="site-header__inner">
       <a class="brand" href="./" aria-label="Nearby Drop home">
-        <img src="assets/icon.png" width="38" height="38" alt="">
+        <img src="assets/icon-128.png" width="38" height="38" alt="">
         <span>Nearby Drop</span>
       </a>
       <nav class="site-nav" aria-label="Main navigation">
         <a href="#how-it-works">How it works</a>
-        <a href="#more-ways">Ways to connect</a>
+        <a href="#features">Features</a>
+        <a href="#guides">Guides</a>
         <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener">GitHub</a>
       </nav>
       <a class="button button--small" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">Download</a>
@@ -62,17 +73,52 @@
       <div class="hero__copy">
         <p class="eyebrow">Quick Share for Mac</p>
         <h1 id="hero-title">Move files between your Mac and Android.</h1>
-        <p class="hero__description">Nearby Drop is a menu bar app for sending and receiving over Quick Share, QR code, or USB.</p>
+        <p class="hero__description">Nearby Drop puts two-way Android file sharing in your Mac menu bar. Use Quick Share, scan a QR code, connect by USB, or send from Finder.</p>
         <div class="hero__actions">
           <a class="button" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">Download for Mac <span aria-hidden="true">↗</span></a>
           <a class="button button--quiet" href="#how-it-works">See how it works</a>
         </div>
-        <p class="requirements">Free download <span aria-hidden="true">·</span> macOS 14+ <span aria-hidden="true">·</span> Apple silicon and Intel</p>
+        <p class="requirements">Free download <span aria-hidden="true">·</span> macOS 14+ <span aria-hidden="true">·</span> Apple silicon and Intel <span aria-hidden="true">·</span> No cloud relay</p>
       </div>
       <figure class="app-shot app-shot--hero">
-        <img src="assets/nearby-drop-receive.png" width="772" height="1012" alt="Nearby Drop’s Receive screen, showing the Mac ready to receive files and instructions for sharing from Android." fetchpriority="high">
+        <picture class="app-shot__media">
+          <source srcset="assets/nearby-drop-receive.webp" type="image/webp">
+          <img src="assets/nearby-drop-receive.png" width="772" height="1012" alt="Nearby Drop’s Receive screen, showing the Mac ready to receive files from Android." fetchpriority="high" decoding="async">
+        </picture>
         <figcaption><span class="caption-mark" aria-hidden="true"></span> Receive files in a clear menu bar window.</figcaption>
       </figure>
+    </section>
+
+    <section class="flow-section" aria-labelledby="flow-title">
+      <div class="page-width flow-section__inner">
+        <div class="section-intro">
+          <p class="eyebrow">A clear view of every transfer</p>
+          <h2 id="flow-title">See what’s moving, and where it’s going.</h2>
+          <p>Follow incoming and outgoing files in one place. Nearby Drop shows transfer progress, speed and remaining time, then keeps recent activity easy to find.</p>
+        </div>
+        <figure class="flow-visual" aria-labelledby="flow-caption">
+          <div class="flow-endpoint flow-endpoint--mac">
+            <span class="endpoint-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="5" y="5" width="22" height="16" rx="2.5"></rect><path d="M3 25h26M12 21l-1.5 4m9.5-4 1.5 4"></path></svg></span>
+            <span>Mac</span>
+          </div>
+          <div class="flow-route" aria-hidden="true">
+            <span class="flow-route__label">Nearby connection</span>
+            <span class="flow-route__line flow-route__line--forward"><i></i></span>
+            <span class="flow-route__line flow-route__line--reverse"><i></i></span>
+            <span class="flow-route__hint">Two-way sharing</span>
+          </div>
+          <div class="flow-endpoint flow-endpoint--android">
+            <span class="endpoint-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="8" y="4" width="16" height="24" rx="4"></rect><path d="M13 7h6M14 24h4"></path></svg></span>
+            <span>Android</span>
+          </div>
+          <figcaption id="flow-caption">Illustration of the two-way transfer path. Files move directly between connected devices.</figcaption>
+        </figure>
+        <ol class="flow-steps">
+          <li><span>01</span><strong>Choose files</strong><small>Pick what to send, or start from Android.</small></li>
+          <li><span>02</span><strong>Track progress</strong><small>See direction, status, speed and time remaining.</small></li>
+          <li><span>03</span><strong>Find it again</strong><small>Open recent transfers or show a saved file in Finder.</small></li>
+        </ol>
+      </div>
     </section>
 
     <section class="how-section" id="how-it-works" aria-labelledby="how-title">
@@ -99,32 +145,57 @@
           <a class="text-link" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/mac-to-android-quick-share.html">Read the Mac-to-Android guide <span aria-hidden="true">→</span></a>
         </div>
         <figure class="app-shot app-shot--send">
-          <img src="assets/nearby-drop-send.png" width="772" height="1012" alt="Nearby Drop’s Send screen with buttons to choose files or share by QR code, plus nearby device discovery." loading="lazy">
+          <picture class="app-shot__media">
+            <source srcset="assets/nearby-drop-send.webp" type="image/webp">
+            <img src="assets/nearby-drop-send.png" width="772" height="1012" alt="Nearby Drop’s Send screen with options to choose files or share by QR code." loading="lazy" decoding="async">
+          </picture>
           <figcaption><span class="caption-mark" aria-hidden="true"></span> Choose files or use QR Share.</figcaption>
         </figure>
       </div>
     </section>
 
-    <section class="more-section page-width" id="more-ways" aria-labelledby="more-title">
+    <section class="more-section page-width" id="features" aria-labelledby="more-title">
       <div class="section-intro">
-        <p class="eyebrow">More ways to move files</p>
-        <h2 id="more-title">Choose how to connect.</h2>
+        <p class="eyebrow">Made for the whole workflow</p>
+        <h2 id="more-title">The useful details are built in.</h2>
+        <p>Send, receive, check progress and choose where files go, all from a small Mac app.</p>
       </div>
-      <div class="connection-list">
-        <article class="connection-item">
-          <span class="connection-index">01</span>
-          <div><h3>Quick Share</h3><p>Send and receive with Android and compatible Windows devices on a reachable local network.</p></div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v18m10-18v18M4 7h6l4 5h6M4 17h6l4-5h6"></path></svg></span>
+          <h3>Quick Share, both ways</h3>
+          <p>Send and receive with Android and compatible Windows devices on a reachable local network. The app keeps transfer direction and status visible.</p>
         </article>
-        <article class="connection-item">
-          <span class="connection-index">02</span>
-          <div><h3>QR code</h3><p>Scan an Android Quick Share code with your Mac camera, or show a code from Nearby Drop.</p></div>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v6h-6v-2"></path></svg></span>
+          <h3>QR sharing</h3>
+          <p>Scan an Android Quick Share QR code with the Mac camera, or show a code for a phone to scan.</p>
         </article>
-        <article class="connection-item">
-          <span class="connection-index">03</span>
-          <div><h3>USB and Finder</h3><p>Browse Android storage over USB, or send selected items from the Finder Share menu.</p></div>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 7V4l4 3-4 3V7H6v6h6m4-8v6h2m-6 6h2l2 2v-4l-2 2h-2m5-8h1v4h-1m-8 1v5"></path></svg></span>
+          <h3>USB MTP</h3>
+          <p>Browse Android storage over a cable, then upload or download files and folders.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5m-5 3h7"></path></svg></span>
+          <h3>Recent transfers</h3>
+          <p>Review recent incoming and outgoing items, see their size and device, and open saved files in Finder.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"></path><circle cx="12" cy="12" r="4"></circle></svg></span>
+          <h3>Your settings</h3>
+          <p>Choose a download folder, light or dark appearance, an accent color, launch-at-login and sound or haptic feedback.</p>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 4.5 3 7.5 8 9 5-1.5 8-4.5 8-9V7l-8-4Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
+          <h3>Trusted devices and updates</h3>
+          <p>Manage trusted devices and automatic acceptance. Check for app updates from the About screen.</p>
         </article>
       </div>
-      <a class="text-link testing-link" href="DEVICE-VERIFICATION.md">See tested devices and connection details <span aria-hidden="true">→</span></a>
+      <div class="ways-footer">
+        <p>Also share selected files, folders and links from the Finder Share menu.</p>
+        <a class="text-link" href="DEVICE-VERIFICATION.md">See tested devices and connection details <span aria-hidden="true">→</span></a>
+      </div>
     </section>
 
     <section class="local-section" aria-labelledby="local-title">
@@ -133,7 +204,34 @@
           <p class="eyebrow">Designed for nearby sharing</p>
           <h2 id="local-title">No cloud relay.</h2>
         </div>
-        <p>Wireless transfers happen over your local network. Nearby Drop doesn’t relay files through a cloud service. USB transfers use the cable.</p>
+        <p>Wireless transfers happen over your local network. Nearby Drop doesn’t relay files through a cloud service. USB transfers use the cable, and recent transfer history stays on your Mac.</p>
+      </div>
+    </section>
+
+    <section class="troubleshooting-section page-width" id="troubleshooting" aria-labelledby="troubleshooting-title">
+      <div class="section-intro">
+        <p class="eyebrow">If a device does not appear</p>
+        <h2 id="troubleshooting-title">Check the connection first.</h2>
+      </div>
+      <div class="troubleshooting-list">
+        <p><strong>For Quick Share:</strong> keep both devices on a reachable network, turn Quick Share on, and allow Nearby Drop under macOS <em>System Settings → Privacy &amp; Security → Local Network</em>. Guest Wi-Fi, client isolation and some hotspots can block discovery.</p>
+        <p><strong>For USB MTP:</strong> unlock the Android phone, choose <em>File transfer / Android Auto</em> in its USB notification, then open the USB tab in Nearby Drop.</p>
+        <p><strong>For QR sharing:</strong> use the app’s Receive → Scan QR Code flow on the Mac, or show a QR code from the Send screen for the phone to scan.</p>
+      </div>
+      <a class="text-link" href="DEVICE-VERIFICATION.md">Read device test results and known limits <span aria-hidden="true">→</span></a>
+    </section>
+
+    <section class="guides-section page-width" id="guides" aria-labelledby="guides-title">
+      <div class="section-intro">
+        <p class="eyebrow">Practical walkthroughs</p>
+        <h2 id="guides-title">Find the right way to share.</h2>
+      </div>
+      <div class="guides-list">
+        <a href="blog/how-to-transfer-files-mac-android.html"><span>Android to Mac</span><strong>Receive files with Quick Share or USB MTP <span aria-hidden="true">↗</span></strong></a>
+        <a href="blog/mac-to-android-quick-share.html"><span>Mac to Android</span><strong>Send files with Quick Share <span aria-hidden="true">↗</span></strong></a>
+        <a href="blog/quick-share-mac-windows.html"><span>Mac and Windows</span><strong>What works across devices <span aria-hidden="true">↗</span></strong></a>
+        <a href="blog/airdrop-alternative-for-android.html"><span>Compare options</span><strong>AirDrop alternatives for Android and Mac <span aria-hidden="true">↗</span></strong></a>
+        <a href="blog/neardrop-vs-nearby-drop.html"><span>App names</span><strong>NearDrop and Nearby Drop compared <span aria-hidden="true">↗</span></strong></a>
       </div>
     </section>
   </main>
@@ -141,7 +239,7 @@
   <footer class="site-footer">
     <div class="site-footer__inner page-width">
       <a class="brand brand--footer" href="./">
-        <img src="assets/icon.png" width="32" height="32" alt="">
+        <img src="assets/icon-128.png" width="32" height="32" alt="">
         <span>Nearby Drop</span>
       </a>
       <p>Independent project by Arslan Basharat. Not affiliated with Google or Apple.</p>

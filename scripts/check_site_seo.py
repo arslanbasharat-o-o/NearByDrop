@@ -25,11 +25,16 @@ class PageMetadata(HTMLParser):
         self.canonical = ""
         self.robots = ""
         self.links = []
+        self.ids = set()
         self.stylesheets = []
         self.capture = None
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if attrs.get("id"):
+            self.ids.add(attrs["id"])
+        if tag == "a" and attrs.get("name"):
+            self.ids.add(attrs["name"])
         if tag == "title":
             self.capture = "title"
         elif tag == "h1":
@@ -171,6 +176,11 @@ def main():
             target_path = local_page_path(target.path)
             if target_path is None or not target_path.is_file():
                 errors.append(f"broken internal link in {relative_path}: {href}")
+            elif target.fragment:
+                fragment_page = PageMetadata()
+                fragment_page.feed(target_path.read_text(encoding="utf-8"))
+                if unquote(target.fragment) not in fragment_page.ids:
+                    errors.append(f"broken internal fragment in {relative_path}: {href}")
 
     if errors:
         for error in errors:

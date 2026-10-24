@@ -1,9 +1,8 @@
-<p align="center">
-  <img src="docs/assets/icon.png" alt="Nearby Drop app icon" width="112">
-</p>
+# Nearby Drop
 
-<h1 align="center">Nearby Drop</h1>
-<p align="center"><strong>Move files between your Mac, Android, and compatible Windows devices.</strong></p>
+Move files between your Mac, Android, and compatible Windows devices.
+
+Nearby Drop is an Android file transfer app for Mac, with Quick Share, QR codes, USB MTP, and Finder sharing.
 
 <p align="center">
   <a href="https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml"><img alt="Build status" src="https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg?branch=main"></a>
@@ -12,23 +11,15 @@
   <img alt="Proprietary license" src="https://img.shields.io/badge/license-proprietary-red">
 </p>
 
-<p align="center">
-  <a href="https://arslanbasharat-o-o.github.io/NearByDrop/"><strong>Quick Share for Mac</strong></a> ·
-  <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest"><strong>Download</strong></a> ·
-  <a href="https://arslanbasharat-o-o.github.io/NearByDrop/#guides">Guides</a> ·
-  <a href="https://github.com/arslanbasharat-o-o/NearByDrop/issues">Report a problem</a> ·
-  <a href="mailto:arslanbasharat414@gmail.com">Contact</a> ·
-  <a href="CONTRIBUTING.md">Contributing</a>
-</p>
+**[Website](https://arslanbasharat-o-o.github.io/NearByDrop/)** · **[Download](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)** · [Guides](https://arslanbasharat-o-o.github.io/NearByDrop/#guides) · [Report a problem](https://github.com/arslanbasharat-o-o/NearByDrop/issues) · [Contributing](CONTRIBUTING.md)
 
 Nearby Drop is a native macOS menu bar app for sharing files with Android phones and compatible Windows Quick Share clients. Send over Wi-Fi, scan or show a QR code, connect by USB, or use Finder’s Share menu.
 
-## See it in action
+## Screenshots
 
-<p align="center">
-  <img src="docs/assets/nearby-drop-receive.png" alt="Nearby Drop ready to receive files from Android" width="340">
-  <img src="docs/assets/nearby-drop-send.png" alt="Nearby Drop choosing files to send to a nearby device" width="340">
-</p>
+| Receive | Send |
+| :---: | :---: |
+| ![Nearby Drop’s Receive screen, ready for files from Android](docs/assets/nearby-drop-receive.png) | ![Nearby Drop’s Send screen, with file selection and QR sharing](docs/assets/nearby-drop-send.png) |
 
 ## Similar names
 
@@ -40,6 +31,15 @@ This GitHub repository is named **NearByDrop**; the app is branded **Nearby Drop
 | --- | --- | --- | --- |
 | Send and receive files over a reachable local network. | Scan a phone’s code in the app, or show a code for the phone to scan. | Browse Android storage and move files over a cable. | Share files, folders, and links from the Finder menu. |
 
+## Track and manage transfers
+
+- **Progress:** Follow transfer direction, status, progress, speed, and estimated time remaining.
+- **History:** Review recent incoming and outgoing items, including their file, device, size, and time. Open a saved item in Finder.
+- **USB MTP:** Browse Android storage and upload or download files and folders over a cable.
+- **Settings:** Choose the download folder, appearance, accent color, launch-at-login, sound, and haptic feedback.
+- **Trusted devices:** Manage devices that can accept transfers automatically.
+- **Updates:** Check for new versions from the About screen and install an available update from the app.
+
 ## Transfer guides
 
 - [Receive Android files on a Mac with Quick Share or USB MTP](https://arslanbasharat-o-o.github.io/NearByDrop/blog/how-to-transfer-files-mac-android.html)
@@ -48,7 +48,7 @@ This GitHub repository is named **NearByDrop**; the app is branded **Nearby Drop
 - [Use Quick Share between Mac and Windows](https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html)
 - [Compare NearDrop and Nearby Drop](https://arslanbasharat-o-o.github.io/NearByDrop/blog/neardrop-vs-nearby-drop.html)
 
-## Get started
+## Install Nearby Drop
 
 1. [Download the latest DMG](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest).
 2. Open it and drag **Nearby Drop** into **Applications**.
