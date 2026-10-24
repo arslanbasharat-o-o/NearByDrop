@@ -1,8 +1,6 @@
 # Nearby Drop
 
-Move files between your Mac, Android, and compatible Windows devices.
-
-Nearby Drop is an Android file transfer app for Mac, with Quick Share, QR codes, USB MTP, and Finder sharing.
+Nearby Drop is a native macOS menu bar app for two-way file sharing between Mac and Android with Quick Share, QR codes, and USB MTP. It also supports compatible Windows Quick Share clients and Finder sharing.
 
 <p align="center">
   <a href="https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml"><img alt="Build status" src="https://github.com/arslanbasharat-o-o/NearByDrop/actions/workflows/build.yml/badge.svg?branch=main"></a>
@@ -13,13 +11,13 @@ Nearby Drop is an Android file transfer app for Mac, with Quick Share, QR codes,
 
 **[Website](https://arslanbasharat-o-o.github.io/NearByDrop/)** · **[Download](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)** · [Guides](https://arslanbasharat-o-o.github.io/NearByDrop/#guides) · [Report a problem](https://github.com/arslanbasharat-o-o/NearByDrop/issues) · [Contributing](CONTRIBUTING.md)
 
-Nearby Drop is a native macOS menu bar app for sharing files with Android phones and compatible Windows Quick Share clients. Send over Wi-Fi, scan or show a QR code, connect by USB, or use Finder’s Share menu.
+Send over Wi-Fi, scan or show a QR code, connect by USB, or share from Finder.
 
 ## Screenshots
 
 | Receive | Send |
 | :---: | :---: |
-| ![Nearby Drop’s Receive screen, ready for files from Android](docs/assets/nearby-drop-receive.png) | ![Nearby Drop’s Send screen, with file selection and QR sharing](docs/assets/nearby-drop-send.png) |
+| ![Nearby Drop’s Receive screen, ready for files from Android with the device name redacted](docs/assets/nearby-drop-receive.webp) | ![Nearby Drop’s Send screen, with file selection and QR sharing](docs/assets/nearby-drop-send.webp) |
 
 ## Similar names
 
