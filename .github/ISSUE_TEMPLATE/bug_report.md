@@ -1,3 +1,11 @@
+---
+name: Bug report
+about: Report a reproducible app or website problem
+title: ""
+labels: ""
+assignees: ""
+---
+
 ## What happened?
 
 Describe the problem and what you expected.
