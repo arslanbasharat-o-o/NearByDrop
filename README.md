@@ -15,10 +15,16 @@
   </p>
 </div>
 
-<div align="center">
-  <img src="README-assets/nearby-drop-receive-readme-aligned.png" alt="Nearby Drop Receive screen" width="48%" />
-  <img src="README-assets/nearby-drop-send-readme-aligned.png" alt="Nearby Drop Send screen" width="48%" />
-</div>
+<table>
+  <tr>
+    <td width="50%" align="center"><strong>Send</strong><br /><img src="docs/assets/screenshots/send.jpg" alt="Nearby Drop Send screen, searching for nearby devices" width="360" /></td>
+    <td width="50%" align="center"><strong>Receive</strong><br /><img src="docs/assets/screenshots/receive.jpg" alt="Nearby Drop Receive screen, ready to receive files" width="360" /></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><strong>Transfers</strong><br /><img src="docs/assets/screenshots/transfers.jpg" alt="Nearby Drop Transfers screen with no recent transfers" width="360" /></td>
+    <td width="50%" align="center"><strong>USB</strong><br /><img src="docs/assets/screenshots/usb.jpg" alt="Nearby Drop USB screen with no device connected" width="360" /></td>
+  </tr>
+</table>
 
 Nearby Drop is an independent macOS menu bar app. It is not affiliated with Google or Apple.
 
