@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/leif-ibsen/ASN1",
       "state" : {
-        "revision" : "555922e06f1835863d4c0143eb00d0097bcfc707",
-        "version" : "2.0.3"
+        "revision" : "e38d1b8b43d8b53ffadde9836f34289176bb7a0c",
+        "version" : "2.7.0"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/leif-ibsen/BigInt",
       "state" : {
-        "revision" : "47903c6b2dd2cb3b4484d4524676a2ca8723a871",
-        "version" : "1.9.0"
+        "revision" : "7c7b1be2f6714ce03833879b0aab4b20293c0207",
+        "version" : "1.24.0"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-protobuf.git",
       "state" : {
-        "revision" : "0af9125c4eae12a4973fb66574c53a54962a9e1e",
-        "version" : "1.21.0"
+        "revision" : "3d537cb81aef272a03cb3be815439e9bf0eb3bd3",
+        "version" : "1.39.0"
       }
     },
     {
