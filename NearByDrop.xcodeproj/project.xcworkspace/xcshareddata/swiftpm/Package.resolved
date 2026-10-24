@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dagronf/qrcode.git",
       "state" : {
-        "revision" : "177d4091f7fcce1efc22de2a5fcdb671bd103101",
-        "version" : "26.10.0"
+        "revision" : "a8b8a5166e072156baf66ec2fff0850aa14b5297",
+        "version" : "28.1.0"
       }
     },
     {
@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/leif-ibsen/SwiftECC",
       "state" : {
-        "revision" : "55493f0609f07b24bf6cd52b90898ed1cefb268e",
-        "version" : "3.5.3"
+        "revision" : "85c529c9c56b649a8d8edcef60aab3925ab0f69f",
+        "version" : "5.5.0"
       }
     },
     {
