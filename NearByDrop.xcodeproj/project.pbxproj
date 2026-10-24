@@ -1066,7 +1066,7 @@
 			repositoryURL = "https://github.com/leif-ibsen/SwiftECC";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 3.0.0;
+				minimumVersion = 5.5.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
