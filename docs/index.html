@@ -7,9 +7,13 @@
   <meta name="description" content="Send files between Mac and Android with Nearby Drop, a free macOS menu bar app for Quick Share, QR codes, USB MTP, transfer history and Finder sharing.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#17141c">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'">
   <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/">
   <link rel="icon" type="image/png" href="assets/icon-128.png">
-  <link rel="preload" as="image" href="assets/nearby-drop-receive.webp" type="image/webp">
+  <link rel="preload" as="image" href="assets/nearby-drop-receive.webp?v=3" type="image/webp">
+  <script src="assets/site-theme.js"></script>
   <link rel="stylesheet" href="assets/site.css">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/">
@@ -64,6 +68,14 @@
         <a href="#guides">Guides</a>
         <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener">GitHub</a>
       </nav>
+      <label class="theme-control">
+        <span class="sr-only">Color theme</span>
+        <select aria-label="Color theme" data-theme-select>
+          <option value="system">System</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
       <a class="button button--small" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">Download</a>
     </div>
   </header>
@@ -82,8 +94,8 @@
       </div>
       <figure class="app-shot app-shot--hero">
         <picture class="app-shot__media">
-          <source srcset="assets/nearby-drop-receive.webp" type="image/webp">
-            <img src="assets/nearby-drop-receive.png" width="772" height="1012" alt="Nearby Drop’s Receive screen, ready to receive Android files; the device name is redacted for privacy." fetchpriority="high" decoding="async">
+            <source srcset="assets/nearby-drop-receive.webp?v=3" type="image/webp">
+            <img src="assets/nearby-drop-receive.png?v=3" width="1096" height="1435" alt="Nearby Drop’s Receive screen, ready to receive Android files; the device name is redacted for privacy." fetchpriority="high" decoding="async">
         </picture>
         <figcaption><span class="caption-mark" aria-hidden="true"></span> Receive files in a clear menu bar window.</figcaption>
       </figure>
@@ -103,8 +115,18 @@
           </div>
           <div class="flow-route" aria-hidden="true">
             <span class="flow-route__label">Nearby connection</span>
-            <span class="flow-route__line flow-route__line--forward"><i></i></span>
-            <span class="flow-route__line flow-route__line--reverse"><i></i></span>
+            <span class="flow-route__line flow-route__line--forward">
+              <svg viewBox="0 0 100 6" preserveAspectRatio="none" focusable="false">
+                <path class="flow-route__track" d="M 1 3 H 99"></path>
+                <path class="flow-route__draw" pathLength="1" data-scroll-draw d="M 1 3 H 99"></path>
+              </svg><i></i>
+            </span>
+            <span class="flow-route__line flow-route__line--reverse">
+              <svg viewBox="0 0 100 6" preserveAspectRatio="none" focusable="false">
+                <path class="flow-route__track" d="M 99 3 H 1"></path>
+                <path class="flow-route__draw" pathLength="1" data-scroll-draw d="M 99 3 H 1"></path>
+              </svg><i></i>
+            </span>
             <span class="flow-route__hint">Two-way sharing</span>
           </div>
           <div class="flow-endpoint flow-endpoint--android">
@@ -160,41 +182,47 @@
         <h2 id="more-title">Transfers, storage and settings.</h2>
         <p>Track progress, choose where files are saved, manage trusted devices and reopen transfers in Finder.</p>
       </div>
-      <div class="feature-grid">
-        <article class="feature-card">
-          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v18m10-18v18M4 7h6l4 5h6M4 17h6l4-5h6"></path></svg></span>
-          <h3>Quick Share, both ways</h3>
-          <p>Send and receive with Android and compatible Windows devices on a reachable local network. The app keeps transfer direction and status visible.</p>
-        </article>
-        <article class="feature-card">
-          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v6h-6v-2"></path></svg></span>
-          <h3>QR sharing</h3>
-          <p>Scan an Android Quick Share QR code with the Mac camera, or show a code for a phone to scan.</p>
-        </article>
-        <article class="feature-card">
-          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 7V4l4 3-4 3V7H6v6h6m4-8v6h2m-6 6h2l2 2v-4l-2 2h-2m5-8h1v4h-1m-8 1v5"></path></svg></span>
-          <h3>USB MTP</h3>
-          <p>Browse Android storage over a cable, then upload or download files and folders.</p>
-        </article>
-        <article class="feature-card">
-          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5m-5 3h7"></path></svg></span>
-          <h3>Recent transfers</h3>
-          <p>Review recent incoming and outgoing items, see their size and device, and open saved files in Finder.</p>
-        </article>
-        <article class="feature-card">
-          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"></path><circle cx="12" cy="12" r="4"></circle></svg></span>
-          <h3>Your settings</h3>
-          <p>Choose a download folder, light or dark appearance, an accent color, launch-at-login and sound or haptic feedback.</p>
-        </article>
-        <article class="feature-card">
-          <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 4.5 3 7.5 8 9 5-1.5 8-4.5 8-9V7l-8-4Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
-          <h3>Trusted devices and updates</h3>
-          <p>Manage trusted devices and automatic acceptance. Check for app updates from the About screen.</p>
-        </article>
+      <div class="feature-showcase">
+        <div id="display-cards-root" class="display-cards-root">
+          <div class="feature-grid feature-grid--fallback">
+            <article class="feature-card">
+              <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v18m10-18v18M4 7h6l4 5h6M4 17h6l4-5h6"></path></svg></span>
+              <h3>Quick Share, both ways</h3>
+              <p>Send and receive with Android and compatible Windows devices on a reachable local network. The app keeps transfer direction and status visible.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v6h-6v-2"></path></svg></span>
+              <h3>QR sharing</h3>
+              <p>Scan an Android Quick Share QR code with the Mac camera, or show a code for a phone to scan.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 7V4l4 3-4 3V7H6v6h6m4-8v6h2m-6 6h2l2 2v-4l-2 2h-2m5-8h1v4h-1m-8 1v5"></path></svg></span>
+              <h3>USB MTP</h3>
+              <p>Browse Android storage over a cable, then upload or download files and folders.</p>
+            </article>
+          </div>
+        </div>
+        <div class="feature-grid feature-grid--supporting">
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5m-5 3h7"></path></svg></span>
+            <h3>Recent transfers</h3>
+            <p>Review recent incoming and outgoing items, see their size and device, and open saved files in Finder.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"></path><circle cx="12" cy="12" r="4"></circle></svg></span>
+            <h3>Your settings</h3>
+            <p>Choose a download folder, light or dark appearance, an accent color, launch-at-login and sound or haptic feedback.</p>
+          </article>
+          <article class="feature-card">
+            <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 4.5 3 7.5 8 9 5-1.5 8-4.5 8-9V7l-8-4Z"></path><path d="m9 12 2 2 4-4"></path></svg></span>
+            <h3>Trusted devices and updates</h3>
+            <p>Manage trusted devices and automatic acceptance. Check for app updates from the About screen.</p>
+          </article>
+        </div>
       </div>
       <div class="ways-footer">
         <p>Also share selected files, folders and links from the Finder Share menu.</p>
-        <a class="text-link" href="DEVICE-VERIFICATION.md">See tested devices and connection details <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="device-verification.html">See tested devices and connection details <span aria-hidden="true">→</span></a>
       </div>
     </section>
 
@@ -218,7 +246,7 @@
         <p><strong>For USB MTP:</strong> unlock the Android phone, choose <em>File transfer / Android Auto</em> in its USB notification, then open the USB tab in Nearby Drop.</p>
         <p><strong>For QR sharing:</strong> use the app’s Receive → Scan QR Code flow on the Mac, or show a QR code from the Send screen for the phone to scan.</p>
       </div>
-      <a class="text-link" href="DEVICE-VERIFICATION.md">Read device test results and known limits <span aria-hidden="true">→</span></a>
+      <a class="text-link" href="device-verification.html">Read device test results and known limits <span aria-hidden="true">→</span></a>
     </section>
 
     <section class="guides-section page-width" id="guides" aria-labelledby="guides-title">
@@ -236,6 +264,7 @@
     </section>
   </main>
 
+  <div id="site-footer-root">
   <footer class="site-footer">
     <div class="site-footer__inner page-width">
       <a class="brand brand--footer" href="./">
@@ -247,8 +276,14 @@
         <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">Latest release</a>
         <a href="https://github.com/arslanbasharat-o-o/NearByDrop">Source on GitHub</a>
         <a href="https://github.com/arslanbasharat-o-o/NearByDrop/issues">Get help</a>
+        <a href="legal/privacy.html">Privacy</a>
+        <a href="legal/terms.html">Terms</a>
+        <a href="legal/security.html">Security</a>
+        <a href="legal/licenses.html">Licenses</a>
       </div>
     </div>
   </footer>
+  </div>
+  <script type="module" src="assets/site-components.js"></script>
 </body>
 </html>

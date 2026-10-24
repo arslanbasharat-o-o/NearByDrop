@@ -7,7 +7,11 @@
   <meta name="description" content="Looking for Quick Share for Mac? Check Google's compatibility list, then compare native Quick Share-to-AirDrop, Nearby Drop, QR transfer, and USB MTP.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/how-to-transfer-files-mac-android.html">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#17141c">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'">
+  <script src="../assets/site-theme.js"></script>
+<link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/how-to-transfer-files-mac-android.html">
 
   <meta property="og:type" content="article">
   <meta property="og:title" content="Quick Share for Mac: Transfer Files from Android to Mac">
@@ -27,27 +31,7 @@
   <link rel="icon" type="image/png" href="../assets/icon-128.png">
 
   <!-- Google Fonts: Space Grotesk, IBM Plex Mono, Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="../assets/site.css">
-  <style>
-    body {
-      background-color: #070707;
-      color: #e4e4e7;
-    }
-    .grid-lines {
-      background-size: 40px 40px;
-      background-image: 
-        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    }
-    ::selection {
-      background-color: #ffffff;
-      color: #000000;
-    }
-  </style>
 
   <!-- Schema.org BlogPosting JSON-LD -->
   <script type="application/ld+json">
@@ -64,68 +48,22 @@
   }
   </script>
 </head>
-<body class="font-sans antialiased selection:bg-white selection:text-black">
-
-  <!-- Background Grid -->
-  <div class="fixed inset-0 pointer-events-none grid-lines opacity-60 z-0"></div>
-
-  <!-- Top Status Banner -->
-  <div class="border-b border-theme-border bg-theme-black/90 font-mono text-[11px] tracking-wider text-neutral-400 py-2 px-4 sm:px-8 flex flex-wrap items-center justify-between gap-3 relative z-50">
-    <div class="flex items-center gap-2.5">
-      <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-      <span class="text-white font-medium">[ VERSION 2.3.4 AVAILABLE ]</span>
-      <span class="hidden sm:inline text-neutral-600">//</span>
-      <span class="hidden sm:inline">ANDROID ↔ MAC QUICK SHARE TRANSFERS</span>
-    </div>
-    <div class="flex items-center gap-4 text-neutral-500">
-      <span>VERSION: <strong class="text-white font-normal">v2.3.4</strong></span>
-      <span>PLATFORM: <strong class="text-white font-normal">macOS 14+ (ARM64 / x86_64)</strong></span>
-    </div>
-  </div>
-
-  <!-- Main Header Navigation -->
-  <header class="sticky top-0 z-40 border-b border-theme-border bg-theme-black/90 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-      
-      <!-- Brand Logo -->
-      <a href="../" class="flex items-center gap-3 group">
-        <div class="w-7 h-7 rounded border border-theme-border overflow-hidden bg-theme-surface flex items-center justify-center group-hover:border-neutral-500 transition-colors">
-          <img src="../assets/icon-128.png" alt="Nearby Drop Logo" class="w-full h-full object-cover">
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="font-display font-bold text-base tracking-tight text-white uppercase">Nearby Drop</span>
-          <span class="font-mono text-[10px] px-1.5 py-0.5 border border-theme-border text-neutral-400 hidden sm:inline">TUTORIAL</span>
-        </div>
-      </a>
-
-      <!-- Desktop Links -->
-      <nav class="flex items-center gap-6 font-mono text-xs text-neutral-400 tracking-wider">
-        <a href="../" class="hover:text-white transition-colors">← BACK TO HOMEPAGE</a>
-      </nav>
-
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-3">
-        <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener"
-           class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 border border-theme-border hover:border-neutral-500 bg-theme-surface text-neutral-300 font-mono text-xs tracking-wider transition-colors">
-          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
-          <span>GITHUB</span>
-        </a>
-
-        <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg"
-           class="inline-flex items-center gap-2 px-4 py-1.5 bg-white hover:bg-neutral-200 text-black font-mono text-xs font-semibold tracking-wider transition-colors">
-          <span>GET .DMG</span>
-          <span class="text-neutral-500">→</span>
-        </a>
-      </div>
+<body id="top" class="blog-page font-sans antialiased">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="fixed inset-0 pointer-events-none grid-lines opacity-60" aria-hidden="true"></div>
+  <header class="blog-header">
+    <div class="blog-header__inner">
+      <a class="brand" href="../"><img src="../assets/icon-128.png" width="30" height="30" alt=""><span>Nearby Drop</span></a>
+      <nav class="blog-nav" aria-label="Main navigation"><a href="../">Home</a><a href="../#guides">Guides</a><a href="../#features">Features</a></nav>
+      <label class="theme-control"><span class="sr-only">Color theme</span><select aria-label="Color theme" data-theme-select><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <a class="button button--small" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">Download</a>
     </div>
   </header>
+<main id="main" class="max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10">
 
-  <!-- Article Container -->
-  <main class="max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10">
-    
     <!-- Meta Breadcrumb -->
     <div class="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-neutral-400 mb-6">
-      <span class="px-2 py-0.5 border border-theme-border bg-theme-surface text-emerald-400">[ TUTORIAL // GUIDE ]</span>
+      <span class="px-2 py-0.5 border border-theme-border bg-theme-surface text-accent">[ TUTORIAL // GUIDE ]</span>
       <span class="text-neutral-600">//</span>
       <span>UPDATED <time datetime="2026-10-24">OCTOBER 24, 2026</time></span>
       <span class="text-neutral-600">//</span>
@@ -178,7 +116,7 @@
               <tr class="border-b border-theme-border align-top">
                 <th scope="row" class="p-3 text-white">Google Quick Share QR code</th>
                 <td class="p-3">Your Android model does not support AirDrop sharing.</td>
-                <td class="p-3">Both devices need internet access; Google says the encrypted download stays available for 24 hours. <a href="https://support.google.com/googleplay/answer/9286773?hl=en" target="_blank" rel="noopener" class="underline hover:text-white">See Google's QR transfer steps</a>.</td>
+                <td class="p-3">Both devices need internet access; Google says the encrypted download stays available for 24 hours. <a href="https://support.google.com/pixelphone/answer/9286773?hl=en" target="_blank" rel="noopener" class="underline hover:text-white">See Google's QR transfer steps</a>.</td>
               </tr>
               <tr class="align-top">
                 <th scope="row" class="p-3 text-white">USB MTP</th>
@@ -191,7 +129,7 @@
       </section>
 
       <div class="mt-12 pt-8 border-t border-theme-border">
-        <span class="font-mono text-xs text-emerald-400 uppercase tracking-widest block mb-2">[ NATIVE OPTION ]</span>
+        <span class="font-mono text-xs text-accent uppercase tracking-widest block mb-2">[ NATIVE OPTION ]</span>
         <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">Use native Quick Share-to-AirDrop when your phone supports it</h2>
         <p class="mb-4">This route does not require Nearby Drop. On your Mac, set AirDrop visibility to <strong>Everyone for 10 minutes</strong>. On Android, select the files, tap <strong>Share → Quick Share</strong>, choose the Mac, then accept the AirDrop notification.</p>
         <p>If your phone does not support native AirDrop interoperability, Google provides a Quick Share QR-code fallback for Mac. It requires internet access; Google says files are encrypted and available to download for 24 hours. Nearby Drop instead transfers over the reachable local network, or through a USB cable with MTP.</p>
@@ -207,39 +145,39 @@
 
       <!-- Method 1 -->
       <div class="mt-12 pt-8 border-t border-theme-border">
-        <span class="font-mono text-xs text-emerald-400 uppercase tracking-widest block mb-2">[ METHOD 01 ]</span>
+        <span class="font-mono text-xs text-accent uppercase tracking-widest block mb-2">[ METHOD 01 ]</span>
         <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">
           Wireless transfer with Quick Share
         </h2>
-        
+
         <p class="mb-6">
           On an Android device that supports Quick Share, select files and look for Nearby Drop in the device list while the Mac app is running. The Mac and phone need a reachable local network; discovery can vary with router and hotspot settings.
         </p>
 
         <!-- Steps Grid -->
         <div class="grid grid-cols-1 gap-4 font-mono text-xs">
-          
+
           <div class="p-5 bg-theme-surface border border-theme-border">
-            <span class="text-emerald-400 font-bold block mb-1">STEP 1: INSTALL NEARBY DROP ON YOUR MAC</span>
+            <span class="text-accent font-bold block mb-1">STEP 1: INSTALL NEARBY DROP ON YOUR MAC</span>
             <p class="font-sans text-xs text-neutral-400 leading-relaxed mb-3">
               Download the universal installer DMG from GitHub Releases and drag Nearby Drop into your <code class="text-white font-mono bg-theme-elevated px-1 py-0.5 border border-theme-border">/Applications</code> folder:
             </p>
             <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-neutral-200 text-black font-semibold text-xs tracking-wider uppercase transition-colors">
+               class="inline-flex items-center gap-2 px-4 py-2 bg-accent hover:bg-neutral-200 text-white font-semibold text-xs tracking-wider uppercase transition-colors">
               <span>DOWNLOAD NEARBY DROP (.DMG)</span>
               <span>↓</span>
             </a>
           </div>
 
           <div class="p-5 bg-theme-surface border border-theme-border">
-            <span class="text-emerald-400 font-bold block mb-1">STEP 2: CONNECT TO A REACHABLE LOCAL WI-FI NETWORK</span>
+            <span class="text-accent font-bold block mb-1">STEP 2: CONNECT TO A REACHABLE LOCAL WI-FI NETWORK</span>
             <p class="font-sans text-xs text-neutral-400 leading-relaxed">
               Connect the Mac and phone to the same local Wi-Fi network and allow local network access when macOS asks. LTE-only phone-hotspot discovery has not been verified and may not show the Mac; use a shared Wi-Fi network or USB MTP if discovery fails.
             </p>
           </div>
 
           <div class="p-5 bg-theme-surface border border-theme-border">
-            <span class="text-emerald-400 font-bold block mb-1">STEP 3: SELECT FILES ON ANDROID AND TAP QUICK SHARE</span>
+            <span class="text-accent font-bold block mb-1">STEP 3: SELECT FILES ON ANDROID AND TAP QUICK SHARE</span>
             <ol class="font-sans text-xs text-neutral-400 leading-relaxed list-decimal list-inside space-y-1 mt-2">
               <li>Open your phone's Gallery or Files app and select the photos, 4K videos, or folders you wish to send.</li>
               <li>Tap the <strong>Share</strong> button and choose <strong>Quick Share</strong>.</li>
@@ -248,7 +186,7 @@
           </div>
 
           <div class="p-5 bg-theme-surface border border-theme-border">
-            <span class="text-emerald-400 font-bold block mb-1">STEP 4: ACCEPT THE TRANSFER ON YOUR MAC</span>
+            <span class="text-accent font-bold block mb-1">STEP 4: ACCEPT THE TRANSFER ON YOUR MAC</span>
             <p class="font-sans text-xs text-neutral-400 leading-relaxed">
               Nearby Drop shows the incoming transfer request and matching confirmation PIN. Review it and click <strong>Accept</strong>. Received files are saved to your Downloads folder. Actual speed depends on the devices and network.
             </p>
@@ -258,7 +196,7 @@
       </div>
 
       <div class="mt-12 pt-8 border-t border-theme-border">
-        <span class="font-mono text-xs text-emerald-400 uppercase tracking-widest block mb-2">[ TROUBLESHOOTING ]</span>
+        <span class="font-mono text-xs text-accent uppercase tracking-widest block mb-2">[ TROUBLESHOOTING ]</span>
         <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">If your Mac does not appear in Quick Share</h2>
         <ol class="space-y-2 list-decimal list-inside text-neutral-400 text-xs sm:text-sm">
           <li>Make sure Nearby Drop is open and both devices can reach each other on the same local network. Guest Wi-Fi and client isolation can block discovery.</li>
@@ -281,7 +219,7 @@
 
       <!-- Method 3 -->
       <div class="mt-12 pt-8 border-t border-theme-border">
-          <span class="font-mono text-xs text-emerald-400 uppercase tracking-widest block mb-2">[ METHOD 02 ]</span>
+          <span class="font-mono text-xs text-accent uppercase tracking-widest block mb-2">[ METHOD 02 ]</span>
         <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">
           Direct USB-C Cable (Hardware MTP Storage Manager)
         </h2>
@@ -317,7 +255,7 @@
         </p>
         <div class="flex flex-wrap items-center justify-center gap-4">
           <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg"
-             class="px-6 py-3 bg-white text-black font-semibold text-xs tracking-wider uppercase hover:bg-neutral-200 transition-colors">
+             class="px-6 py-3 bg-accent text-white font-semibold text-xs tracking-wider uppercase hover:bg-neutral-200 transition-colors">
             DOWNLOAD .DMG (v2.3.4) →
           </a>
           <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener"
@@ -347,7 +285,7 @@
       <div>
         <h3 class="text-neutral-500 font-bold mb-3">// DOCUMENTATION</h3>
         <ul class="space-y-2 text-neutral-400">
-          <li><a href="how-to-transfer-files-mac-android.html" class="text-white hover:text-emerald-400 transition-colors">Tutorial Guide</a></li>
+          <li><a href="how-to-transfer-files-mac-android.html" class="text-white hover:text-accent transition-colors">Tutorial Guide</a></li>
           <li><a href="airdrop-alternative-for-android.html" class="hover:text-white transition-colors">AirDrop Comparison</a></li>
           <li><a href="quick-share-mac-windows.html" class="hover:text-white transition-colors">Mac &amp; Windows Guide</a></li>
           <li><a href="https://github.com/arslanbasharat-o-o/NearByDrop/blob/main/PROTOCOL.md" target="_blank" rel="noopener" class="hover:text-white transition-colors">Protocol Spec</a></li>
@@ -376,11 +314,13 @@
     <!-- Rule and Back to Top -->
     <div class="max-w-7xl mx-auto relative z-10 flex justify-between items-center px-6 sm:px-10 py-4 border-t border-white/10 font-mono text-[11px] tracking-wider uppercase text-neutral-500">
       <span>ENGINEERED BY ARSLAN BASHARAT</span>
-      <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="hover:text-white transition-colors flex items-center gap-1 cursor-pointer">
+      <a href="#top" class="hover:text-white transition-colors flex items-center gap-1 cursor-pointer">
         <span>BACK TO TOP</span>
         <span>↑</span>
-      </button>
+      </a>
     </div>
+
+    <nav class="legal-nav" aria-label="Legal information"><a href="../legal/privacy.html">Privacy</a><a href="../legal/terms.html">Terms</a><a href="../legal/security.html">Security</a><a href="../legal/licenses.html">Licenses</a></nav>
   </footer>
 
 </body>

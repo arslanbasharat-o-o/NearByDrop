@@ -11,6 +11,8 @@ Nearby Drop is a native macOS menu bar app for two-way file sharing between Mac 
 
 **[Website](https://arslanbasharat-o-o.github.io/NearByDrop/)** · **[Download](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)** · [Guides](https://arslanbasharat-o-o.github.io/NearByDrop/#guides) · [Report a problem](https://github.com/arslanbasharat-o-o/NearByDrop/issues) · [Contributing](CONTRIBUTING.md)
 
+[Privacy](https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html) · [Terms](https://arslanbasharat-o-o.github.io/NearByDrop/legal/terms.html) · [Security and data handling](https://arslanbasharat-o-o.github.io/NearByDrop/legal/security.html) · [License and third-party notices](https://arslanbasharat-o-o.github.io/NearByDrop/legal/licenses.html)
+
 Send over Wi-Fi, scan or show a QR code, connect by USB, or share from Finder.
 
 ## Screenshots
@@ -73,7 +75,7 @@ Starting with version 2.3.3, the app checks for updates at launch and hourly. Wh
 | Android USB MTP | Browse, upload, and download passed with Pixel and Nexus devices. |
 | Phone hotspot using LTE | Not verified; use a shared Wi-Fi network or USB if discovery does not work. |
 
-See [device verification notes](docs/DEVICE-VERIFICATION.md) for the tested scope and limitations. Results on one device do not guarantee compatibility with every Android phone or Windows PC.
+See the [device verification page](https://arslanbasharat-o-o.github.io/NearByDrop/device-verification.html) for the tested scope and limitations, or read the [Markdown source](docs/DEVICE-VERIFICATION.md). Results on one device do not guarantee compatibility with every Android phone or Windows PC.
 
 ## Network and privacy
 
@@ -85,6 +87,24 @@ See [device verification notes](docs/DEVICE-VERIFICATION.md) for the tested scop
 ## For developers
 
 See [Contributing](CONTRIBUTING.md) for the universal release build and automated test commands. Protocol notes are in [PROTOCOL.md](PROTOCOL.md); USB library notices and source details are in [Vendor/USB](Vendor/USB/README.md).
+
+### Website development
+
+The site is static HTML under `docs/` so GitHub Pages can serve its pages and search metadata without a client-side app shell. React is used only for the homepage component islands. From the repository root:
+
+```sh
+npm ci
+npx tsc --noEmit
+npm run test:site
+npm run build:css
+npm run build:components
+python3 scripts/check_site_seo.py
+python3 -m http.server 8765 --directory docs
+```
+
+The live project site is published under `/NearByDrop/`; keep asset, canonical, and sitemap paths aligned with that base path. See the [site privacy page](https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html) for browser storage and hosting details.
+
+To monitor search indexing, verify the URL-prefix property `https://arslanbasharat-o-o.github.io/NearByDrop/` in Google Search Console, submit `https://arslanbasharat-o-o.github.io/NearByDrop/sitemap.xml`, then use URL Inspection and the indexing reports to review important pages. Verification and monitoring require access to the project’s Search Console account; sitemap submission does not guarantee indexing.
 
 ## License
 

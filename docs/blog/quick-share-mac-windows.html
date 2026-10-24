@@ -7,7 +7,11 @@
   <meta name="description" content="Set up Quick Share between Nearby Drop for Mac and Windows. See current Windows requirements, setup, one-PC test results, and v2.3.4 limits.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
-  <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#17141c">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'">
+  <script src="../assets/site-theme.js"></script>
+<link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="Nearby Drop">
   <meta property="og:title" content="Quick Share Between Mac and Windows | Nearby Drop">
@@ -35,23 +39,21 @@
     "mainEntityOfPage": "https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html"
   }
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/site.css">
-  <style>body{background:#070707;color:#e4e4e7}.grid-lines{background-size:40px 40px;background-image:linear-gradient(to right,rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.03) 1px,transparent 1px)}::selection{background:#fff;color:#000}</style>
 </head>
-<body class="font-sans antialiased">
-  <div class="fixed inset-0 pointer-events-none grid-lines opacity-60"></div>
-  <div class="relative z-10 border-b border-theme-border bg-theme-black/90 px-5 py-3 font-mono text-xs text-neutral-400">
-    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-      <a class="font-semibold text-white" href="../">NEARBY DROP</a>
-      <span>VERSION 2.3.4 · macOS 14+ · APPLE SILICON &amp; INTEL</span>
-      <a class="text-white underline" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">DOWNLOAD THE MAC APP</a>
+<body id="top" class="blog-page font-sans antialiased">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="fixed inset-0 pointer-events-none grid-lines opacity-60" aria-hidden="true"></div>
+  <header class="blog-header">
+    <div class="blog-header__inner">
+      <a class="brand" href="../"><img src="../assets/icon-128.png" width="30" height="30" alt=""><span>Nearby Drop</span></a>
+      <nav class="blog-nav" aria-label="Main navigation"><a href="../">Home</a><a href="../#guides">Guides</a><a href="../#features">Features</a></nav>
+      <label class="theme-control"><span class="sr-only">Color theme</span><select aria-label="Color theme" data-theme-select><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <a class="button button--small" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">Download</a>
     </div>
-  </div>
-  <main class="relative z-10 mx-auto max-w-4xl px-5 py-14 sm:px-8 sm:py-20">
-    <p class="mb-5 font-mono text-xs uppercase tracking-widest text-emerald-400">MAC ↔ WINDOWS · QUICK SHARE GUIDE</p>
+  </header>
+<main id="main" class="relative z-10 mx-auto max-w-4xl px-5 py-14 sm:px-8 sm:py-20">
+    <p class="mb-5 font-mono text-xs uppercase tracking-widest text-accent">MAC ↔ WINDOWS · QUICK SHARE GUIDE</p>
     <h1 class="mb-6 font-display text-3xl font-bold uppercase leading-tight tracking-tight text-white sm:text-5xl">Quick Share Between Mac and Windows</h1>
     <p class="mb-6 font-mono text-xs text-neutral-400">BY ARSLAN BASHARAT · UPDATED <time datetime="2026-10-24">OCTOBER 24, 2026</time></p>
     <p class="mb-10 text-base leading-relaxed text-neutral-300 sm:text-lg">Nearby Drop is a macOS menu bar app that can send and receive files with compatible Windows Quick Share devices. It adds a Mac endpoint to a local Quick Share workflow; the Windows PC uses its own compatible Quick Share client.</p>
@@ -62,7 +64,7 @@
         <li>Google Quick Share for Windows requires 64-bit Windows 10 or later; ARM-based PCs require Windows 11 or later. Samsung PCs should use Samsung's Quick Share app.</li>
         <li>For Google's Windows client, enable Bluetooth and Wi-Fi or Ethernet, connect both devices to the same network, and keep them within 5 metres (16 feet). Set Windows device visibility so the Mac can find it.</li>
       </ul>
-      <p class="mt-4 text-sm leading-relaxed text-neutral-400">These are Google's client requirements. Nearby Drop is a separate macOS endpoint. See <a class="underline hover:text-white" href="https://support.google.com/android/answer/13801258" target="_blank" rel="noopener">Google's current Windows setup and troubleshooting guidance</a>. This guide's test covers one Windows PC, not every model or network.</p>
+      <p class="mt-4 text-sm leading-relaxed text-neutral-400">These are Google's client requirements. Nearby Drop is a separate macOS endpoint. See <a class="underline hover:text-white" href="https://support.google.com/android/answer/13801258?hl=en" target="_blank" rel="noopener">Google's current Windows setup and troubleshooting guidance</a>. This guide's test covers one Windows PC, not every model or network.</p>
     </section>
 
     <section class="mb-8 border border-theme-border bg-theme-surface p-6 sm:p-8">
@@ -105,12 +107,14 @@
     </section>
 
     <div class="flex flex-wrap gap-4">
-      <a class="bg-white px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-black" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">GET NEARBY DROP</a>
+      <a class="bg-accent px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-white" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">GET NEARBY DROP</a>
       <a class="border border-theme-border px-6 py-3 font-mono text-xs uppercase tracking-wider text-white" href="../#flow-title">SEE TRANSFER STATUS</a>
     </div>
   </main>
   <footer class="relative z-10 border-t border-theme-border px-5 py-6 font-mono text-xs text-neutral-500">
     <div class="mx-auto flex max-w-6xl flex-wrap justify-between gap-3"><span>NEARBY DROP · INDEPENDENT MACOS APP</span><a class="text-neutral-300 underline" href="../">BACK TO THE TRANSFER GUIDE</a></div>
+
+    <nav class="legal-nav" aria-label="Legal information"><a href="../legal/privacy.html">Privacy</a><a href="../legal/terms.html">Terms</a><a href="../legal/security.html">Security</a><a href="../legal/licenses.html">Licenses</a></nav>
   </footer>
 </body>
 </html>

@@ -1,5 +1,3 @@
-"use client"
-
 // Halftone Wordmark Footer — a site footer whose wordmark is set enormous and
 // cropped by the bottom edge, printed as a field of halftone dots. Each dot is
 // sized by how much of the letter covers its cell, so the type keeps its edges
@@ -147,7 +145,7 @@ const HWF_CSS = `
 }
 .hwf-root canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; }
 .hwf-top {
-  position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 1fr));
+  position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.25fr) repeat(4, minmax(0, 1fr));
   gap: 24px; padding: clamp(22px, 3.4vw, 40px) clamp(20px, 3.4vw, 44px) 0;
   font-family: var(--hwf-mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; line-height: 1.75;
 }
@@ -448,7 +446,8 @@ export default function HalftoneWordmarkFooter({
   }, [key])
 
   const toTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" })
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) window.scrollTo(0, 0)
+    else window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   return (

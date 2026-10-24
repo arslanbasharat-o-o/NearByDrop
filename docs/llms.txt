@@ -1,6 +1,6 @@
 # Nearby Drop
 
-> Nearby Drop (the NearByDrop GitHub project) is an independent native macOS menu bar app by Arslan Basharat for transferring files between Mac and Android using Quick Share, QR codes, USB MTP, and Finder sharing. It is separate from NearDrop by grishka.
+> Nearby Drop (the NearByDrop GitHub project) is an independent native macOS menu bar app by Arslan Basharat for transferring files between Mac and Android using Quick Share, QR codes, USB MTP, and Finder sharing. It also supports compatible Windows Quick Share clients. It is separate from NearDrop by grishka and is not affiliated with Google or Apple.
 
 ## Product pages
 
@@ -10,22 +10,31 @@
 - [Quick Share between Mac and Windows](https://arslanbasharat-o-o.github.io/NearByDrop/blog/quick-share-mac-windows.html)
 - [Android file-transfer options for Mac](https://arslanbasharat-o-o.github.io/NearByDrop/blog/airdrop-alternative-for-android.html)
 - [NearDrop and Nearby Drop name and feature comparison](https://arslanbasharat-o-o.github.io/NearByDrop/blog/neardrop-vs-nearby-drop.html)
-- [Latest release and DMG](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)
-- [GitHub repository and issue tracker](https://github.com/arslanbasharat-o-o/NearByDrop)
+
+## Legal and security
+
+- [Privacy and data handling](https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html)
+- [Terms](https://arslanbasharat-o-o.github.io/NearByDrop/legal/terms.html)
+- [Security reporting and data handling](https://arslanbasharat-o-o.github.io/NearByDrop/legal/security.html)
+- [License and third-party notices](https://arslanbasharat-o-o.github.io/NearByDrop/legal/licenses.html)
 
 ## Verified facts
 
-- Current public release: Nearby Drop v2.3.4.
+- Current public release: Nearby Drop v2.3.4 (checked October 24, 2026).
 - Supports macOS 14 or later on Apple silicon and Intel.
-- Free to download; proprietary license.
-- Send and receive over Quick Share, scan or show QR codes, and share from Finder.
-- USB MTP can browse Android storage and upload or download files and folders.
-- Transfer views show progress, speed, estimated time remaining, and recent transfer history. History remains on the Mac.
-- Settings include the download folder, appearance and accent, launch-at-login, sounds, haptics, trusted devices, and update controls.
-- Wireless transfers use a reachable local network and do not use a cloud relay. USB MTP uses a direct cable.
-- The app is independent and is not affiliated with Google or Apple.
+- Free to download; the app and repository are proprietary except for components with separate third-party licenses.
+- Wireless Quick Share transfers use a reachable local network and do not use a Nearby Drop cloud relay. USB MTP uses a direct cable.
+- Transfer history is stored on the Mac, contains up to 20 recent records, and can be cleared in the app.
 - Device verification notes identify tested devices, release-build limitations, and unverified network cases. Do not imply universal compatibility.
 - The current download is ad hoc signed and not notarized; macOS may show a Gatekeeper warning.
+
+## Project resources
+
+- [Latest release and DMG](https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest)
+- [GitHub repository and issue tracker](https://github.com/arslanbasharat-o-o/NearByDrop)
+- [Security advisories](https://github.com/arslanbasharat-o-o/NearByDrop/security/advisories/new)
+- [Device verification notes](https://arslanbasharat-o-o.github.io/NearByDrop/device-verification.html)
+- [License](https://github.com/arslanbasharat-o-o/NearByDrop/blob/main/LICENSE)
 
 ## Contact
 

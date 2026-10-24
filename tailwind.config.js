@@ -1,21 +1,27 @@
 module.exports = {
-  content: ["./docs/**/*.html"],
+  content: ["./docs/**/*.html", "./components/**/*.tsx", "./scripts/**/*.tsx"],
   darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
-        mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
-        display: ['"Space Grotesk"', "sans-serif"],
-        sans: ["Inter", "sans-serif"],
+        mono: ["ui-monospace", "SFMono-Regular", "monospace"],
+        display: ["system-ui", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        sans: ["system-ui", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
       },
       colors: {
+        background: "var(--surface)",
+        muted: "var(--surface-soft)",
+        border: "var(--line)",
+        "muted-foreground": "var(--muted)",
+        accent: "var(--accent)",
+        "accent-wash": "var(--accent-wash)",
         theme: {
-          black: "#070707",
-          surface: "#0e0e0e",
-          elevated: "#151515",
-          border: "#222222",
-          borderLight: "#333333",
-          accent: "#22c55e",
+          black: "rgb(var(--page-rgb) / <alpha-value>)",
+          surface: "rgb(var(--surface-rgb) / <alpha-value>)",
+          elevated: "rgb(var(--surface-soft-rgb) / <alpha-value>)",
+          border: "rgb(var(--line-rgb) / <alpha-value>)",
+          borderLight: "rgb(var(--line-rgb) / <alpha-value>)",
+          accent: "rgb(var(--accent-rgb) / <alpha-value>)",
         },
       },
     },

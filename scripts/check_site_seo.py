@@ -134,7 +134,8 @@ def main():
             errors.append(f"cannot read sitemap page {page_url}: {exc}")
             continue
 
-        expected_stylesheet = urljoin(page_url, "assets/site.css" if page_url.endswith("/") else "../assets/site.css")
+        page_depth = len(page_path.relative_to(ROOT / "docs").parts) - 1
+        expected_stylesheet = urljoin(page_url, "../" * page_depth + "assets/site.css")
         if expected_stylesheet not in {urljoin(page_url, href) for href in page.stylesheets}:
             errors.append(f"missing local site stylesheet: {page_path.relative_to(ROOT)}")
         if "cdn.tailwindcss.com" in source:
