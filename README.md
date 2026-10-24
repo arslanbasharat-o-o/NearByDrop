@@ -24,7 +24,7 @@ Nearby Drop is a native macOS menu bar app for sharing files with Android phones
 
 ## Similar names
 
-Nearby Drop is separate from [NearDrop by grishka](https://github.com/grishka/NearDrop). See the [sourced comparison of the two Mac apps](https://arslanbasharat-o-o.github.io/NearByDrop/blog/neardrop-vs-nearby-drop.html).
+This GitHub repository is named **NearByDrop**; the app is branded **Nearby Drop**. It is separate from [NearDrop by grishka](https://github.com/grishka/NearDrop). See the [sourced comparison of the two Mac apps](https://arslanbasharat-o-o.github.io/NearByDrop/blog/neardrop-vs-nearby-drop.html).
 
 ## Pick your path
 
