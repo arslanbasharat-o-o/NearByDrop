@@ -23,6 +23,13 @@
 
 Nearby Drop is a native macOS menu bar app for sharing files with Android phones and compatible Windows Quick Share clients. Send over Wi-Fi, scan or show a QR code, connect by USB, or use Finder’s Share menu.
 
+## See it in action
+
+<p align="center">
+  <img src="docs/assets/nearby-drop-receive.png" alt="Nearby Drop ready to receive files from Android" width="340">
+  <img src="docs/assets/nearby-drop-send.png" alt="Nearby Drop choosing files to send to a nearby device" width="340">
+</p>
+
 ## Similar names
 
 This GitHub repository is named **NearByDrop**; the app is branded **Nearby Drop**. It is separate from [NearDrop by grishka](https://github.com/grishka/NearDrop). See the [sourced comparison of the two Mac apps](https://arslanbasharat-o-o.github.io/NearByDrop/blog/neardrop-vs-nearby-drop.html).
@@ -65,7 +72,7 @@ Starting with version 2.3.3, the app checks for updates at launch and hourly. Wh
 | --- | --- |
 | Pixel 8 Pro ↔ Mac over local Wi-Fi | File transfer and both QR directions were manually confirmed. |
 | One Windows PC ↔ Mac | Both directions passed with the Google Quick Share app in a development build; the packaged release was not separately device-tested. |
-| Android USB MTP | Supported. Browse, upload, and download were not reverified in the latest device-test round. |
+| Android USB MTP | Browse, upload, and download passed with Pixel and Nexus devices. |
 | Phone hotspot using LTE | Not verified; use a shared Wi-Fi network or USB if discovery does not work. |
 
 See [device verification notes](docs/DEVICE-VERIFICATION.md) for the tested scope and limitations. Results on one device do not guarantee compatibility with every Android phone or Windows PC.
