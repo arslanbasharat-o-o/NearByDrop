@@ -1,4 +1,4 @@
-# Nearby Drop
+<h1 align="center">Nearby Drop</h1>
 
 <div align="center">
   <img src="docs/assets/icon.png" alt="Nearby Drop app icon" width="88" />
@@ -15,7 +15,7 @@
   </p>
 </div>
 
-<table>
+<table align="center">
   <tr>
     <td width="50%" align="center"><strong>Send</strong><br /><img src="docs/assets/screenshots/send.jpg" alt="Nearby Drop Send screen, searching for nearby devices" width="360" /></td>
     <td width="50%" align="center"><strong>Receive</strong><br /><img src="docs/assets/screenshots/receive.jpg" alt="Nearby Drop Receive screen, ready to receive files" width="360" /></td>
