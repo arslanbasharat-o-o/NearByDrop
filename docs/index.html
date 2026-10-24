@@ -1005,12 +1005,35 @@
       const radius = 95;
       const crop = 0.08;
       const grain = 0.35;
+      // Choose a different accent on each load, keeping it stable across theme changes.
+      const heroAccents = [
+        { name: 'emerald', light: [0, 145, 95], dark: [35, 225, 150] },
+        { name: 'teal', light: [0, 145, 160], dark: [35, 220, 225] },
+        { name: 'blue', light: [35, 115, 215], dark: [90, 165, 255] },
+        { name: 'violet', light: [125, 75, 200], dark: [185, 135, 255] },
+        { name: 'rose', light: [200, 65, 115], dark: [255, 115, 165] },
+        { name: 'orange', light: [205, 105, 30], dark: [255, 165, 75] }
+      ];
+      let previousAccent = -1;
+      try {
+        const previous = sessionStorage.getItem('nearby-drop-hero-accent');
+        previousAccent = heroAccents.findIndex(accent => accent.name === previous);
+      } catch {}
+      const accentIndex = previousAccent < 0
+        ? Math.floor(Math.random() * heroAccents.length)
+        : (previousAccent + 1 + Math.floor(Math.random() * (heroAccents.length - 1))) % heroAccents.length;
+      const heroAccent = heroAccents[accentIndex];
+      root.dataset.heroAccent = heroAccent.name;
+      try { sessionStorage.setItem('nearby-drop-hero-accent', heroAccent.name); } catch {}
+      // End accent selection.
+
       let bg, ink, warm;
       function updatePalette() {
         const light = document.documentElement.dataset.theme === 'light';
         bg = light ? '#ffffff' : '#090a0f';
-        ink = light ? [135, 135, 135] : [38, 45, 58];
-        warm = light ? [40, 110, 85] : [16, 185, 129];
+        warm = light ? heroAccent.light : heroAccent.dark;
+        ink = warm.map(channel => Math.round(light ? channel * 0.7 + 255 * 0.3 : channel * 0.42));
+        canvas.style.opacity = light ? '0.48' : '0.60';
       }
       updatePalette();
 
