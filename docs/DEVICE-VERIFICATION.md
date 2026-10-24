@@ -1,14 +1,20 @@
-# Device verification
+# Nearby Drop device verification
 
-These are hands-on checks, not a promise that every Android phone or Windows PC behaves the same way.
+Last reviewed: October 24, 2026.
 
-## Confirmed
+These are hands-on checks on specific devices. They do not establish compatibility with every Android phone, Windows PC, or network.
 
-- A Pixel 8 Pro transferred files with Nearby Drop over local Wi-Fi. Mac-generated and Android-generated QR flows both completed.
-- One Windows PC using Google Quick Share sent files to the Mac and received files from it. The successful checks used a development build after the Windows endpoint-name fix; the packaged release was not separately tested on that PC.
+## Passed checks
 
-## Not confirmed in the latest round
+- **Quick Share over local Wi-Fi:** Mac-to-Android and Android-to-Mac file transfers passed with a Pixel 8 Pro.
+- **Quick Share QR transfers:** Mac-generated QR sending and Android-generated QR receiving both passed with a Pixel 8 Pro. Android-to-Mac QR receiving was verified with the v2.3.2 Debug build.
+- **Android USB MTP:** browsing, upload, and download passed with Pixel and Nexus devices. The test payload was transferred over MTP; ADB was used only to read back the phone-side hash.
+- **Windows Quick Share:** sending to and receiving from Nearby Drop passed with one Windows PC in a Debug test build after protocol fixes.
 
-- USB MTP browsing, upload, and download were not completed as part of the latest logged device checks. The app supports MTP; unlock the phone and choose **File transfer / Android Auto** before testing it.
-- Discovery through an LTE phone hotspot was not verified because the mobile connection was unstable.
-- Other Windows PCs and Android models were not tested.
+The packaged v2.3.4 release includes these workflows, but it has not been separately device-tested for every listed setup. The Windows result covers one PC only.
+
+## Not verified
+
+- LTE-only phone-hotspot discovery; the mobile connection was unstable during testing.
+- Other Android models, additional Windows PCs, and every router or network configuration.
+- A maximum transfer speed. Speeds depend on the devices, network, cable, and storage.
