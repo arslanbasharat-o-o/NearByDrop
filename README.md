@@ -13,6 +13,7 @@
 </p>
 
 <p align="center">
+  <a href="https://arslanbasharat-o-o.github.io/NearByDrop/"><strong>Quick Share for Mac</strong></a> ·
   <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest"><strong>Download</strong></a> ·
   <a href="https://arslanbasharat-o-o.github.io/NearByDrop/#guides">Guides</a> ·
   <a href="https://github.com/arslanbasharat-o-o/NearByDrop/issues">Report a problem</a> ·
