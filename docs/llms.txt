@@ -1,6 +1,6 @@
 # Nearby Drop
 
-> Nearby Drop is an independent native macOS menu bar app by Arslan Basharat for transferring files between Mac and Android using Quick Share, QR codes, USB MTP, and Finder sharing.
+> Nearby Drop (the NearByDrop GitHub project) is an independent native macOS menu bar app by Arslan Basharat for transferring files between Mac and Android using Quick Share, QR codes, USB MTP, and Finder sharing. It is separate from NearDrop by grishka.
 
 ## Product pages
 
