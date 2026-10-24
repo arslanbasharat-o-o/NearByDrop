@@ -102,3 +102,22 @@ for (const initial of ['light', 'dark', 'system', null, 'invalid']) {
 }
 for (const match of html.matchAll(/<script(?![^>]*type="application\/ld\+json")[^>]*>([\s\S]*?)<\/script>/g)) new vm.Script(match[1]);
 console.log('Shared direct theme toggle passed: persistence, OS defaults, blocked storage, cross-tab sync, canvas notifications.');
+
+// Reloads must choose a different accent, even at random-value boundaries.
+const accentSource = html.split('// Choose a different accent on each load, keeping it stable across theme changes.')[1].split('// End accent selection.')[0];
+const names = ['emerald', 'teal', 'blue', 'violet', 'rose', 'orange'];
+for (const previous of [null, 'invalid', ...names]) {
+  for (const value of [0, 0.5, 0.999999]) {
+    const mockMath = Object.create(Math); mockMath.random = () => value;
+    let saved;
+    const root = { dataset: {} };
+    vm.runInNewContext(accentSource, { root, Math: mockMath, sessionStorage: { getItem: () => previous, setItem: (_, v) => { saved = v; } } });
+    assert.ok(names.includes(saved));
+    assert.equal(root.dataset.heroAccent, saved);
+    if (names.includes(previous)) assert.notEqual(saved, previous);
+  }
+}
+const fallbackRoot = { dataset: {} };
+vm.runInNewContext(accentSource, { root: fallbackRoot, sessionStorage: { getItem() { throw Error('Blocked'); }, setItem() { throw Error('Blocked'); } } });
+assert.ok(names.includes(fallbackRoot.dataset.heroAccent));
+console.log('Hero accent tests passed: no immediate repeats, valid colors, blocked-storage fallback.');
