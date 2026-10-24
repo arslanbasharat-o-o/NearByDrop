@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AirDrop Alternatives for Android and Mac – Nearby Drop</title>
-  <meta name="description" content="Compare Android-to-Mac transfer options, plus Nearby Drop Quick Share transfers between Mac and Windows, USB MTP, and cloud storage.">
+  <meta name="description" content="Compare AirDrop alternatives for Android and Mac: native Quick Share, Nearby Drop for Mac, USB MTP, and cloud transfer options, with device limits.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/airdrop-alternative-for-android.html">
 
   <meta property="og:type" content="article">
   <meta property="og:title" content="AirDrop Alternatives for Android and Mac">
-  <meta property="og:description" content="Compare native Android-to-Mac sharing with Nearby Drop for Android and Windows Quick Share, USB MTP, and cloud storage.">
+  <meta property="og:description" content="Compare native Quick Share-to-AirDrop, Nearby Drop for Mac, USB MTP, and cloud options for Android-to-Mac transfers, with device limits.">
   <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -21,7 +21,7 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="AirDrop Alternatives for Android and Mac – Nearby Drop">
-  <meta name="twitter:description" content="Compare Android-to-Mac transfer options, plus Nearby Drop Quick Share transfers between Mac and Windows, USB MTP, and cloud storage.">
+  <meta name="twitter:description" content="Compare AirDrop alternatives for Android and Mac: native Quick Share, Nearby Drop for Mac, USB MTP, and cloud transfer options, with device limits.">
   <meta name="twitter:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
 
   <link rel="icon" type="image/png" href="../assets/icon.png">
@@ -55,12 +55,13 @@
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": "AirDrop Alternatives for Android and Mac",
-    "description": "A practical comparison of native Quick Share and AirDrop on supported phones, Nearby Drop, USB MTP, and cloud storage for Android-to-Mac transfers.",
+    "description": "A practical comparison of native Quick Share-to-AirDrop, Nearby Drop for Mac, USB MTP, and cloud storage for Android-to-Mac transfers.",
     "author": {
       "@type": "Person",
       "name": "Arslan Basharat"
     },
     "datePublished": "2026-10-22",
+    "dateModified": "2026-10-24",
     "publisher": {
       "@type": "Organization",
       "name": "Nearby Drop",
@@ -134,6 +135,8 @@
       <span class="px-2 py-0.5 border border-theme-border bg-theme-surface text-emerald-400">[ GUIDE // ANDROID + MAC ]</span>
       <span class="text-neutral-600">//</span>
       <span>BY ARSLAN BASHARAT</span>
+      <span class="text-neutral-600">//</span>
+      <span>UPDATED OCT 24, 2026</span>
     </div>
 
     <h1 class="font-display text-3xl sm:text-5xl font-bold uppercase tracking-tight text-white mb-6 leading-tight">
@@ -141,45 +144,109 @@
     </h1>
 
     <p class="text-neutral-300 text-base sm:text-lg leading-relaxed mb-8">
-      Android-to-Mac sharing now has more than one path. Some Android phones support Google's native Quick Share-to-AirDrop interoperability; other setups can use a Mac-side Quick Share client, USB MTP, or cloud storage. Availability varies by phone and software.
+      Android-to-Mac sharing now has several paths. Some Android phones can use Google's native Quick Share-to-AirDrop compatibility; other setups may use a Mac-side Quick Share client, USB MTP, or cloud storage. The best choice depends on the phone model, transfer direction, network, and whether you want the files to pass through a cloud service.
     </p>
 
     <div class="space-y-8 text-neutral-300 font-sans text-sm sm:text-base leading-relaxed">
       <section class="p-6 sm:p-8 border border-theme-border bg-theme-surface">
-        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">1. Quick Share between Mac, Android, and Windows</h2>
+        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">1. Native Quick Share and AirDrop on supported Android phones</h2>
         <p class="mb-4">
-          Nearby Drop is an independent macOS menu bar app for sending and receiving files with compatible Android and Windows Quick Share devices, browsing Android storage over USB MTP, and sharing from Finder. Two-way Windows support ships in v2.3.1; both directions passed in a final Debug test with one Windows PC, while the packaged release was not separately device-tested. Nearby Drop runs on the Mac; no Nearby Drop Windows app is required. See the <a class="underline hover:text-white" href="quick-share-mac-windows.html">Mac and Windows setup guide</a>. Broader Windows device testing is still limited.
+          Google has made Quick Share compatible with AirDrop on selected Android devices. Its current help page lists Pixel 8a or later and certain Samsung, Oppo, OnePlus, Vivo, Xiaomi, Honor, Transsion, and Motorola phones for sending files to macOS. The Mac receives through AirDrop, so this is not a Google Quick Share app installed on the Mac. Google announced the Pixel 8a and Pixel 9a expansion in its June 2026 Pixel update. Check Google's <a class="underline hover:text-white" href="https://support.google.com/pixelphone/answer/9286773?hl=en" target="_blank" rel="noopener">current Quick Share compatibility guide</a> for the exact model and workflow.
         </p>
         <p class="mb-4">
-          Wireless discovery needs a reachable local network. Guest Wi-Fi, client isolation, and hotspot behavior can affect whether the Mac appears. LTE-only phone-hotspot discovery has not been verified for this release. Transfer speed varies with the devices, signal, and network.
+          For Android-to-Mac sharing, the Mac must be discoverable in AirDrop, and the Android user chooses the Mac from Quick Share. Google says to set AirDrop visibility to “Everyone for 10 minutes” and accept the incoming AirDrop notification. This built-in path is a good first choice when the phone supports it and direct Quick Share-to-AirDrop sharing covers the files and direction you need.
         </p>
         <p>
-          Mac-generated QR sending is a separate Mac-to-Android path and passed with a Pixel 8 Pro in a Debug test build. Nearby Drop's in-app camera also received an Android-generated QR transfer from Pixel 8 Pro during v2.3.2 validation; this fix is included in the current release.
+          The reverse direction has its own requirements. Google's help page describes Mac-to-Android receiving separately from Android-to-Mac sending, and the supported model list can differ by direction. Check the current instructions for the specific phone and direction you plan to use; do not infer reverse compatibility from the Android-to-Mac list or support on one Pixel generation.
         </p>
       </section>
 
       <section class="p-6 sm:p-8 border border-theme-border bg-theme-surface">
-        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">2. USB MTP with Nearby Drop</h2>
+        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">2. Nearby Drop as a Mac-side Quick Share client</h2>
+        <p class="mb-4">
+          Nearby Drop is an independent macOS menu bar app for sending and receiving files with compatible Android Quick Share devices. It also has Android USB MTP browsing, an in-app camera for Android Quick Share QR codes, Mac-generated QR sharing, and a Finder Share extension. The app runs on the Mac; the Android phone uses its existing Quick Share feature. It is free to download for macOS 14 or later on Apple silicon and Intel, and it is not affiliated with Google or Apple.
+        </p>
+        <p class="mb-4">
+          Nearby Drop is useful when you want a separate Mac endpoint for a local-network transfer, or need its USB, QR, or Finder workflows. It is not a replacement for the Android feature itself: both devices still need a compatible Quick Share setup and a reachable network for wireless discovery. Guest Wi-Fi, client isolation, firewalls, local-network permissions, and hotspot behavior can affect whether the Mac appears. Transfer speed varies with the devices, signal, and network.
+        </p>
         <p>
-          A USB cable provides a wired option when wireless discovery is inconvenient. Connect the phone, unlock it, select File Transfer or MTP in Android's USB prompt, then browse and copy files from Nearby Drop's USB tab. Speed depends on the phone, cable, and storage.
+          The project has documented two-way Quick Share transfers over local Wi-Fi with a Pixel 8 Pro. The packaged v2.3.4 app includes the tested workflows, but that release has not been separately tested with every Android model or network. See the dated <a class="underline hover:text-white" href="https://github.com/arslanbasharat-o-o/NearByDrop/blob/main/docs/DEVICE-VERIFICATION.md" target="_blank" rel="noopener">device verification notes</a> before relying on broader compatibility. One tested phone is evidence for that setup, not a guarantee for every phone.
         </p>
       </section>
 
       <section class="p-6 sm:p-8 border border-theme-border bg-theme-surface">
-        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">3. Cloud storage</h2>
+        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">3. QR-code transfers</h2>
+        <p class="mb-4">
+          Quick Share QR codes can help when nearby-device discovery is not the right path. Google's Android help explains a QR option for sending from Android to an iPhone, iPad, or Mac: the recipient scans the code, then downloads the files from a Google page. Google says that flow requires internet on both devices, encrypts the files, stores them on Google servers for up to 24 hours, and has a 10 GB per 24-hour sharing limit. That can be convenient when the devices cannot discover each other directly, but it is a cloud-assisted transfer rather than a local-only connection.
+        </p>
+        <p class="mb-4">
+          Nearby Drop has a different QR workflow. It can show a code from the Mac for an Android phone to scan, and its in-app camera can scan an Android-generated Quick Share code to receive files. Both directions were checked with a Pixel 8 Pro; Android-to-Mac QR receiving was validated with the v2.3.2 Debug build. The current release includes the workflow, but the exact test scope is in the <a class="underline hover:text-white" href="https://github.com/arslanbasharat-o-o/NearByDrop/blob/main/docs/DEVICE-VERIFICATION.md" target="_blank" rel="noopener">device notes</a>. Choose the QR path supported by your phone and check whether it uses a local connection or a cloud download before sending private or large files.
+        </p>
         <p>
-          A cloud drive can move files between devices that are not on the same network. It requires an internet connection and usually involves uploading from one device and downloading on the other. Check the provider's storage, privacy, and data settings.
+          A QR code is a connection method, not a promise of universal compatibility. Keep the receiving device close, verify the transfer request on screen, and avoid scanning a code from an unknown source. If a particular Android camera does not recognize a Quick Share code, try its system QR scanner or the device's Quick Share screen.
+        </p>
+      </section>
+
+      <section class="p-6 sm:p-8 border border-theme-border bg-theme-surface">
+        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">4. USB MTP with Nearby Drop</h2>
+        <p class="mb-4">
+          USB MTP is a wired option for copying files between an Android phone and Mac. Connect the phone, unlock it, choose File Transfer or MTP in the Android USB prompt, and open the USB tab in Nearby Drop. You can browse the phone's exposed storage, upload files from the Mac, or download files and folders to the Mac. The USB path avoids wireless device discovery and does not depend on both devices joining the same Wi-Fi network.
+        </p>
+        <p>
+          MTP is a practical choice for a large local copy, a weak Wi-Fi environment, or a phone whose wireless Quick Share workflow is not a fit. Keep the phone unlocked during the connection, use a data-capable cable, and check the phone's USB mode if it does not appear. Speed depends on the Android device, cable, port, and storage. The project has verified browsing, upload, and download with Pixel and Nexus devices; that does not certify every handset or cable.
+        </p>
+      </section>
+
+      <section class="p-6 sm:p-8 border border-theme-border bg-theme-surface">
+        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">5. Cloud storage</h2>
+        <p class="mb-4">
+          A cloud drive works when the Mac and Android phone are far apart, when you need a shared folder, or when a copy should remain available after the original devices are offline. Upload from one device and download on the other. This is often the simplest remote workflow, but it requires internet access and uses the provider's account, storage quota, retention settings, and privacy controls.
+        </p>
+        <p>
+          For one-time nearby transfers, a direct local connection or USB cable avoids uploading a second copy to a cloud provider. For a recurring folder or a transfer between different networks, cloud storage may be more convenient. Check the provider's sharing permissions and remove public links when they are no longer needed.
         </p>
       </section>
 
       <section class="p-6 sm:p-8 border border-theme-border bg-theme-surface">
         <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">Which option should you use?</h2>
+        <p class="mb-4">
+          Start with the direction of transfer, then check model support. “Can Quick Share work with a Mac?” has more than one answer: Android-to-Mac sending, Mac-to-Android receiving, and QR-based downloads can use different compatibility rules. A phone that appears in one workflow may not have the same features in the reverse direction.
+        </p>
         <ul class="list-disc list-inside space-y-2">
-          <li>Choose Nearby Drop for Android Quick Share or for a Mac-to-Windows Quick Share transfer when both devices can discover one another on the local network.</li>
-          <li>Choose USB MTP for a wired connection or when local wireless discovery is unavailable.</li>
-          <li>Choose cloud storage when the devices are apart or a shared local connection is not practical.</li>
-          <li>Use native Quick Share-to-AirDrop when your Android phone and Mac meet Google's current compatibility requirements; otherwise use Nearby Drop, USB MTP, or cloud storage.</li>
+          <li><strong class="text-white">For a supported phone-to-Mac transfer:</strong> try Google's built-in Quick Share-to-AirDrop path first. Check the current device list and make the Mac discoverable in AirDrop.</li>
+          <li><strong class="text-white">For a Mac-side Quick Share client:</strong> consider Nearby Drop when your Android setup is compatible and both devices can see each other on the local network. See the documented Pixel 8 Pro test scope.</li>
+          <li><strong class="text-white">For a cable transfer:</strong> use USB MTP when wireless discovery is inconvenient or you want to browse the phone's storage from the Mac.</li>
+          <li><strong class="text-white">For a QR transfer:</strong> use the code flow available on your phone; Google's QR download uses an internet-connected Google-hosted link, while Nearby Drop's in-app QR flow is a separate Mac endpoint.</li>
+          <li><strong class="text-white">For devices in different places:</strong> use cloud storage or a service that is designed for remote sharing.</li>
         </ul>
+        <p class="mt-4">
+          If your need is simply to send one file from a newly supported Android phone to a Mac, an extra app may not be necessary. If you also need to receive from Android through a Mac client, browse files over USB, share from Finder, or work with a compatible Windows Quick Share client, compare those specific requirements with Nearby Drop's current release notes and test notes before downloading.
+        </p>
+      </section>
+
+      <section class="p-6 sm:p-8 border border-theme-border bg-theme-surface">
+        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">Connection and privacy checks</h2>
+        <p class="mb-4">
+          For native Quick Share-to-AirDrop, confirm that the Android model supports the direction you want, turn on the required visibility on both devices, and accept the AirDrop prompt on the Mac. Google's guidance uses “Everyone for 10 minutes” on the Apple device. The temporary visibility setting is important: return it to your preferred AirDrop setting after the transfer.
+        </p>
+        <p class="mb-4">
+          For Nearby Drop over Wi-Fi, connect the devices to a reachable local network. Guest Wi-Fi, router client isolation, firewalls, and local-network permissions can stop discovery even if both devices have Wi-Fi enabled. If the Mac is not listed, check those conditions before repeatedly retrying a transfer. LTE-only phone-hotspot discovery has not been verified for this release.
+        </p>
+        <p>
+          The transfer route matters for privacy. Nearby Drop documents its wireless Quick Share sessions as encrypted and direct between the devices, without a Nearby Drop cloud relay; USB MTP uses the cable. Google's QR-to-Mac download path is encrypted but uses Google's servers and internet access. Cloud-storage transfers use the selected provider. Choose based on where the files travel, not only on which option has the fewest taps.
+        </p>
+      </section>
+
+      <section class="p-6 sm:p-8 border border-theme-border bg-theme-surface">
+        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">Common questions</h2>
+        <h3 class="font-semibold text-white">Is Nearby Drop an official Google Quick Share app?</h3>
+        <p class="mb-4">No. Nearby Drop is an independent macOS application by Arslan Basharat. It is not made by or affiliated with Google or Apple. It implements a Mac-side Quick Share workflow; the Android phone uses its own Quick Share feature.</p>
+        <h3 class="font-semibold text-white">Can every Android phone use Quick Share with a Mac?</h3>
+        <p class="mb-4">No single answer covers every phone and direction. Google's native AirDrop compatibility is available on selected models and varies by workflow. Nearby Drop has hands-on Quick Share tests with a Pixel 8 Pro, but that test does not establish support for every Android phone. Check both the Google compatibility page and Nearby Drop's test notes for your exact setup.</p>
+        <h3 class="font-semibold text-white">Does Nearby Drop need the internet for a local Quick Share transfer?</h3>
+        <p class="mb-4">Nearby Drop's documented Quick Share transfer path uses a reachable local network and does not relay the file through its own cloud service. Google's Android-to-Mac QR download is a separate cloud-assisted method that needs internet. If the devices cannot reach each other locally, use a compatible native, USB, or remote-sharing option.</p>
+        <h3 class="font-semibold text-white">Is Nearby Drop free and what macOS version does it need?</h3>
+        <p>Nearby Drop is free to download under a proprietary license and requires macOS 14 or later on Apple silicon or Intel. The current v2.3.4 download is ad hoc signed and not notarized, so macOS may show a Gatekeeper warning. Review the official release information before installing.</p>
       </section>
 
       <section class="p-6 sm:p-8 border border-theme-border bg-theme-black">
@@ -192,6 +259,16 @@
           <a href="how-to-transfer-files-mac-android.html" class="px-6 py-3 border border-theme-border bg-theme-surface text-neutral-300 font-semibold text-xs tracking-wider uppercase hover:text-white transition-colors">READ THE SETUP GUIDE</a>
           <a href="neardrop-vs-nearby-drop.html" class="px-6 py-3 border border-theme-border bg-theme-surface text-neutral-300 font-semibold text-xs tracking-wider uppercase hover:text-white transition-colors">NEARDROP VS NEARBY DROP</a>
         </div>
+      </section>
+
+      <section class="p-6 sm:p-8 border border-theme-border bg-theme-surface">
+        <h2 class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white mb-4">Sources and hands-on test scope</h2>
+        <p class="mb-4">
+          Google's <a class="underline hover:text-white" href="https://support.google.com/pixelphone/answer/9286773?hl=en" target="_blank" rel="noopener">Quick Share help page</a> describes supported Android devices, the AirDrop visibility steps, and the QR download flow. Google also announced the Pixel 8a and Pixel 9a expansion in its <a class="underline hover:text-white" href="https://blog.google/products-and-platforms/devices/pixel/june-2026-pixel-drop/" target="_blank" rel="noopener">June 2026 Pixel update</a>. These sources can change as features roll out, so the linked help page is the reference for current requirements.
+        </p>
+        <p>
+          Nearby Drop's <a class="underline hover:text-white" href="https://github.com/arslanbasharat-o-o/NearByDrop/blob/main/docs/DEVICE-VERIFICATION.md" target="_blank" rel="noopener">device verification notes</a> identify the Pixel 8 Pro, USB MTP checks, one Windows PC, and the limits of the tests. Read the <a class="underline hover:text-white" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/tag/v2.3.4" target="_blank" rel="noopener">v2.3.4 release notes</a> for the current build. Results on one device are not a compatibility guarantee for all phones, PCs, networks, or macOS versions.
+        </p>
       </section>
     </div>
   </main>
