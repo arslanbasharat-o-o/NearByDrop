@@ -33,8 +33,14 @@ Before submitting a pull request:
 5. **License**: Do not assume a public pull request grants permission to use your code. Written permission is required before code can be merged.
 
 ## Commit Messages
-Use plain English. Five words is ideal; ten words is the limit. Say what changed, and add a little humor only when it comes naturally.
+Use plain, friendly English. Five words is ideal; ten is the limit. Say what changed, add a small joke or user-friendly nudge when it fits, and skip long bodies.
 
 - Keep QR codes on speaking terms
 - Make file sending less dramatic
 - Smooth out the settings panel
+
+## Release Notes
+
+- Title releases `Nearby Drop vX.Y.Z`.
+- Use one short summary and at most three brief bullets. Keep it friendly and easy to scan; a small joke or useful user prompt is welcome when the change stays clear. Keep compatibility, signing, installation, and update details accurate.
+- Preserve published tags and download assets. Never rewrite shared history or push to GitHub without the user's approval.
