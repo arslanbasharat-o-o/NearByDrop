@@ -18,6 +18,10 @@
 - Current public release: Nearby Drop v2.3.4.
 - Supports macOS 14 or later on Apple silicon and Intel.
 - Free to download; proprietary license.
+- Send and receive over Quick Share, scan or show QR codes, and share from Finder.
+- USB MTP can browse Android storage and upload or download files and folders.
+- Transfer views show progress, speed, estimated time remaining, and recent transfer history. History remains on the Mac.
+- Settings include the download folder, appearance and accent, launch-at-login, sounds, haptics, trusted devices, and update controls.
 - Wireless transfers use a reachable local network and do not use a cloud relay. USB MTP uses a direct cable.
 - The app is independent and is not affiliated with Google or Apple.
 - Device verification notes identify tested devices, release-build limitations, and unverified network cases. Do not imply universal compatibility.
