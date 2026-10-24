@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parent.parent
 SITE_PATH = "/NearByDrop/"
 SITEMAP = ROOT / "docs/sitemap.xml"
+TEXT_SITEMAP = ROOT / "docs/sitemap.txt"
 NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 
 
@@ -106,6 +107,12 @@ def main():
         errors.append("sitemap contains no valid URLs")
     if len(urls) != len(set(urls)):
         errors.append("sitemap contains duplicate URLs")
+    try:
+        text_urls = [line.strip() for line in TEXT_SITEMAP.read_text(encoding="utf-8").splitlines() if line.strip()]
+        if text_urls != urls:
+            errors.append("plain-text sitemap URLs must match the XML sitemap URLs in order")
+    except OSError as exc:
+        errors.append(f"cannot read {TEXT_SITEMAP}: {exc}")
 
     titles, descriptions, headings = set(), set(), set()
     for page_url in urls:
