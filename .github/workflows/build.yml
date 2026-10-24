@@ -10,10 +10,6 @@ on:
       - "**/*.md"
   pull_request:
     branches: [main, beta]
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-      - "**/*.md"
   workflow_dispatch:
 
 permissions:
