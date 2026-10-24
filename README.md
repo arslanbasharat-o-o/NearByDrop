@@ -22,8 +22,8 @@ Nearby Drop is a native macOS menu bar app for sending and receiving files with 
 ## Screenshots
 
 <div align="center">
-  <img src="docs/assets/nearby-drop-receive.webp" alt="Nearby Drop Receive tab ready to accept files or scan a Quick Share QR code; the device is shown as This Mac." width="46%" />
-  <img src="README-assets/nearby-drop-send-readme-matched.png" alt="Nearby Drop Send tab showing Choose Files and QR Share, with the visible device name set to This Mac." width="46%" />
+  <img src="README-assets/nearby-drop-receive-readme-aligned.png" alt="Nearby Drop Receive tab ready to accept files or scan a Quick Share QR code; the device is shown as This Mac." width="46%" />
+  <img src="README-assets/nearby-drop-send-readme-aligned.png" alt="Nearby Drop Send tab showing Choose Files and QR Share, with the visible device name set to This Mac." width="46%" />
 </div>
 
 <details>
