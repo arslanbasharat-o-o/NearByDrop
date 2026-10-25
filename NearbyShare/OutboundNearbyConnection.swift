@@ -166,7 +166,9 @@ class OutboundNearbyConnection:NearbyConnection{
 		super.handleConnectionClosure()
 		guard !resultReported || currentState == .finishing else { return }
 		NSLog("[NearByDrop] Outbound connection closed in state: %@, lastError: %@", String(describing: currentState), String(describing: lastError))
-		if currentState == .finishing && lastError == nil {
+		let filesWereAcknowledged = !urlsToSend.isEmpty && urlsToSend.allSatisfy(\.isFileURL) && pendingAcknowledgements.isEmpty
+		// A peer reset after saving every file can race the final disconnect.
+		if currentState == .finishing && (lastError == nil || filesWereAcknowledged) {
 			currentState = .completed
 			closeAllTransferHandles()
 			guard !resultReported else { return }
