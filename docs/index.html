@@ -113,7 +113,7 @@
     .app-tour-step-copy { display: grid; gap: 0.35rem; }
     .app-tour-step-copy strong { color: var(--site-title); font-weight: 600; }
     .app-tour-step-copy span { font-size: 14px; line-height: 1.5; }
-    .app-tour-preview { min-width: 0; }
+    .app-tour-preview { min-width: 0; border-radius: 1rem; }
     .app-tour-screen { display: none; margin: 0; }
     .app-tour-screen img { display: block; width: 100%; height: auto; border-radius: 10px; }
     #app-screen-send:checked ~ .app-tour-steps label[for="app-screen-send"],
@@ -361,7 +361,7 @@
           <label class="app-tour-step" for="app-screen-transfers"><span class="app-tour-step-index">03</span><span class="app-tour-step-copy"><strong>Transfers</strong><span>See sent and received files in one place.</span></span></label>
           <label class="app-tour-step" for="app-screen-usb"><span class="app-tour-step-index">04</span><span class="app-tour-step-copy"><strong>USB</strong><span>Connect an Android phone for file transfer.</span></span></label>
         </div>
-        <div class="app-tour-preview border border-theme-border bg-theme-surface p-2 sm:p-3 rounded-2xl">
+        <div class="app-tour-preview border border-theme-border bg-theme-surface p-2">
           <figure class="app-tour-screen app-tour-screen--send"><a href="assets/screenshots/send.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/send.jpg" alt="Nearby Drop Send screen with file selection and nearby device controls" width="772" height="1012" loading="lazy" decoding="async"></a></figure>
           <figure class="app-tour-screen app-tour-screen--receive"><a href="assets/screenshots/receive.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/receive.jpg" alt="Nearby Drop Receive screen with QR scan and connection instructions" width="772" height="1012" loading="lazy" decoding="async"></a></figure>
           <figure class="app-tour-screen app-tour-screen--transfers"><a href="assets/screenshots/transfers.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/transfers.jpg" alt="Nearby Drop Transfers screen showing no transfers yet" width="772" height="1012" loading="lazy" decoding="async"></a></figure>
