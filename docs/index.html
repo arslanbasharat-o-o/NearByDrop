@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nearby Drop: Quick Share for Mac</title>
-  <meta name="description" content="Nearby Drop is a free Quick Share for Mac app for two-way Android file transfers, plus USB MTP, QR tools, Finder sharing, and Windows interoperability.">
+  <title>Android File Transfer for Mac | Quick Share | Nearby Drop</title>
+  <meta name="description" content="Nearby Drop is a Mac app for Android file transfers: Quick Share over Wi-Fi, USB MTP, QR sharing, and Finder. Free for macOS 14+.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <link rel="alternate" type="text/plain" href="https://arslanbasharat-o-o.github.io/NearByDrop/llms.txt">
@@ -14,8 +14,8 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/">
   <meta property="og:site_name" content="Nearby Drop">
-  <meta property="og:title" content="Nearby Drop: Quick Share for Mac">
-  <meta property="og:description" content="Nearby Drop is a free Quick Share for Mac app for two-way Android file transfers, plus USB MTP, QR tools, Finder sharing, and Windows interoperability.">
+  <meta property="og:title" content="Android File Transfer for Mac | Quick Share | Nearby Drop">
+  <meta property="og:description" content="Nearby Drop is a Mac app for Android file transfers: Quick Share over Wi-Fi, USB MTP, QR sharing, and Finder. Free for macOS 14+.">
   <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -24,8 +24,8 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Nearby Drop: Quick Share for Mac">
-  <meta name="twitter:description" content="Nearby Drop is a free Quick Share for Mac app for two-way Android file transfers, plus USB MTP, QR tools, Finder sharing, and Windows interoperability.">
+  <meta name="twitter:title" content="Android File Transfer for Mac | Quick Share | Nearby Drop">
+  <meta name="twitter:description" content="Nearby Drop is a Mac app for Android file transfers: Quick Share over Wi-Fi, USB MTP, QR sharing, and Finder. Free for macOS 14+.">
   <meta name="twitter:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
 
   <link rel="icon" type="image/png" href="assets/icon.png">
@@ -75,23 +75,68 @@
       grid-template-columns: minmax(0, 1fr);
       gap: 2rem;
     }
-    .hero-screenshot-grid {
+    .app-tour {
       display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 0.75rem;
-    }
-    .hero-screenshot-grid > figure {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      align-items: center;
+      gap: clamp(1.5rem, 5vw, 4rem);
+      max-width: 960px;
       min-width: 0;
+      margin: 2rem auto 0;
+      padding: 0;
+      border: 0;
     }
-    .hero-screenshot-grid img {
-      display: block;
-      width: 100%;
-      height: auto;
+    .app-tour-choice {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
-    @media (min-width: 640px) {
-      .hero-screenshot-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    .app-tour-steps { display: grid; gap: 0.5rem; }
+    .app-tour-step {
+      display: grid;
+      grid-template-columns: 2rem minmax(0, 1fr);
+      gap: 0.75rem;
+      align-items: start;
+      padding: 1rem;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      color: var(--site-muted);
+      cursor: pointer;
+      transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+    }
+    .app-tour-step:hover { color: var(--site-title); background: color-mix(in srgb, var(--site-title) 4%, transparent); }
+    .app-tour-step-index { padding-top: 0.1rem; font: 12px 'IBM Plex Mono', monospace; color: var(--site-subtle); }
+    .app-tour-step-copy { display: grid; gap: 0.35rem; }
+    .app-tour-step-copy strong { color: var(--site-title); font-weight: 600; }
+    .app-tour-step-copy span { font-size: 14px; line-height: 1.5; }
+    .app-tour-preview { min-width: 0; border-radius: 1rem; }
+    .app-tour-screen { display: none; margin: 0; }
+    .app-tour-screen img { display: block; width: 100%; height: auto; border-radius: 10px; }
+    #app-screen-send:checked ~ .app-tour-steps label[for="app-screen-send"],
+    #app-screen-receive:checked ~ .app-tour-steps label[for="app-screen-receive"],
+    #app-screen-transfers:checked ~ .app-tour-steps label[for="app-screen-transfers"],
+    #app-screen-usb:checked ~ .app-tour-steps label[for="app-screen-usb"] {
+      border-color: var(--site-line);
+      background: var(--site-surface);
+      color: var(--site-title);
+    }
+    #app-screen-send:focus-visible ~ .app-tour-steps label[for="app-screen-send"],
+    #app-screen-receive:focus-visible ~ .app-tour-steps label[for="app-screen-receive"],
+    #app-screen-transfers:focus-visible ~ .app-tour-steps label[for="app-screen-transfers"],
+    #app-screen-usb:focus-visible ~ .app-tour-steps label[for="app-screen-usb"] { outline: 2px solid var(--site-title); outline-offset: 3px; }
+    #app-screen-send:checked ~ .app-tour-preview .app-tour-screen--send,
+    #app-screen-receive:checked ~ .app-tour-preview .app-tour-screen--receive,
+    #app-screen-transfers:checked ~ .app-tour-preview .app-tour-screen--transfers,
+    #app-screen-usb:checked ~ .app-tour-preview .app-tour-screen--usb { display: block; }
+    @media (max-width: 767px) {
+      .app-tour { grid-template-columns: minmax(0, 1fr); gap: 1rem; max-width: 560px; }
+      .app-tour-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .app-tour-step { grid-template-columns: 1.5rem minmax(0, 1fr); gap: 0.5rem; padding: 0.75rem; }
+      .app-tour-step-copy span { font-size: 12px; }
     }
     @media (min-width: 1024px) {
       .hero-proof-layout {
@@ -110,10 +155,6 @@
     .skip-link:focus { top: 12px; }
     .hero-proof-layout { display: block; max-width: 850px; }
     #hwf-canvas { opacity: .35; }
-    .hero-screenshot-grid { max-width: 760px; margin: 32px auto 0; align-items: start; }
-    .hero-screenshot-grid figure { padding: 16px; border-radius: 16px; }
-    .hero-screenshot-grid figcaption { font-size: 12px; text-align: center; }
-    .hero-screenshot-grid img { border-radius: 10px; }
     .mobile-navigation { display: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
     .mobile-navigation summary { cursor: pointer; padding: 12px 6px; }
     .mobile-navigation nav { position: absolute; left: 0; right: 0; top: 100%; padding: 16px 24px; background: #111; border-bottom: 1px solid #444; }
@@ -123,7 +164,6 @@
       .mobile-navigation { display: block; }
     }
     @media (max-width: 639px) {
-      .hero-screenshot-grid { max-width: 300px; gap: 24px; }
       #site-footer > div:last-child { flex-wrap: wrap; gap: 16px; }
       header .gap-3 { gap: 8px; }
       header .font-display { font-size: 14px; }
@@ -308,25 +348,26 @@
     <div class="max-w-7xl mx-auto px-5 sm:px-8">
       <p class="font-mono text-xs text-neutral-400 mb-4">// INSIDE THE APP</p>
       <h2 id="preview-title" class="font-display text-3xl sm:text-4xl font-bold text-white mb-4">Send. Receive. Right from your menu bar.</h2>
-      <p class="text-neutral-400 mb-8">Send, Receive, Transfers, and USB in Nearby Drop. Open an image for a closer look.</p>
-        <div class="hero-screenshot-grid" role="group" aria-label="Nearby Drop app screenshots">
-          <figure class="border border-theme-border bg-theme-surface p-2">
-            <a href="assets/screenshots/send.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/send.jpg" alt="Nearby Drop Send screen, searching for nearby devices" width="772" height="1012" loading="lazy" decoding="async"></a>
-            <figcaption class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400">01 / Send</figcaption>
-          </figure>
-          <figure class="border border-theme-border bg-theme-surface p-2">
-            <a href="assets/screenshots/receive.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/receive.jpg" alt="Nearby Drop Receive screen, ready to receive files" width="772" height="1012" loading="lazy" decoding="async"></a>
-            <figcaption class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400">02 / Receive</figcaption>
-          </figure>
-          <figure class="border border-theme-border bg-theme-surface p-2">
-            <a href="assets/screenshots/transfers.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/transfers.jpg" alt="Nearby Drop Transfers screen with no recent transfers" width="772" height="1012" loading="lazy" decoding="async"></a>
-            <figcaption class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400">03 / Transfers</figcaption>
-          </figure>
-          <figure class="border border-theme-border bg-theme-surface p-2">
-            <a href="assets/screenshots/usb.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/usb.jpg" alt="Nearby Drop USB screen with no device connected" width="772" height="1012" loading="lazy" decoding="async"></a>
-            <figcaption class="mt-3 font-mono text-[10px] uppercase tracking-wider text-neutral-400">04 / USB</figcaption>
-          </figure>
+      <p class="text-neutral-400 mb-8">Pick a screen. Open it for a closer look.</p>
+      <fieldset class="app-tour">
+        <legend class="sr-only">Choose a Nearby Drop screen to preview</legend>
+        <input class="app-tour-choice" type="radio" name="app-screen" id="app-screen-send" checked>
+        <input class="app-tour-choice" type="radio" name="app-screen" id="app-screen-receive">
+        <input class="app-tour-choice" type="radio" name="app-screen" id="app-screen-transfers">
+        <input class="app-tour-choice" type="radio" name="app-screen" id="app-screen-usb">
+        <div class="app-tour-steps">
+          <label class="app-tour-step" for="app-screen-send"><span class="app-tour-step-index">01</span><span class="app-tour-step-copy"><strong>Send</strong><span>Choose files and find nearby devices.</span></span></label>
+          <label class="app-tour-step" for="app-screen-receive"><span class="app-tour-step-index">02</span><span class="app-tour-step-copy"><strong>Receive</strong><span>Get ready to receive or scan a QR code.</span></span></label>
+          <label class="app-tour-step" for="app-screen-transfers"><span class="app-tour-step-index">03</span><span class="app-tour-step-copy"><strong>Transfers</strong><span>See sent and received files in one place.</span></span></label>
+          <label class="app-tour-step" for="app-screen-usb"><span class="app-tour-step-index">04</span><span class="app-tour-step-copy"><strong>USB</strong><span>Connect an Android phone for file transfer.</span></span></label>
         </div>
+        <div class="app-tour-preview border border-theme-border bg-theme-surface p-2">
+          <figure class="app-tour-screen app-tour-screen--send"><a href="assets/screenshots/send.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/send.jpg" alt="Nearby Drop Send screen with file selection and nearby device controls" width="772" height="1012" loading="lazy" decoding="async"></a></figure>
+          <figure class="app-tour-screen app-tour-screen--receive"><a href="assets/screenshots/receive.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/receive.jpg" alt="Nearby Drop Receive screen with QR scan and connection instructions" width="772" height="1012" loading="lazy" decoding="async"></a></figure>
+          <figure class="app-tour-screen app-tour-screen--transfers"><a href="assets/screenshots/transfers.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/transfers.jpg" alt="Nearby Drop Transfers screen showing no transfers yet" width="772" height="1012" loading="lazy" decoding="async"></a></figure>
+          <figure class="app-tour-screen app-tour-screen--usb"><a href="assets/screenshots/usb.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/usb.jpg" alt="Nearby Drop USB screen with Android file transfer instructions" width="772" height="1012" loading="lazy" decoding="async"></a></figure>
+        </div>
+      </fieldset>
     </div>
   </section>
 
