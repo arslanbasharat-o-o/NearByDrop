@@ -173,7 +173,7 @@
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
   </style>
-  <link rel="stylesheet" href="assets/site-appearance.css?v=3">
+  <link rel="stylesheet" href="assets/site-appearance.css?v=4">
 
   <!-- Structured product details; the matching FAQs remain visible in page content. -->
   <script type="application/ld+json">
@@ -280,11 +280,11 @@
           <span>GITHUB</span>
         </a>
 
-        <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg"
-           class="inline-flex items-center gap-2 px-4 py-1.5 bg-white hover:bg-neutral-200 text-black font-mono text-xs font-semibold tracking-wider transition-colors">
-          <span>GET .DMG</span>
-          <span class="text-neutral-500">→</span>
-        </a>
+        <div id="header-download-root" class="gradient-button-root">
+          <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg" class="gradient-button gradient-button--small">
+            <span>GET .DMG</span><span aria-hidden="true">→</span>
+          </a>
+        </div>
       </div>
     </div>
   </header>
@@ -312,17 +312,18 @@
           </p>
 
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pointer-events-auto">
-            <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg"
-               class="inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-white hover:bg-neutral-200 text-black font-mono text-sm font-semibold tracking-wider transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              <span>DOWNLOAD FOR MAC · V2.3.4</span>
-            </a>
+            <div id="hero-download-root" class="gradient-button-root">
+              <a href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg" class="gradient-button">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>DOWNLOAD FOR MAC · V2.3.4</span>
+              </a>
+            </div>
 
-            <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener"
-               class="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-theme-border hover:border-neutral-500 bg-theme-surface text-neutral-200 font-mono text-sm tracking-wider transition-colors">
-              <span>VIEW ON GITHUB</span>
-              <span class="text-neutral-500" aria-hidden="true">↗</span>
-            </a>
+            <div id="hero-github-root" class="gradient-button-root">
+              <a href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener" class="gradient-button gradient-button--variant">
+                <span>VIEW ON GITHUB</span><span aria-hidden="true">↗</span>
+              </a>
+            </div>
           </div>
 
           <details class="mt-6 max-w-2xl font-mono text-xs pointer-events-auto">
@@ -1299,6 +1300,7 @@
       }
     })();
   </script>
+  <script type="module" src="assets/site-components.js"></script>
 
 </body>
 </html>
