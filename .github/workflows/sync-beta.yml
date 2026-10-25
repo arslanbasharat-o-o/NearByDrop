@@ -1,0 +1,33 @@
+name: Mirror main to beta
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mirror-main-to-beta
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Fast-forward beta
+        run: |
+          git fetch origin beta
+          if git merge-base --is-ancestor "$GITHUB_SHA" origin/beta; then
+            echo "Beta already contains this main commit."
+            exit 0
+          fi
+          if ! git merge-base --is-ancestor origin/beta "$GITHUB_SHA"; then
+            echo "Beta has commits that main does not; refusing to overwrite it."
+            exit 1
+          fi
+          git push origin "$GITHUB_SHA:refs/heads/beta"
