@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client"
 import Demo from "@/components/ui/demo"
 import DisplayCardsDemo from "@/components/ui/display-cards-demo"
 import { GradientButton } from "@/components/ui/gradient-button"
+import { FeatureSteps } from "@/components/ui/feature-section"
 import { scrollDrawProgress } from "./scroll-draw-progress.mjs"
 
 const footerRoot = document.getElementById("site-footer-root")
@@ -9,6 +10,18 @@ if (footerRoot) createRoot(footerRoot).render(<Demo />)
 
 const cardsRoot = document.getElementById("display-cards-root")
 if (cardsRoot) createRoot(cardsRoot).render(<DisplayCardsDemo />)
+
+const appPreviewRoot = document.getElementById("app-preview-root")
+if (appPreviewRoot) createRoot(appPreviewRoot).render(
+  <FeatureSteps
+    features={[
+      { step: "Send", content: "Choose files and find nearby devices.", image: "assets/screenshots/send.jpg", alt: "Nearby Drop Send screen with file selection and nearby device controls" },
+      { step: "Receive", content: "Get ready to receive or scan a QR code.", image: "assets/screenshots/receive.jpg", alt: "Nearby Drop Receive screen with QR scan and connection instructions" },
+      { step: "Transfers", content: "See sent and received files in one place.", image: "assets/screenshots/transfers.jpg", alt: "Nearby Drop Transfers screen showing no transfers yet" },
+      { step: "USB", content: "Connect an Android phone for file transfer.", image: "assets/screenshots/usb.jpg", alt: "Nearby Drop USB screen with Android file transfer instructions" },
+    ]}
+  />,
+)
 
 const headerDownloadRoot = document.getElementById("header-download-root")
 if (headerDownloadRoot) createRoot(headerDownloadRoot).render(
