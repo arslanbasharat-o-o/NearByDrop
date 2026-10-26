@@ -12,6 +12,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     private var localClickMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UsageAnalytics.start()
         AppUpdater.shared.canInstall = { [weak self] in
             guard let model=self?.model else { return false }
             return !model.sending && model.incoming.isEmpty && !model.usb.transferring
@@ -59,7 +60,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             }
         }
 
-        if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") {
+        if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+            || !UserDefaults.standard.bool(forKey: "diagnosticsDisclosureSeen") {
             OnboardingWindowController.showOnboarding(onFinished: { [weak self] in
                 self?.showPopover()
             })

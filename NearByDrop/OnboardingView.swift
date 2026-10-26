@@ -26,7 +26,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
     init(onFinished: @escaping () -> Void) {
         self.onFinished = onFinished
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 600),
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 680),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -46,10 +46,14 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
 
     required init?(coder: NSCoder) { return nil }
 
-    func finish() {
+    func finish(acceptedDiagnostics: Bool = true) {
         guard !hasFinished else { return }
         hasFinished = true
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        if acceptedDiagnostics && !UserDefaults.standard.bool(forKey: "diagnosticsDisclosureSeen") {
+            UserDefaults.standard.set(true, forKey: "diagnosticsDisclosureSeen")
+            UsageAnalytics.start()
+        }
         window?.orderOut(nil)
         close()
         OnboardingWindowController.current = nil
@@ -57,7 +61,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        finish()
+        finish(acceptedDiagnostics: false)
     }
 }
 
@@ -65,8 +69,10 @@ struct OnboardingView: View {
     let onFinish: () -> Void
     @ObservedObject private var theme = ThemeManager.shared
     @State private var cameraAllowed: Bool = false
+    @State private var shareUsageData = UsageAnalytics.isEnabled
 
     var body: some View {
+        ScrollView {
         VStack(spacing: 16) {
             // Header
             VStack(spacing: 6) {
@@ -145,6 +151,8 @@ struct OnboardingView: View {
 
             Spacer(minLength: 8)
 
+            diagnosticsCard
+
             // Action
             Button(action: {
                 onFinish()
@@ -161,11 +169,40 @@ struct OnboardingView: View {
         .padding(.horizontal, 28)
         .padding(.top, 20)
         .padding(.bottom, 22)
-        .frame(width: 480, height: 600)
+        }
+        .frame(width: 500, height: 680)
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
             checkPermissions()
         }
+    }
+
+    private var diagnosticsCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle("Send diagnostic reports", isOn: $shareUsageData)
+                .onChange(of: shareUsageData) { _, enabled in
+                    UsageAnalytics.setEnabled(enabled)
+                }
+
+            Text(UsageAnalytics.endpointIsConfigured
+                 ? "On by default. Includes app and macOS versions, Mac hardware model, this Mac’s name, and nearby device name and type after successful wireless transfers. No file names or contents."
+                 : "On by default. Reports start after the dashboard is configured. They include app and macOS versions, Mac hardware model, this Mac’s name, and nearby device name and type after successful wireless transfers. No file names or contents.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            DisclosureGroup("Timing and installation details") {
+                Text("Reports also record first launch and app opens, using a random installation ID and hour-rounded timestamps. Turn reports off anytime in Settings.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
+            }
+            .font(.caption.weight(.medium))
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
     }
 
     private func featureItem(icon: String, color: Color, title: String, text: String) -> some View {

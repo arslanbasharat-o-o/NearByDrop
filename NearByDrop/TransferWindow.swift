@@ -119,6 +119,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     var deviceName: String { NearbyConnectionManager.currentDeviceName }
     var onConsent: ((String, Bool) -> Void)?
     private var chosenID: String?
+    private var chosenPeer: RemoteDeviceInfo?
     private var scopedURLs: [URL] = []
     private var qrExpiry: DispatchWorkItem?
     private var timeout: DispatchWorkItem?
@@ -257,6 +258,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     func send(to device: RemoteDeviceInfo) {
         guard !sending, !urls.isEmpty, let id = device.id else { return }
         chosenID = id
+        chosenPeer = device
         recipient = device.name
         sending = true
         showingQR = false
@@ -279,7 +281,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     func cancelSend() {
         timeout?.cancel()
         if let id = chosenID { NearbyConnectionManager.shared.cancelOutgoingTransfer(id: id) }
-        chosenID = nil; sending = false; sendMessage = "Canceled"
+        chosenID = nil; chosenPeer = nil; sending = false; sendMessage = "Canceled"
         resetSpeedTracking()
     }
     func showQR() {
@@ -402,12 +404,15 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         DispatchQueue.main.async { [self] in
             self.timeout?.cancel()
             let peer = self.recipient
+            let peerInfo = self.chosenPeer
+            self.chosenPeer = nil
             self.chosenID = nil
             self.progress = 1
             self.sendMessage = "Sent to \(peer)"
             let fileName = self.displayNames.first ?? self.urls.first?.lastPathComponent ?? "Files"
             let display = self.urls.count > 1 ? "\(fileName) (+\(self.urls.count - 1))" : fileName
             self.recordTransfer(fileName: display, fileSize: self.totalBytes, direction: .outgoing, peerName: peer, fileURL: self.urls.first)
+            if let peerInfo { UsageAnalytics.completedTransfer(direction: "outgoing", peer: peerInfo) }
             FeedbackManager.shared.playSuccess()
             FeedbackManager.shared.vibrateSuccess()
             self.resetSpeedTracking()
@@ -504,6 +509,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         }
         let total = info.transfer.files.reduce(0) { $0 + $1.size }
         recordTransfer(fileName: name, fileSize: total, direction: .incoming, peerName: info.device.name, fileURL: fileURLs.first)
+        UsageAnalytics.completedTransfer(direction: "incoming", peer: info.device)
     }
 
     func isDeviceTrusted(_ device: RemoteDeviceInfo) -> Bool {

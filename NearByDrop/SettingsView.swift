@@ -61,6 +61,7 @@ struct SettingsView: View {
     @ObservedObject private var theme = ThemeManager.shared
     @ObservedObject private var feedback = FeedbackManager.shared
     @State private var customName: String = ""
+    @State private var usageAnalyticsEnabled = UsageAnalytics.isEnabled
 
     var body: some View {
         HStack(spacing: 0) {
@@ -180,6 +181,32 @@ struct SettingsView: View {
                 .controlSize(.small)
             }
             .padding(12)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+
+            sectionHeader(title: "Diagnostics", subtitle: "Help improve compatibility across Macs and phones.")
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("Send diagnostic reports", isOn: $usageAnalyticsEnabled)
+                    .toggleStyle(.switch)
+                    .onChange(of: usageAnalyticsEnabled) { _, enabled in
+                        UsageAnalytics.setEnabled(enabled)
+                    }
+                Text(UsageAnalytics.endpointIsConfigured
+                     ? "On by default. Sends app and macOS versions, Mac hardware model, this Mac’s name, and nearby device name and type after successful wireless transfers. No file names or contents."
+                     : "On by default. Sends app and macOS versions, Mac hardware model, this Mac’s name, and nearby device name and type after successful wireless transfers once the dashboard is configured. No file names or contents.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                DisclosureGroup("Timing and installation details") {
+                    Text("Reports include first launch and app opens, using a random installation ID and hour-rounded timestamps. Turn reports off anytime here.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 4)
+                }
+                .font(.caption.weight(.medium))
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
 
             sectionHeader(title: "Options", subtitle: "System startup preferences.")

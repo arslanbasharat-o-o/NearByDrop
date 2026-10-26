@@ -32,6 +32,7 @@
 		699DEBAE2AB0573200115D22 /* ShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 699DEBA12AB0573200115D22 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		69D2C32F29E7898C00EC7E30 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 69D2C32E29E7898C00EC7E30 /* MainMenu.xib */; };
 		69DA9A1229E0BF5100A442DA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69DA9A1129E0BF5100A442DA /* AppDelegate.swift */; };
+		A10000000000000000000001 /* UsageAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* UsageAnalytics.swift */; };
 		69E000022E44000100000001 /* TransferWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000001 /* TransferWindow.swift */; };
 		69E000022E44000100000002 /* QRCodeScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000002 /* QRCodeScanner.swift */; };
 		69E000022E44000100000003 /* USBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E000012E44000100000003 /* USBView.swift */; };
@@ -170,6 +171,7 @@
 		69D2C32E29E7898C00EC7E30 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		69DA9A0E29E0BF5100A442DA /* Nearby Drop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Nearby Drop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		69DA9A1129E0BF5100A442DA /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A10000000000000000000002 /* UsageAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageAnalytics.swift; sourceTree = "<group>"; };
 		69E000012E44000100000001 /* TransferWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferWindow.swift; sourceTree = "<group>"; };
 		69E000012E44000100000002 /* QRCodeScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeScanner.swift; sourceTree = "<group>"; };
 		69E000012E44000100000003 /* USBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBView.swift; sourceTree = "<group>"; };
@@ -301,6 +303,7 @@
 			children = (
 				69B5994C30598C1300449F58 /* Info.plist */,
 				69DA9A1129E0BF5100A442DA /* AppDelegate.swift */,
+				A10000000000000000000002 /* UsageAnalytics.swift */,
 				69E000012E44000100000001 /* TransferWindow.swift */,
 				69E000012E44000100000002 /* QRCodeScanner.swift */,
 				69E000012E44000100000003 /* USBView.swift */,
@@ -565,6 +568,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				69DA9A1229E0BF5100A442DA /* AppDelegate.swift in Sources */,
+				A10000000000000000000001 /* UsageAnalytics.swift in Sources */,
 				69E000022E44000100000001 /* TransferWindow.swift in Sources */,
 				69E000022E44000100000002 /* QRCodeScanner.swift in Sources */,
 				69E000022E44000100000003 /* USBView.swift in Sources */,
@@ -683,7 +687,7 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
@@ -695,7 +699,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.4;
+				MARKETING_VERSION = 2.3.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -710,7 +714,7 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/ShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
@@ -722,7 +726,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.4;
+				MARKETING_VERSION = 2.3.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -869,7 +873,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -880,6 +884,7 @@
 				);
 				INFOPLIST_FILE = NearByDrop/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Nearby Drop";
+				DIAGNOSTIC_EVENTS_ENDPOINT = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Nearby Drop uses Bluetooth to detect nearby Android devices sharing via Quick Share.";
@@ -897,7 +902,7 @@
 					"$(PROJECT_DIR)/Vendor/USB/lib",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.4;
+				MARKETING_VERSION = 2.3.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop;
 				PRODUCT_MODULE_NAME = NearByDrop;
 				PRODUCT_NAME = "Nearby Drop";
@@ -920,11 +925,12 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 18;
+				CURRENT_PROJECT_VERSION = 19;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				DIAGNOSTIC_EVENTS_ENDPOINT = "https://nearbydrop.runs-at.dev/ingest.php";
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Vendor/USB/include",
@@ -948,7 +954,7 @@
 					"$(PROJECT_DIR)/Vendor/USB/lib",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 2.3.4;
+				MARKETING_VERSION = 2.3.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.arslanbasharat.NearByDrop;
 				PRODUCT_MODULE_NAME = NearByDrop;
 				PRODUCT_NAME = "Nearby Drop";
