@@ -44,7 +44,7 @@ Nearby Drop also supports Finder sharing, transfer history, and signed in-app up
 
 ## Privacy
 
-Wireless transfers go directly over your local network; Nearby Drop does not relay files through its own cloud service. Incoming transfers need your approval unless you trust that device. Preferences and recent transfer records stay on your Mac.
+Wireless transfers go directly over your local network; Nearby Drop does not relay files through its own cloud service. Incoming transfers need your approval unless you trust that device. Diagnostic reports are on by default in configured builds and can be disabled in Settings. They include first launch and app opens (hour-rounded), a random installation ID, app and macOS versions, Mac hardware model, your Mac's advertised name, and the other device's advertised name and broad type after a successful wireless transfer. They never include file names, file contents, or device IDs. See the [privacy policy](https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html).
 
 ## Help
 

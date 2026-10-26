@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Privacy | Nearby Drop</title>
-  <meta name="description" content="How the Nearby Drop website and macOS app handle browser preferences, transfer history, local files, and update checks.">
+  <meta name="description" content="How Nearby Drop handles app diagnostics, local transfers, and update checks.">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow">
   <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -61,25 +61,29 @@
     </div>
   </header>
   <main id="main" class="legal-content">
-    <p class="eyebrow">Legal · Effective October 24, 2026</p>
+    <p class="eyebrow">Legal · Effective October 26, 2026</p>
     <h1>Privacy</h1>
-    <div class="legal-review-note">Draft for project-owner and legal review. This page describes behavior observed in the published site and current app source; hosting-provider practices are controlled by the provider.</div>
+    <div class="legal-review-note">This page describes the website and app diagnostics introduced in version 2.3.5. Hosting-provider practices are controlled by the provider.</div>
 
     <h2>Website visits</h2>
-    <p>The Nearby Drop site is static and hosted by GitHub Pages. Its source does not add analytics tags, advertising pixels, sign-in, contact forms, or tracking cookies. The site follows your device appearance until you choose Light or Dark. It saves that choice in this browser’s local storage under <code>nearby-drop-theme</code>; that preference stays on your device and is not sent to Nearby Drop.</p>
+    <p>The Nearby Drop site is static and hosted by GitHub Pages. Its source does not add analytics tags, advertising pixels, sign-in, or contact forms. Its appearance choice is stored locally under <code>nearby-drop-theme</code> and is not sent to Nearby Drop.</p>
     <p>GitHub operates the hosting service and may process connection details such as IP address and request information under its <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement">privacy statement</a>. The project owner cannot set GitHub’s log retention or independently verify its internal handling. Links to GitHub, Google, and other services open those services under their own privacy terms.</p>
 
     <h2>Information stored by the macOS app</h2>
     <p>Nearby Drop stores app preferences on the Mac. These include appearance and accent choices, the selected download folder, the device name, trusted-device entries, and transfer history. The app keeps up to 20 recent transfer records. A record can include a file name, size, transfer direction, peer name, timestamp, and local file URL. You can clear transfer history and remove trusted devices in the app.</p>
     <p>Files are saved to the folder you choose. Wireless transfers connect directly between nearby devices over a reachable local network; USB MTP uses the connected cable. The app does not relay transferred files through a Nearby Drop cloud service. Treat trusted-device settings and live pairing codes as sensitive because they affect who can initiate or automatically receive transfers.</p>
 
+    <h2>App diagnostics</h2>
+    <p>Diagnostic reporting is on by default in builds connected to the project dashboard and can be turned off in onboarding or Settings. When enabled, the app sends a first-launch event, app-open events, app version, macOS major and minor versions, Mac hardware model identifier, and a random installation ID so the project can count distinct installations and active Macs. Event timestamps are rounded to the hour. It also sends the Mac's advertised device name and, after a successful wireless transfer, the other device's advertised name and broad type (phone, tablet, computer, or unknown). Device names may identify their owners. The app does not send file names, file contents, transfer history, or remote device IDs.</p>
+    <p>Reports go to the project's HTTPS diagnostics service. Turning reporting off stops future events; it does not erase data already received by the project. Reports are retained for up to 90 days and automatically removed when the service receives reports or the dashboard is opened, with a daily cleanup job as a backstop. Failed sends are queued on your Mac for up to seven days (at most 200 reports); turning reporting off clears queued reports. Hostinger may separately process connection details under its own hosting terms.</p>
+
     <h2>Update checks and external services</h2>
-    <p>The app checks GitHub for signed update metadata at launch and periodically while it is running; the current updater configuration disables sending a system profile. The app also uses the Quick Share protocol and QR workflows described in the <a href="https://github.com/arslanbasharat-o-o/NearByDrop/blob/main/PROTOCOL.md">protocol notes</a>.</p>
+    <p>The app checks GitHub for signed update metadata hourly and at launch; it does not send a system profile. Sparkle can download and install signed updates automatically, usually when the app quits. Installation waits for active transfers to finish, and macOS authorization or an unsupported install location may require action. Diagnostic reports are separate and can be disabled in the app. The app also uses the Quick Share protocol and QR workflows described in the <a href="https://github.com/arslanbasharat-o-o/NearByDrop/blob/main/PROTOCOL.md">protocol notes</a>.</p>
     <p>When the Mac displays a Quick Share QR code, its link opens Google’s hosted flow at <code>quickshare.google</code> and contains a temporary connection key in the URL fragment. Google operates that external flow; its handling is outside the project’s control. This is separate from scanning an Android-generated QR code in Nearby Drop, which starts the app’s local receiving workflow. Treat displayed QR codes as temporary connection credentials and do not publish them.</p>
     <p>The app also writes troubleshooting events to macOS unified logging. The app marks log message content as private, and it does not automatically send these logs to the project. macOS controls local diagnostic log retention.</p>
 
     <h2>Contact and changes</h2>
-    <p>For privacy questions, contact <a href="mailto:arslanbasharat414@gmail.com">Arslan Basharat</a>. This page may be updated when the site or app behavior changes; the effective date above identifies the current draft.</p>
+    <p>For privacy questions, contact <a href="mailto:arslanbasharat414@gmail.com">Arslan Basharat</a>. This page may be updated when the site or app behavior changes; the effective date above identifies this policy version.</p>
   </main>
   <footer class="site-footer"><div class="site-footer__inner page-width">
     <a class="brand brand--footer" href="../"><img src="../assets/icon-128.png" width="32" height="32" alt=""><span>Nearby Drop</span></a>
