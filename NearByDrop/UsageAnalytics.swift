@@ -30,7 +30,9 @@ enum UsageAnalytics {
         defaults.register(defaults: [enabledKey: true])
         guard isEnabled, defaultsReady else { return }
 
-        if defaults.object(forKey: firstLaunchDateKey) == nil {
+        let storedFirstLaunch = defaults.object(forKey: firstLaunchDateKey) as? Date
+        if storedFirstLaunch == nil || (!defaults.bool(forKey: firstLaunchSentKey)
+            && storedFirstLaunch!.timeIntervalSinceNow < -7 * 86400) {
             defaults.set(Date(), forKey: firstLaunchDateKey)
             defaults.set(UUID().uuidString, forKey: firstLaunchEventIDKey)
         }

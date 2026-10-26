@@ -63,9 +63,12 @@ UsageAnalytics.start()
 Thread.sleep(forTimeInterval:0.1)
 precondition(testDefaults.array(forKey:"diagnosticsPendingEvents") == nil, "Upgrade disclosure must precede reporting")
 testDefaults.set(true,forKey:"diagnosticsDisclosureSeen")
+testDefaults.set(Date().addingTimeInterval(-8 * 86400),forKey:"diagnosticsFirstLaunchDate")
+testDefaults.set("expired-first-event",forKey:"diagnosticsFirstLaunchEventID")
 UsageAnalytics.start()
 waitFor { (testDefaults.array(forKey:"diagnosticsPendingEvents")?.count ?? 0) == 2 }
 precondition(!testDefaults.bool(forKey:"diagnosticsFirstLaunchSent"))
+precondition(testDefaults.string(forKey:"diagnosticsFirstLaunchEventID") != "expired-first-event", "Expired unsent first launch must get a reportable timestamp")
 let original=testDefaults.array(forKey:"diagnosticsPendingEvents") as! [Data]
 let payload=try! JSONSerialization.jsonObject(with:original[0]) as! [String:Any]
 precondition(payload["mac_model"] as? String != "unknown")

@@ -85,7 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $config['admin_username'] = $username;
             $config['admin_password_hash'] = password_hash($password, PASSWORD_DEFAULT);
             $temporaryPath = $configPath . '.tmp-' . bin2hex(random_bytes(8));
-            $written = file_put_contents($temporaryPath, "<?php\nreturn " . var_export($config, true) . ";\n", LOCK_EX);
+            $previousMask = umask(0077);
+            try {
+                $written = file_put_contents($temporaryPath, "<?php\nreturn " . var_export($config, true) . ";\n", LOCK_EX);
+            } finally {
+                umask($previousMask);
+            }
             if ($written === false || !chmod($temporaryPath, 0600) || !rename($temporaryPath, $configPath)) {
                 @unlink($temporaryPath);
                 throw new RuntimeException('Could not save dashboard credentials.');

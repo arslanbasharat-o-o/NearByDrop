@@ -49,7 +49,7 @@ jobs:
             -configuration Debug -destination 'platform=macOS' -derivedDataPath build-tests \
             CODE_SIGNING_ALLOWED=NO test | tee tests.log
       - name: Check diagnostics client
-        run: scripts/tests/diagnostics-client.sh
+        run: bash scripts/tests/diagnostics-client.sh
       - name: Static analysis
         run: |
           set -o pipefail
