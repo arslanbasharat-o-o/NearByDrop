@@ -1,5 +1,6 @@
 import XCTest
 @testable import NearbyShare
+import Darwin
 
 final class NearbyShareSafetyTests: XCTestCase {
     func testWindowsBinaryEndpointNameIsPreserved() throws {
@@ -336,6 +337,31 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
 }
 
 final class TransferFileSafetyTests: XCTestCase {
+    func testEmptyFoldersAndUnreadableFilesAreExplained() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let emptyFolder = root.appendingPathComponent("empty", isDirectory: true)
+        let unreadableFile = root.appendingPathComponent("unreadable.txt")
+        try FileManager.default.createDirectory(at: emptyFolder, withIntermediateDirectories: true)
+        try Data("private".utf8).write(to: unreadableFile)
+        defer {
+            _ = unreadableFile.path.withCString { Darwin.chmod($0, mode_t(0o600)) }
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        XCTAssertEqual(unreadableFile.path.withCString { Darwin.chmod($0, mode_t(0)) }, 0)
+        let probe = unreadableFile.path.withCString { Darwin.open($0, O_RDONLY | O_CLOEXEC) }
+        if probe >= 0 {
+            Darwin.close(probe)
+            throw XCTSkip("The test runner can read files despite cleared POSIX permissions.")
+        }
+
+        let selection = TransferFileSafety.expandSelection([emptyFolder, unreadableFile])
+        XCTAssertTrue(selection.urls.isEmpty)
+        XCTAssertEqual(selection.skipped.unreadable, 1)
+        XCTAssertTrue(selection.emptyMessage.contains("No transferable files remain"))
+        XCTAssertTrue(selection.emptyMessage.contains("1 unreadable item was skipped"))
+    }
+
     func testFolderExpansionSkipsEverySymlinkWithoutFollowingIt() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let folder = root.appendingPathComponent("選択", isDirectory: true)
