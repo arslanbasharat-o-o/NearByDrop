@@ -598,11 +598,11 @@ struct MenuView: View {
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
-                        .fill(model.advertisement == .failed ? Color.secondary.opacity(0.2) : theme.currentAccent.color)
+                        .fill(model.advertisement == .failed || model.advertisement == .paused ? Color.secondary.opacity(0.2) : theme.currentAccent.color)
                         .frame(width: 32, height: 32)
                     Image(systemName: "antenna.radiowaves.left.and.right")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(model.advertisement == .failed ? Color.secondary : Color.white)
+                        .foregroundStyle(model.advertisement == .failed || model.advertisement == .paused ? Color.secondary : Color.white)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
@@ -1075,6 +1075,28 @@ struct MenuView: View {
     // MARK: - Receive View
     private var receiveView: some View {
         VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Label(
+                    model.receivingPaused ? "Receiving Paused" : "Receiving On",
+                    systemImage: model.receivingPaused ? "pause.circle.fill" : "antenna.radiowaves.left.and.right"
+                )
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(model.receivingPaused ? Color.secondary : theme.currentAccent.color)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(model.receivingPaused ? "Receiving Paused" : "Receiving On")
+                Spacer()
+                Button(model.receivingPaused ? "Resume Receiving" : "Pause Receiving") {
+                    model.setReceivingPaused(!model.receivingPaused)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(model.receivingPaused ? "Resume Receiving" : "Pause Receiving")
+                .accessibilityHint(model.receivingPaused ? "Allows new incoming transfers and QR receive sessions." : "Stops new incoming transfers while keeping outgoing discovery available.")
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 9))
+
             if model.qrStatus != .idle {
                 VStack(spacing: 12) {
                     switch model.qrStatus {
@@ -1209,9 +1231,11 @@ struct MenuView: View {
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 38))
                             .foregroundStyle(theme.currentAccent.color)
-                        Text("Ready to Receive")
+                        Text(model.receivingPaused ? "Receiving Paused" : "Ready to Receive")
                             .font(.headline)
-                        Text("Select \(model.deviceName) on your device to share files.")
+                        Text(model.receivingPaused
+                             ? "This Mac is not advertising or accepting new incoming transfers. Existing approved transfers can finish."
+                             : "Select \(model.deviceName) on your device to share files.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -1225,6 +1249,8 @@ struct MenuView: View {
                         .buttonStyle(.borderedProminent)
                         .tint(theme.currentAccent.color)
                         .controlSize(.regular)
+                        .disabled(model.receivingPaused)
+                        .help(model.receivingPaused ? "Resume receiving to scan a Quick Share QR code." : "Scan a Quick Share QR code to receive files.")
 
                         QuickShareGuideCard(deviceName: model.deviceName)
                             .padding(.top, 4)
@@ -1325,6 +1351,7 @@ struct MenuView: View {
         case .published: return "Ready to receive"
         case .failed: return "Network unavailable"
         case .starting, .idle: return "Connecting…"
+        case .paused: return "Receiving Paused"
         }
     }
 
@@ -1333,6 +1360,7 @@ struct MenuView: View {
         case .published: return .green
         case .failed: return .red
         case .starting, .idle: return .orange
+        case .paused: return .secondary
         }
     }
 }

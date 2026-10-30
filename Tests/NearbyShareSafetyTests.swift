@@ -1037,9 +1037,16 @@ final class TrustedDevicePreferenceMigrationTests: XCTestCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
+        let bookmark = Data([0x4E, 0x44, 0x42])
+        defaults.set("/Users/example/Downloads", forKey: "downloadDirectoryURL")
+        defaults.set(bookmark, forKey: "downloadDirectoryBookmark")
+        defaults.set(false, forKey: "usageAnalyticsEnabled")
         defaults.set(["Known Phone", "Known Phone#old-endpoint", "Known Phone#new-endpoint"], forKey: "trustedDevices")
         NearbyConnectionManager.invalidateLegacyTrustedDevices(in: defaults)
         XCTAssertNil(defaults.object(forKey: "trustedDevices"))
+        XCTAssertEqual(defaults.string(forKey: "downloadDirectoryURL"), "/Users/example/Downloads")
+        XCTAssertEqual(defaults.data(forKey: "downloadDirectoryBookmark"), bookmark)
+        XCTAssertFalse(defaults.bool(forKey: "usageAnalyticsEnabled"))
 
         // A repeated launch, including a value restored by a downgraded build,
         // invalidates the same unsafe preference again.

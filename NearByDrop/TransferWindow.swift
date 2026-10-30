@@ -117,6 +117,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var launchAtLogin: Bool = false
     @Published var history: [TransferHistoryItem] = []
     private static let historyKey = "transferHistory"
+    @Published private(set) var receivingPaused = UserDefaults.standard.bool(forKey: "receivingPaused")
 
     let usb = USBModel()
     var deviceName: String { NearbyConnectionManager.currentDeviceName }
@@ -167,8 +168,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 
     func setAdvertisementState(_ state: NearbyConnectionManager.AdvertisementState) {
         adDebounce?.cancel()
-        if state == .published {
-            advertisement = .published
+        if state == .published || state == .paused {
+            advertisement = state
         } else {
             let work = DispatchWorkItem { [weak self] in
                 self?.advertisement = state
