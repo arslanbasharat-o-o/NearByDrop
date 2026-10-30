@@ -4,6 +4,9 @@
 - Exclude symbolic links and reject files changed during outbound reads.
 - Enforce the 128-file limit and open source files only while sending.
 - Verify installer checksums and preserve the existing app on failed upgrades.
+- Retry failed outgoing transfers as new attempts after rechecking selected sources.
+- Pause incoming visibility while preserving outgoing discovery and approved transfers.
+- Preview and export allowlisted diagnostics locally without uploading the report.
 
 # 2.3.5 (19)
 
