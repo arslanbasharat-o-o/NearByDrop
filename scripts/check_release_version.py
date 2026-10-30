@@ -30,7 +30,18 @@ def main() -> int:
     components = (ROOT / "scripts/site-components.tsx").read_text(encoding="utf-8")
     installer = (ROOT / "scripts/install.sh").read_text(encoding="utf-8")
 
-    require(changelog.startswith(f"# {version} ({build})\n"), "CHANGELOG.md must start with the current version and build.")
+    changelog_headings = [line for line in changelog.splitlines() if line.startswith("# ")]
+    current_heading = f"# {version} ({build})"
+    if changelog_headings and changelog_headings[0] == "# Unreleased":
+        require(
+            len(changelog_headings) >= 2 and changelog_headings[1] == current_heading,
+            "CHANGELOG.md must place the current version immediately after Unreleased.",
+        )
+    else:
+        require(
+            bool(changelog_headings) and changelog_headings[0] == current_heading,
+            "CHANGELOG.md must start with the current version and build, optionally after Unreleased.",
+        )
     marketing_versions = re.findall(r"MARKETING_VERSION = ([^;]+);", project)
     require(bool(marketing_versions) and set(marketing_versions) == {version}, "Xcode MARKETING_VERSION values do not match release-version.json.")
     project_builds = re.findall(r"CURRENT_PROJECT_VERSION = ([^;]+);", project)

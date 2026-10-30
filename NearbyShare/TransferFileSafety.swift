@@ -150,8 +150,27 @@ public enum TransferFileSafety {
         }
     }
 
+    static func readVerifiedChunk(
+        from handle: FileHandle,
+        expected identity: TransferFileIdentity,
+        maximumCount: Int
+    ) throws -> Data {
+        guard maximumCount > 0 else { throw NearbyError.inputOutput }
+        try verifyUnchanged(handle, expected: identity)
+        guard let data = try handle.read(upToCount: maximumCount), !data.isEmpty else {
+            throw NearbyError.inputOutput
+        }
+        // The descriptor pins the selected inode. Check after the read and before
+        // returning bytes so observable in-place changes are rejected before the
+        // buffer is framed. This check is not an atomic filesystem snapshot.
+        try verifyUnchanged(handle, expected: identity)
+        return data
+    }
+
     private static func openDescriptor(at url: URL) throws -> Int32 {
-        let descriptor = url.path.withCString { Darwin.open($0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC) }
+        // O_NONBLOCK prevents a raced replacement with a FIFO from stalling the
+        // shared connection queue before fstat can reject the non-regular file.
+        let descriptor = url.path.withCString { Darwin.open($0, O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC) }
         guard descriptor >= 0 else { throw TransferFileSafetyError.unreadable }
         return descriptor
     }
@@ -256,7 +275,7 @@ public enum TransferFileSafety {
             }
 
             let fileDescriptor = childName.withCString {
-                Darwin.openat(parentDescriptor, $0, O_RDONLY | O_NOFOLLOW | O_CLOEXEC)
+                Darwin.openat(parentDescriptor, $0, O_RDONLY | O_NONBLOCK | O_NOFOLLOW | O_CLOEXEC)
             }
             guard fileDescriptor >= 0 else {
                 skipped.unreadable += 1

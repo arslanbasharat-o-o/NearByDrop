@@ -487,17 +487,11 @@ class OutboundNearbyConnection:NearbyConnection{
 			return
 		}
 
-		let fileBuffer:Data
-		if #available(macOS 10.15.4, *) {
-			guard let _fileBuffer=try currentTransfer!.handle!.read(upToCount: Int(min(512*1024, currentTransfer!.totalBytes-currentTransfer!.currentOffset))) else{
-				throw NearbyError.inputOutput
-			}
-			guard !_fileBuffer.isEmpty else { throw NearbyError.inputOutput }
-			try TransferFileSafety.verifyUnchanged(currentTransfer!.handle!, expected: currentTransfer!.identity)
-			fileBuffer=_fileBuffer
-		} else {
-			fileBuffer=currentTransfer!.handle!.readData(ofLength: 512*1024)
-		}
+		let fileBuffer = try TransferFileSafety.readVerifiedChunk(
+			from: currentTransfer!.handle!,
+			expected: currentTransfer!.identity,
+			maximumCount: Int(min(512*1024, currentTransfer!.totalBytes-currentTransfer!.currentOffset))
+		)
 		
 		var transfer=Location_Nearby_Connections_PayloadTransferFrame()
 		transfer.packetType = .data

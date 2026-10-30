@@ -1,3 +1,10 @@
+# Unreleased
+
+- Require approval for every incoming transfer, including valid QR pairings.
+- Exclude symbolic links and reject files changed during outbound reads.
+- Enforce the 128-file limit and open source files only while sending.
+- Verify installer checksums and preserve the existing app on failed upgrades.
+
 # 2.3.5 (19)
 
 - Add first-party diagnostics with a reviewable choice in onboarding and Settings.

@@ -440,6 +440,81 @@ final class TransferFileSafetyTests: XCTestCase {
         XCTAssertThrowsError(try TransferFileSafety.openReadOnlyFile(at: source, expected: identity))
     }
 
+    func testParentDirectorySymlinkReplacementIsRejectedBeforeOpening() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let selectedParent = root.appendingPathComponent("selected", isDirectory: true)
+        let outsideParent = root.appendingPathComponent("outside", isDirectory: true)
+        try FileManager.default.createDirectory(at: selectedParent, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: outsideParent, withIntermediateDirectories: true)
+        let selectedFile = selectedParent.appendingPathComponent("source.bin")
+        let outsideFile = outsideParent.appendingPathComponent("source.bin")
+        try Data("selected bytes".utf8).write(to: selectedFile)
+        try Data("outside secret".utf8).write(to: outsideFile)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let identity = try TransferFileSafety.readableIdentity(at: selectedFile)
+        let movedParent = root.appendingPathComponent("selected-original", isDirectory: true)
+        try FileManager.default.moveItem(at: selectedParent, to: movedParent)
+        try FileManager.default.createSymbolicLink(at: selectedParent, withDestinationURL: outsideParent)
+
+        XCTAssertThrowsError(try TransferFileSafety.openReadOnlyFile(at: selectedFile, expected: identity))
+    }
+
+    func testSelectedFileReplacedWithFIFOIsRejectedWithoutBlocking() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let source = root.appendingPathComponent("source.bin")
+        try Data("selected".utf8).write(to: source)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let identity = try TransferFileSafety.readableIdentity(at: source)
+        try FileManager.default.removeItem(at: source)
+        let createdFIFO = source.path.withCString { Darwin.mkfifo($0, mode_t(0o600)) }
+        XCTAssertEqual(createdFIFO, 0)
+
+        XCTAssertThrowsError(try TransferFileSafety.openReadOnlyFile(at: source, expected: identity))
+    }
+
+    func testOpenedDescriptorDoesNotFollowLaterSymlinkReplacement() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let selectedFile = root.appendingPathComponent("source.bin")
+        let outsideFile = root.appendingPathComponent("outside-secret.bin")
+        let selectedBytes = Data("selected bytes".utf8)
+        try selectedBytes.write(to: selectedFile)
+        try Data("outside secret".utf8).write(to: outsideFile)
+        defer {
+            try? FileManager.default.removeItem(at: selectedFile)
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let identity = try TransferFileSafety.readableIdentity(at: selectedFile)
+        let handle = try TransferFileSafety.openReadOnlyFile(at: selectedFile, expected: identity)
+        defer { try? handle.close() }
+
+        try FileManager.default.removeItem(at: selectedFile)
+        try FileManager.default.createSymbolicLink(at: selectedFile, withDestinationURL: outsideFile)
+        XCTAssertEqual(try handle.readToEnd(), selectedBytes)
+        XCTAssertEqual(try Data(contentsOf: outsideFile), Data("outside secret".utf8))
+    }
+
+    func testInPlaceEditAfterOpenIsRejectedBeforeReturningChunk() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let source = root.appendingPathComponent("source.bin")
+        try Data("original".utf8).write(to: source)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let identity = try TransferFileSafety.readableIdentity(at: source)
+        let handle = try TransferFileSafety.openReadOnlyFile(at: source, expected: identity)
+        defer { try? handle.close() }
+        let writer = try FileHandle(forWritingTo: source)
+        try writer.write(contentsOf: Data("modified".utf8))
+        try writer.close()
+
+        XCTAssertThrowsError(try TransferFileSafety.readVerifiedChunk(from: handle, expected: identity, maximumCount: 8))
+    }
+
     func testFileSelectionCountBoundariesAndLargeFolders() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

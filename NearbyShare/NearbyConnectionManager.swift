@@ -11,7 +11,7 @@ import CryptoKit
 import SwiftECC
 import CoreBluetooth
 
-public struct RemoteDeviceInfo{
+public struct RemoteDeviceInfo: Sendable {
 	public let name:String
 	public let type:DeviceType
 	public let qrCodeData:Data?
@@ -31,7 +31,7 @@ public struct RemoteDeviceInfo{
 		self.id=id
 	}
 	
-	public enum DeviceType:Int32{
+	public enum DeviceType:Int32, Sendable{
 		case unknown=0
 		case phone
 		case tablet
@@ -55,14 +55,14 @@ public struct RemoteDeviceInfo{
 }
 
 
-public enum NearbyError: LocalizedError {
+public enum NearbyError: LocalizedError, Sendable {
 	case protocolError(_ message:String)
 	case requiredFieldMissing(_ message:String)
 	case ukey2
 	case inputOutput
 	case canceled(reason:CancellationReason)
 	
-	public enum CancellationReason {
+	public enum CancellationReason: Sendable {
 		case userRejected, userCanceled, notEnoughSpace, unsupportedType, timedOut
 	}
 
@@ -96,7 +96,7 @@ public enum NearbyError: LocalizedError {
 	}
 }
 
-public struct TransferMetadata{
+public struct TransferMetadata: Sendable {
 	public let files:[FileMetadata]
 	public let id:String
 	public let pinCode:String?
@@ -110,7 +110,7 @@ public struct TransferMetadata{
 	}
 }
 
-public struct FileMetadata{
+public struct FileMetadata: Sendable {
 	public let name:String
 	public let size:Int64
 	public let mimeType:String
@@ -137,7 +137,7 @@ struct OutgoingTransferInfo{
 	var cancelled=false
 }
 
-struct EndpointInfo{
+struct EndpointInfo: Sendable {
 	var name:String?
 	let deviceType:RemoteDeviceInfo.DeviceType
 	let qrCodeData:Data?
@@ -224,7 +224,7 @@ public protocol ShareExtensionDelegate:AnyObject{
 }
 
 public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNearbyConnectionDelegate, OutboundNearbyConnectionDelegate, CBCentralManagerDelegate{
-	public enum AdvertisementState:Equatable{
+	public enum AdvertisementState:Equatable, Sendable{
 		case idle
 		case starting
 		case published
