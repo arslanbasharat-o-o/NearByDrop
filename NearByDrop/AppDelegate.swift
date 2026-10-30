@@ -816,6 +816,15 @@ struct MenuView: View {
                 .accessibilityLabel("Remove selected files")
             }
 
+            if let notice = model.selectionNotice {
+                Label(notice, systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .combine)
+            }
+
             HStack(spacing: 8) {
                 Button(action: { model.chooseFiles() }) {
                     Label("Change…", systemImage: "arrow.triangle.2.circlepath")
@@ -941,6 +950,9 @@ struct MenuView: View {
                         }
                     }
                     .frame(height: 6)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Transfer progress")
+                    .accessibilityValue("\(Int(model.progress * 100)) percent")
                     HStack {
                         Text(model.sendMessage.isEmpty ? "Connecting…" : model.sendMessage)
                             .font(.caption)
@@ -1018,7 +1030,9 @@ struct MenuView: View {
                 Text(error)
                     .foregroundStyle(.red)
                     .font(.caption)
-                    .lineLimit(2)
+                    .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel("Transfer message")
             }
         }
         .padding(.horizontal, 14)

@@ -54,6 +54,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var sending = false
     @Published var recipient = ""
     @Published var error: String?
+    @Published var selectionNotice: String?
     @Published var lastCompletedTransfer: CompletedTransferInfo?
     @Published var lastTransferError: String?
 
@@ -89,6 +90,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     // Folder & relative path transfers
     @Published var displayNames: [String] = []
     private(set) var totalBytes: Int64 = 0
+    private var selectionIdentities: [TransferFileIdentity] = []
 
     // Transfer speed and ETA
     @Published var transferSpeed: String = ""
@@ -120,6 +122,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     private var chosenID: String?
     private var chosenPeer: RemoteDeviceInfo?
     private var scopedURLs: [URL] = []
+    private var selectionGeneration = UUID()
+    private let fileSelectionQueue = DispatchQueue(label: "com.arslanbasharat.NearByDrop.file-selection", qos: .userInitiated)
     private var qrExpiry: DispatchWorkItem?
     private var timeout: DispatchWorkItem?
     private var adDebounce: DispatchWorkItem?
@@ -173,54 +177,51 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         NearbyConnectionManager.shared.addShareExtensionDelegate(self)
     }
 
-    private func expandFilesAndDirectories(_ inputURLs: [URL]) -> (urls: [URL], displayNames: [String]) {
-        var flatURLs: [URL] = []
-        var names: [String] = []
-        let fm = FileManager.default
-
-        for url in inputURLs {
-            var isDir: ObjCBool = false
-            if fm.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
-                let parentURL = url.deletingLastPathComponent()
-                let parentPath = parentURL.path
-                if let enumerator = fm.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey], options: [.skipsHiddenFiles]) {
-                    for case let fileURL as URL in enumerator {
-                        var subIsDir: ObjCBool = false
-                        if fm.fileExists(atPath: fileURL.path, isDirectory: &subIsDir), !subIsDir.boolValue {
-                            flatURLs.append(fileURL)
-                            var relPath = fileURL.path
-                            if relPath.hasPrefix(parentPath) {
-                                relPath = String(relPath.dropFirst(parentPath.count))
-                                if relPath.hasPrefix("/") { relPath = String(relPath.dropFirst()) }
-                            } else {
-                                relPath = fileURL.lastPathComponent
-                            }
-                            names.append(relPath)
-                        }
-                    }
-                }
-            } else {
-                flatURLs.append(url)
-                names.append(url.lastPathComponent)
-            }
-        }
-        return (flatURLs, names)
-    }
-
-    func setFiles(_ newURLs: [URL]) {
+    func setFiles(_ newURLs: [URL], completion: (() -> Void)? = nil) {
         guard !sending, !usb.busy else { return }
+        selectionGeneration = UUID()
+        let generation = selectionGeneration
         scopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
-        scopedURLs = newURLs.filter { $0.startAccessingSecurityScopedResource() }
-        let (expanded, names) = expandFilesAndDirectories(newURLs)
-        urls = expanded
-        displayNames = names
-        totalBytes = expanded.reduce(0) { total, url in
-            let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value ?? 0
-            return total + size
-        }
+        scopedURLs = []
+        urls = []
+        displayNames = []
+        selectionIdentities = []
+        totalBytes = 0
+        selectionNotice = nil
         sendMessage = ""
         error = nil
         resetSpeedTracking()
+
+        guard !newURLs.isEmpty else {
+            completion?()
+            return
+        }
+        let newScopedURLs = newURLs.filter { $0.startAccessingSecurityScopedResource() }
+        fileSelectionQueue.async { [weak self] in
+            let selection = TransferFileSafety.expandSelection(newURLs)
+            DispatchQueue.main.async {
+                guard let self, self.selectionGeneration == generation else {
+                    newScopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+                    return
+                }
+                self.scopedURLs = newScopedURLs
+                self.urls = selection.urls
+                self.displayNames = selection.displayNames
+                self.selectionIdentities = selection.identities
+                self.totalBytes = selection.identities.reduce(Int64(0)) { total, identity in
+                    let (sum, overflow) = total.addingReportingOverflow(identity.size)
+                    return overflow ? Int64.max : sum
+                }
+                self.selectionNotice = selection.skipped.message
+                if selection.urls.isEmpty {
+                    self.error = selection.emptyMessage
+                } else if selection.urls.count > TransferFileSafety.maximumFileCount {
+                    let limitNotice = "Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Choose fewer files."
+                    self.selectionNotice = [self.selectionNotice, limitNotice].compactMap { $0 }.joined(separator: " ")
+                }
+                completion?()
+            }
+        }
     }
 
     func chooseFiles() {
@@ -243,18 +244,23 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
                 NotificationCenter.default.post(name: .didFinishChoosingFiles, object: nil)
             }
             guard result == .OK, let self else { return }
-            self.setFiles(panel.urls)
-            FeedbackManager.shared.vibrateClick()
-            if let device = device {
-                self.send(to: device)
-            } else if thenShowQR {
-                self.showQR()
+            self.setFiles(panel.urls) {
+                FeedbackManager.shared.vibrateClick()
+                if let device = device {
+                    self.send(to: device)
+                } else if thenShowQR {
+                    self.showQR()
+                }
             }
         }
         panel.presentForInteraction(completion: handler)
     }
     func send(to device: RemoteDeviceInfo) {
         guard !sending, !urls.isEmpty, let id = device.id else { return }
+        guard urls.filter(\.isFileURL).count <= TransferFileSafety.maximumFileCount else {
+            error = "Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Choose fewer files and try again."
+            return
+        }
         chosenID = id
         chosenPeer = device
         recipient = device.name
@@ -273,7 +279,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         }
         timeout?.cancel(); timeout = expiry
         DispatchQueue.main.asyncAfter(deadline: .now() + 45, execute: expiry)
-        NearbyConnectionManager.shared.startOutgoingTransfer(deviceID: id, delegate: self, urls: urls, displayNames: displayNames.isEmpty ? nil : displayNames)
+        NearbyConnectionManager.shared.startOutgoingTransfer(deviceID: id, delegate: self, urls: urls, displayNames: displayNames.isEmpty ? nil : displayNames, fileIdentities: selectionIdentities)
         NearbyConnectionManager.shared.clearQrCodeKey()
     }
     func cancelSend() {
@@ -284,6 +290,10 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
     func showQR() {
         guard !urls.isEmpty, !sending else { return }
+        guard urls.filter(\.isFileURL).count <= TransferFileSafety.maximumFileCount else {
+            error = "Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Choose fewer files and try again."
+            return
+        }
 
         NearbyConnectionManager.shared.clearQrCodeKey()
         startSendingDiscovery()
@@ -745,6 +755,8 @@ struct IncomingTransferReceivingCard: View {
 
             ProgressView(value: totalBytes > 0 ? Double(model.incomingProgress[id]?.bytes ?? 0) / Double(totalBytes) : nil)
                 .progressViewStyle(.linear)
+                .accessibilityLabel("Receiving files from \(item.device.name)")
+                .accessibilityValue(totalBytes > 0 ? "\(Int(Double(model.incomingProgress[id]?.bytes ?? 0) / Double(totalBytes) * 100)) percent" : "In progress")
 
             HStack {
                 Text("\(TransferModel.formatBytes((model.incomingProgress[id]?.bytes ?? 0))) of \(TransferModel.formatBytes(totalBytes))")

@@ -527,7 +527,7 @@ class InboundNearbyConnection: NearbyConnection{
 	private func processIntroductionFrame(_ frame:Sharing_Nearby_Frame) throws{
 		guard frame.hasV1, frame.v1.hasIntroduction else { throw NearbyError.requiredFieldMissing("shareNearbyFrame.v1.introduction") }
 		let introduction=frame.v1.introduction
-		guard introduction.fileMetadata.count <= 128,
+		guard introduction.fileMetadata.count <= TransferFileSafety.maximumFileCount,
 			  !(introduction.fileMetadata.isEmpty && introduction.textMetadata.isEmpty) else {
 			throw NearbyError.protocolError("Malformed introduction payload")
 		}

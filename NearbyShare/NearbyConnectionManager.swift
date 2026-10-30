@@ -808,8 +808,14 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		}
 	}
 	
-	public func startOutgoingTransfer(deviceID:String, delegate:ShareExtensionDelegate, urls:[URL], displayNames:[String]?=nil){
+	public func startOutgoingTransfer(deviceID:String, delegate:ShareExtensionDelegate, urls:[URL], displayNames:[String]?=nil, fileIdentities:[TransferFileIdentity]?=nil){
 		stateQueue.async {
+			guard urls.filter(\.isFileURL).count <= TransferFileSafety.maximumFileCount else {
+				DispatchQueue.main.async {
+					delegate.connectionFailed(with: NearbyError.protocolError("Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Select fewer files and try again."))
+				}
+				return
+			}
 			guard let info=self.foundServices[deviceID] else {
 				DispatchQueue.main.async { delegate.connectionFailed(with: NearbyError.protocolError("Device is no longer reachable")) }
 				return
@@ -830,7 +836,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			params.serviceClass = .responsiveData
 			params.preferNoProxies=true
 			let nwconn=NWConnection(to: info.service.endpoint, using: params)
-			let conn=OutboundNearbyConnection(connection: nwconn, id: deviceID, urlsToSend: urls, displayNames: displayNames)
+			let conn=OutboundNearbyConnection(connection: nwconn, id: deviceID, urlsToSend: urls, displayNames: displayNames, fileIdentities: fileIdentities)
 			conn.delegate=self
 			conn.qrCodePrivateKey=self.qrCodePrivateKey
 			let targetDevice = info.device ?? RemoteDeviceInfo(name: "Android Phone", type: .phone, id: deviceID)

@@ -7,10 +7,12 @@
 import Foundation
 import Cocoa
 import UniformTypeIdentifiers
+import os
 import NearbyShare
 import QRCode
 
 class ShareViewController: NSViewController, ShareExtensionDelegate{
+	private let logger = Logger(subsystem: "com.arslanbasharat.NearByDrop", category: "ShareExtension")
 	
 	private var urls:[URL]=[]
 	private var foundDevices:[RemoteDeviceInfo]=[]
@@ -226,7 +228,7 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 			if url.isFileURL{
 				var isDirectory: ObjCBool = false
 				if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue{
-					print("Canceling share request because URL \(url) is a directory")
+					logger.notice("Canceling share request because a directory was selected")
 					let cancelError = NSError(domain: NSCocoaErrorDomain, code: NSUserCancelledError, userInfo: nil)
 					extensionContext?.cancelRequest(withError: cancelError)
 					return

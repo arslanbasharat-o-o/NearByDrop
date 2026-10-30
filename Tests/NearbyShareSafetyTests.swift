@@ -55,6 +55,9 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
     private var consentRequestCount = 0
     private var expectedPeerName: String?
     private var expectedPeerID: String?
+    private var replaceFirstSourceWithSymlinkAfterApproval = false
+    private var firstOutboundFile: URL?
+    private var replacementTargetURL: URL?
 
     func testExplicitApprovalCompletesEncryptedFilesAndEmptyFileRoundTrip() throws {
         try runRoundTrip()
@@ -131,6 +134,10 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         cancelAfterAcceptance = true
         try runRoundTrip()
     }
+    func testOutboundPathRejectsFileReplacedWithSymlinkBeforeOpening() throws {
+        replaceFirstSourceWithSymlinkAfterApproval = true
+        try runRoundTrip(payloadSize: 64 * 1024)
+    }
 
     private func senderIdentity() -> (name: String, endpointID: String) {
         let manager = NearbyConnectionManager.shared
@@ -170,6 +177,10 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         NearbyConnectionManager.downloadDirectory = downloads
         let payload = Data((0..<payloadSize).map { UInt8(truncatingIfNeeded: $0) })
         let file = root.appendingPathComponent("payload.bin")
+        firstOutboundFile = file
+        let replacementTarget = root.appendingPathComponent("outside-target.bin")
+        replacementTargetURL = replacementTarget
+        try Data("outside target".utf8).write(to: replacementTarget)
         let empty = root.appendingPathComponent("empty.txt")
         try payload.write(to: file)
         try Data().write(to: empty)
@@ -205,7 +216,7 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         let start = Date()
         listener.start(queue: .main)
         wait(for: [received, sent], timeout: 30)
-        if cancelAfterAcceptance || rejectQR || rejectIncoming || duplicateIntroduction || prematureURLPayload {
+        if cancelAfterAcceptance || rejectQR || rejectIncoming || duplicateIntroduction || prematureURLPayload || replaceFirstSourceWithSymlinkAfterApproval {
             if rejectQR { XCTAssertTrue(destinations.isEmpty) }
             if rejectIncoming {
                 XCTAssertEqual(consentRequestCount, 1)
@@ -294,7 +305,7 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
             XCTAssertTrue(String(describing: error).contains("does not match the scanned QR code"))
         } else if rejectIncoming {
             XCTAssertNotNil(error)
-        } else if duplicateIntroduction || prematureURLPayload {
+        } else if duplicateIntroduction || prematureURLPayload || replaceFirstSourceWithSymlinkAfterApproval {
             XCTAssertNotNil(error)
         } else if cancelAfterAcceptance { XCTAssertNotNil(error) }
         else { XCTAssertNil(error) }
@@ -305,14 +316,162 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
     func outboundConnectionTransferAccepted(connection: OutboundNearbyConnection) {
         dataTransferStarted = Date()
         if cancelAfterAcceptance { connection.cancel() }
+        if replaceFirstSourceWithSymlinkAfterApproval,
+           let firstOutboundFile, let replacementTargetURL {
+            do {
+                try FileManager.default.removeItem(at: firstOutboundFile)
+                try FileManager.default.createSymbolicLink(at: firstOutboundFile, withDestinationURL: replacementTargetURL)
+            } catch {
+                XCTFail("Could not replace the source fixture: \(error)")
+            }
+        }
     }
     func outboundConnection(connection: OutboundNearbyConnection, failedWithError: Error) {
-        if !cancelAfterAcceptance && !rejectQR && !rejectIncoming && !duplicateIntroduction && !prematureURLPayload {
+        if !cancelAfterAcceptance && !rejectQR && !rejectIncoming && !duplicateIntroduction && !prematureURLPayload && !replaceFirstSourceWithSymlinkAfterApproval {
             XCTFail(failedWithError.localizedDescription)
         }
         sent.fulfill()
     }
     func outboundConnectionTransferFinished(connection: OutboundNearbyConnection) { sent.fulfill() }
+}
+
+final class TransferFileSafetyTests: XCTestCase {
+    func testFolderExpansionSkipsEverySymlinkWithoutFollowingIt() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let folder = root.appendingPathComponent("選択", isDirectory: true)
+        let nested = folder.appendingPathComponent("子", isDirectory: true)
+        let outside = root.appendingPathComponent("outside.txt")
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        try Data("valid".utf8).write(to: nested.appendingPathComponent("naïve-🛰️.txt"))
+        try Data("outside".utf8).write(to: outside)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("external-file"), withDestinationURL: outside)
+        try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("internal-file"), withDestinationURL: nested.appendingPathComponent("naïve-🛰️.txt"))
+        try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("external-dir"), withDestinationURL: root)
+        try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("dangling"), withDestinationURL: root.appendingPathComponent("missing"))
+        let cycle = folder.appendingPathComponent("cycle")
+        try FileManager.default.createSymbolicLink(at: cycle, withDestinationURL: cycle)
+
+        let selection = TransferFileSafety.expandSelection([folder])
+        XCTAssertEqual(selection.urls, [nested.appendingPathComponent("naïve-🛰️.txt")])
+        XCTAssertEqual(selection.displayNames, ["選択/子/naïve-🛰️.txt"])
+        XCTAssertEqual(selection.skipped.symbolicLinks, 5)
+        XCTAssertEqual(selection.identities.count, 1)
+        XCTAssertTrue(selection.skipped.message?.contains("5 symbolic links were skipped for safety.") == true)
+    }
+
+    func testExplicitSymlinkRootsAreExcluded() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let folder = root.appendingPathComponent("folder", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = root.appendingPathComponent("file.txt")
+        try Data("file".utf8).write(to: file)
+        let fileLink = root.appendingPathComponent("file-link")
+        let directoryLink = root.appendingPathComponent("directory-link")
+        try FileManager.default.createSymbolicLink(at: fileLink, withDestinationURL: file)
+        try FileManager.default.createSymbolicLink(at: directoryLink, withDestinationURL: folder)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let selection = TransferFileSafety.expandSelection([fileLink, directoryLink])
+        XCTAssertTrue(selection.urls.isEmpty)
+        XCTAssertEqual(selection.skipped.symbolicLinks, 2)
+        XCTAssertTrue(selection.emptyMessage.contains("No transferable files remain"))
+    }
+
+    func testSourceReplacementAfterSelectionIsRejected() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let source = root.appendingPathComponent("source.bin")
+        let target = root.appendingPathComponent("target.bin")
+        try Data("source".utf8).write(to: source)
+        try Data("target".utf8).write(to: target)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let identity = try TransferFileSafety.readableIdentity(at: source)
+        try FileManager.default.removeItem(at: source)
+        try FileManager.default.createSymbolicLink(at: source, withDestinationURL: target)
+        XCTAssertThrowsError(try TransferFileSafety.openReadOnlyFile(at: source, expected: identity))
+    }
+
+    func testInPlaceSourceEditAfterSelectionIsRejected() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let source = root.appendingPathComponent("source.bin")
+        try Data("original".utf8).write(to: source)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let identity = try TransferFileSafety.readableIdentity(at: source)
+        Thread.sleep(forTimeInterval: 0.002)
+        let writer = try FileHandle(forWritingTo: source)
+        try writer.write(contentsOf: Data("modified".utf8))
+        try writer.close()
+        let changedIdentity = try TransferFileSafety.readableIdentity(at: source)
+        XCTAssertEqual(changedIdentity.device, identity.device)
+        XCTAssertEqual(changedIdentity.inode, identity.inode)
+        XCTAssertEqual(changedIdentity.size, identity.size)
+        XCTAssertNotEqual(changedIdentity, identity)
+        XCTAssertThrowsError(try TransferFileSafety.openReadOnlyFile(at: source, expected: identity))
+    }
+
+    func testFileSelectionCountBoundariesAndLargeFolders() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        XCTAssertEqual(TransferFileSafety.expandSelection([]).urls.count, 0)
+        for count in [1, 128, 129, 1_000] {
+            let batch = root.appendingPathComponent("batch-\(count)", isDirectory: true)
+            try FileManager.default.createDirectory(at: batch, withIntermediateDirectories: true)
+            for index in 0..<count {
+                try Data().write(to: batch.appendingPathComponent("\(index).bin"))
+            }
+            let selection = TransferFileSafety.expandSelection([batch])
+            XCTAssertEqual(selection.urls.count, count)
+            XCTAssertEqual(selection.identities.count, count)
+        }
+        XCTAssertEqual(TransferFileSafety.maximumFileCount, 128)
+    }
+}
+
+final class OutgoingTransferPreflightTests: XCTestCase {
+    func test129FilesFailManagerPreflightBeforeDeviceLookup() {
+        let delegate = PreflightShareExtensionDelegate()
+        let urls = (0..<129).map { URL(fileURLWithPath: "/nonexistent/\($0).bin") }
+        NearbyConnectionManager.shared.startOutgoingTransfer(
+            deviceID: "unavailable-device",
+            delegate: delegate,
+            urls: urls
+        )
+        wait(for: [delegate.failed], timeout: 5)
+        XCTAssertTrue(delegate.error?.localizedDescription.contains("up to 128 files") == true)
+    }
+
+    func test128FilesReachDeviceLookupWithoutBeingTruncated() {
+        let delegate = PreflightShareExtensionDelegate()
+        let urls = (0..<128).map { URL(fileURLWithPath: "/nonexistent/\($0).bin") }
+        NearbyConnectionManager.shared.startOutgoingTransfer(
+            deviceID: "unavailable-device",
+            delegate: delegate,
+            urls: urls
+        )
+        wait(for: [delegate.failed], timeout: 5)
+        XCTAssertTrue(delegate.error?.localizedDescription.contains("no longer reachable") == true)
+    }
+}
+
+private final class PreflightShareExtensionDelegate: ShareExtensionDelegate {
+    let failed = XCTestExpectation(description: "Preflight failure delivered")
+    private(set) var error: Error?
+
+    func addDevice(device: RemoteDeviceInfo) {}
+    func removeDevice(id: String) {}
+    func startTransferWithQrCode(device: RemoteDeviceInfo) {}
+    func connectionWasEstablished(pinCode: String) {}
+    func connectionFailed(with error: Error) { self.error = error; failed.fulfill() }
+    func transferAccepted() {}
+    func transferProgress(progress: Double) {}
+    func transferFinished() {}
 }
 
 final class AppSupportTests: XCTestCase {
