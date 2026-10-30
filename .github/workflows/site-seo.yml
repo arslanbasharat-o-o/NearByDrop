@@ -1,0 +1,101 @@
+name: Site SEO
+
+on:
+  push:
+    branches: [main, beta]
+    paths:
+      - "docs/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tailwind.config.js"
+      - "components/**"
+      - "lib/**"
+      - "scripts/site-components.tsx"
+      - "scripts/scroll-draw-progress.*"
+      - "vite.config.mts"
+      - "tsconfig.json"
+      - "scripts/tailwind.css"
+      - "scripts/check_site_seo.py"
+      - "scripts/indexnow_payload.py"
+      - ".github/workflows/site-seo.yml"
+  pull_request:
+    branches: [main, beta]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  site-seo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Install site dependencies
+        run: npm ci
+      - name: Type-check site components
+        run: npx tsc --noEmit
+      - name: Test scroll drawing progress
+        run: npm run test:site
+      - name: Test site interactions
+        run: node scripts/site-interactions.test.mjs
+      - name: Verify committed site stylesheet
+        run: |
+          cp docs/assets/site.css /tmp/site.css
+          npm run build:css
+          cmp /tmp/site.css docs/assets/site.css
+      - name: Verify committed site component bundle
+        run: |
+          cp docs/assets/site-components.js /tmp/site-components.js
+          npm run build:components
+          cmp /tmp/site-components.js docs/assets/site-components.js
+      - name: Validate sitemap and crawl paths
+        run: python3 scripts/check_site_seo.py
+      - name: Notify IndexNow after the site is published
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          published=false
+          for _ in $(seq 1 36); do
+            runs=$(gh run list --repo "$GH_REPOSITORY" --branch main --limit 100 --json name,headSha,status,conclusion) || {
+              echo "IndexNow skipped: GitHub Pages run lookup failed."
+              exit 0
+            }
+            status=$(jq -r --arg sha "$HEAD_SHA" '[.[] | select(.headSha == $sha and .name == "pages build and deployment")][0].status // empty' <<< "$runs")
+            conclusion=$(jq -r --arg sha "$HEAD_SHA" '[.[] | select(.headSha == $sha and .name == "pages build and deployment")][0].conclusion // empty' <<< "$runs")
+            if [[ "$status" == completed ]]; then
+              if [[ "$conclusion" == success ]]; then published=true; fi
+              break
+            fi
+            sleep 5
+          done
+          if [[ "$published" != true ]]; then
+            echo "IndexNow skipped: this commit's GitHub Pages deployment did not finish successfully."
+            exit 0
+          fi
+          if [[ "$BASE_SHA" =~ ^0+$ ]]; then BASE_SHA=$(git rev-parse HEAD^); fi
+          python3 scripts/indexnow_payload.py "$BASE_SHA" "$HEAD_SHA" > "$RUNNER_TEMP/indexnow-payload.json"
+          if [[ "$(jq '.urlList | length' "$RUNNER_TEMP/indexnow-payload.json")" == 0 ]]; then
+            echo "IndexNow skipped: no HTML pages changed."
+            exit 0
+          fi
+          response_code=$(curl -sS -o "$RUNNER_TEMP/indexnow-response.txt" -w '%{http_code}' \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            --data-binary @"$RUNNER_TEMP/indexnow-payload.json" \
+            'https://api.indexnow.org/indexnow') || {
+              echo "IndexNow skipped: the notification endpoint could not be reached."
+              exit 0
+            }
+          if [[ "$response_code" == 200 || "$response_code" == 202 ]]; then
+            echo "IndexNow accepted the changed HTML URLs (HTTP ${response_code})."
+          else
+            echo "IndexNow did not accept the URLs (HTTP ${response_code}); the Pages and SEO checks remain successful."
+            cat "$RUNNER_TEMP/indexnow-response.txt"
+          fi

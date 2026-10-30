@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send Files from Mac to Android with Quick Share | Nearby Drop</title>
+  <meta name="description" content="Check native Quick Share and AirDrop support, then compare Nearby Drop for Mac-to-Android, Finder, USB MTP, and QR transfers.">
+  <meta name="author" content="Arslan Basharat">
+  <meta name="robots" content="index, follow">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#070707">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'">
+  <script src="../assets/site-theme.js?v=3"></script>
+<link rel="canonical" href="https://arslanbasharat-o-o.github.io/NearByDrop/blog/mac-to-android-quick-share.html">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Nearby Drop">
+  <meta property="og:title" content="Send Files from Mac to Android with Quick Share">
+  <meta property="og:description" content="Check native Quick Share and AirDrop compatibility, then compare Nearby Drop, Finder sharing, USB MTP, and QR transfers.">
+  <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/blog/mac-to-android-quick-share.html">
+  <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:alt" content="Nearby Drop, Quick Share for Mac">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Send Files from Mac to Android with Quick Share">
+  <meta name="twitter:description" content="Check native Quick Share and AirDrop compatibility, then set up Nearby Drop for Mac-to-Android, Finder, USB, and QR transfers.">
+  <meta name="twitter:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
+  <link rel="icon" type="image/png" href="../assets/icon-128.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Send Files from Mac to Android with Quick Share",
+    "description": "Current Quick Share and AirDrop compatibility for Mac-to-Android transfers, plus Nearby Drop setup and test notes.",
+    "datePublished": "2026-10-23",
+    "dateModified": "2026-10-26",
+    "mainEntityOfPage": "https://arslanbasharat-o-o.github.io/NearByDrop/blog/mac-to-android-quick-share.html",
+    "author": {"@type": "Person", "name": "Arslan Basharat", "url": "https://github.com/arslanbasharat-o-o"},
+    "publisher": {"@type": "Organization", "name": "Nearby Drop", "url": "https://arslanbasharat-o-o.github.io/NearByDrop/"}
+  }
+  </script>
+  <link rel="stylesheet" href="../assets/site.css">
+  <link rel="stylesheet" href="../assets/site-appearance.css?v=3">
+</head>
+<body id="top" class="blog-page font-sans antialiased">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="fixed inset-0 pointer-events-none grid-lines opacity-60" aria-hidden="true"></div>
+  <header class="blog-header">
+    <div class="blog-header__inner">
+      <a class="brand" href="../"><img src="../assets/icon-128.png" width="30" height="30" alt=""><span>Nearby Drop</span></a>
+      <nav class="blog-nav" aria-label="Main navigation"><a href="../">Home</a><a href="../#guides">Guides</a><a href="../#features">Features</a></nav>
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch color theme"><svg aria-hidden="true" data-theme-icon="light"
+  xmlns="http://www.w3.org/2000/svg"
+  width="16"
+  height="16"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+  <path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7" />
+</svg>
+<svg aria-hidden="true" data-theme-icon="dark"
+  xmlns="http://www.w3.org/2000/svg"
+  width="16"
+  height="16"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454l0 .008" />
+</svg>
+</button>
+      <a class="button button--small" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">Download</a>
+    </div>
+  </header>
+<main id="main" class="relative z-10 mx-auto max-w-4xl px-5 py-14 sm:px-8 sm:py-20">
+    <p class="mb-5 font-mono text-xs uppercase tracking-widest text-accent">MAC → ANDROID · QUICK SHARE GUIDE</p>
+    <h1 class="mb-6 font-display text-3xl font-bold uppercase leading-tight tracking-tight text-white sm:text-5xl">Send Files from Mac to Android with Quick Share</h1>
+    <p class="mb-10 text-base leading-relaxed text-neutral-300 sm:text-lg">Nearby Drop is an independent macOS menu bar app for sending files to compatible Android Quick Share devices and receiving files back on the Mac. Transfers run over a reachable local network; the app does not use a cloud relay.</p>
+
+    <section class="mb-8 border border-theme-border bg-theme-surface p-6 sm:p-8">
+      <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Check native Quick Share first</h2>
+      <p class="mb-3 text-sm leading-relaxed text-neutral-300">Google's built-in Quick Share can send from Android to Mac through AirDrop on Pixel 8a or later and certain other Android models. For the reverse direction, Google currently lists Pixel 9 or later, except Pixel 9a: set the phone to Everyone for 10 minutes or Quick Share Receive mode. Check <a class="underline hover:text-white" href="https://support.google.com/pixelphone/answer/9286773?hl=en" target="_blank" rel="noopener">Google's current compatibility and setup guide</a>; support depends on phone model and transfer direction.</p>
+      <p class="text-sm leading-relaxed text-neutral-400">A compatible native transfer needs no Mac app. Nearby Drop adds its own Mac menu-bar workflow, Finder sharing, USB MTP, and QR options for the setups covered in the test notes below.</p>
+    </section>
+
+    <section class="mb-8 border border-theme-border bg-theme-surface p-6 sm:p-8">
+      <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Send over Wi-Fi</h2>
+      <ol class="list-inside list-decimal space-y-3 text-sm leading-relaxed text-neutral-300">
+        <li>Install Nearby Drop on a Mac running macOS 14 or later. The universal release supports Apple silicon and Intel.</li>
+        <li>Connect the Mac and Android phone to a reachable local Wi-Fi network, then open Nearby Drop from the menu bar.</li>
+        <li>Choose <strong>Send</strong>, select the files, and choose the Android device when it appears.</li>
+        <li>Accept the incoming transfer in Quick Share on Android. Speed and discovery depend on the devices, signal, router, and network settings.</li>
+      </ol>
+    </section>
+
+    <section class="mb-8 border border-theme-border bg-theme-surface p-6 sm:p-8">
+      <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Share from Finder</h2>
+      <p class="text-sm leading-relaxed text-neutral-300">Select files, folders, or a web link in Finder, open the Share menu, and choose Nearby Drop. Pick a nearby Android device in the app to continue the transfer.</p>
+    </section>
+
+    <section class="mb-8 border border-theme-border bg-theme-surface p-6 sm:p-8">
+      <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Use a Mac-generated QR code</h2>
+      <p class="mb-3 text-sm leading-relaxed text-neutral-300">Nearby Drop can display a Quick Share QR code for the phone to scan. This Mac-to-Android path passed with a Pixel 8 Pro in a development test build; the packaged release was not separately device-tested for this flow.</p>
+      <p class="text-sm leading-relaxed text-neutral-400">The in-app camera also receives Android-generated codes. Pixel 8 Pro to Mac QR receiving passed during v2.3.2 validation, and the fix is included in the current release.</p>
+    </section>
+
+    <section class="mb-10 border border-theme-border bg-theme-black p-6 sm:p-8">
+      <h2 class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">If your phone does not see the Mac</h2>
+      <p class="mb-4 text-sm leading-relaxed text-neutral-300">Both devices need a network that allows local discovery. Guest Wi-Fi, client isolation, firewall rules, or hotspot settings may prevent them from appearing. LTE-only phone-hotspot discovery has not been verified. You can also transfer files to or from Android storage over USB MTP.</p>
+      <p class="text-sm leading-relaxed text-neutral-400">Nearby Drop is free to download for macOS 14 or later, uses a proprietary license, and is not affiliated with Google or Apple. The current download is ad hoc signed and not notarized, so macOS may show a Gatekeeper warning.</p>
+    </section>
+
+    <section class="mb-10 border border-theme-border bg-theme-surface p-6 sm:p-8" aria-labelledby="related-guides">
+      <h2 id="related-guides" class="mb-4 font-display text-xl font-bold uppercase text-white sm:text-2xl">Related transfer guides</h2>
+      <ul class="space-y-3 text-sm leading-relaxed text-neutral-300">
+        <li><a class="underline hover:text-white" href="how-to-transfer-files-mac-android.html">Receive files from Android on a Mac with Quick Share or USB MTP</a></li>
+        <li><a class="underline hover:text-white" href="airdrop-alternative-for-android.html">Compare Android-to-Mac file transfer options</a></li>
+        <li><a class="underline hover:text-white" href="neardrop-vs-nearby-drop.html">See how NearDrop and Nearby Drop differ</a></li>
+        <li><a class="underline hover:text-white" href="quick-share-mac-windows.html">Use Quick Share between a Mac and Windows PC</a></li>
+      </ul>
+    </section>
+
+    <div class="flex flex-wrap gap-4">
+      <a class="bg-accent px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider text-white" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest">GET NEARBY DROP</a>
+      <a class="border border-theme-border px-6 py-3 font-mono text-xs uppercase tracking-wider text-white" href="https://github.com/arslanbasharat-o-o/NearByDrop" target="_blank" rel="noopener">VIEW SOURCE &amp; STAR</a>
+      <a class="border border-theme-border px-6 py-3 font-mono text-xs uppercase tracking-wider text-white" href="../#flow-title">SEE TRANSFER STATUS</a>
+      <a class="border border-theme-border px-6 py-3 font-mono text-xs uppercase tracking-wider text-white" href="how-to-transfer-files-mac-android.html">ANDROID TO MAC GUIDE</a>
+    </div>
+  </main>
+  <footer class="relative z-10 border-t border-theme-border px-5 py-6 font-mono text-xs text-neutral-500">
+    <div class="mx-auto flex max-w-6xl flex-wrap justify-between gap-3"><span>NEARBY DROP · INDEPENDENT MACOS APP</span><a class="text-neutral-300 underline" href="../">BACK TO NEARBY DROP</a></div>
+
+    <nav class="legal-nav" aria-label="Legal information"><a href="../legal/privacy.html">Privacy</a><a href="../legal/terms.html">Terms</a><a href="../legal/security.html">Security</a><a href="../legal/licenses.html">Licenses</a></nav>
+  </footer>
+</body>
+</html>

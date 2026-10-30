@@ -1,0 +1,30 @@
+# Build products
+node_modules/
+DerivedData/
+build/
+build-*/
+dist/
+*.hmap
+*.log
+*.xcresult/
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+NearByDrop.xcodeproj/xcuserdata/
+project.xcworkspace/xcuserdata/
+
+# macOS system
+.DS_Store
+
+# Package archives & disk images
+*.zip
+*.dmg
+
+# Local test & verification logs
+*-TEST-*.md
+RELEASE-VERIFICATION*.md
+
