@@ -46,8 +46,72 @@ public struct TransferFileSelection: Sendable {
     }
 }
 
+public enum TransferFileRetryError: LocalizedError {
+    case sourceUnavailable
+    case accessExpired
+    case sourceChanged
+    case tooManyFiles
+
+    public var errorDescription: String? {
+        switch self {
+        case .sourceUnavailable:
+            return "A selected file or folder is no longer available. Choose the files again before sending."
+        case .accessExpired:
+            return "Access to a selected file or folder has expired. Choose it again and retry."
+        case .sourceChanged:
+            return "A selected file or folder changed after it was chosen. Review the selection and choose it again."
+        case .tooManyFiles:
+            return "Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Choose fewer files and try again."
+        }
+    }
+}
+
 public enum TransferFileSafety {
     public static let maximumFileCount = 128
+
+    public static func revalidateSelection(
+        roots: [URL],
+        matching expected: TransferFileSelection
+    ) throws -> TransferFileSelection {
+        let current = expandSelection(roots)
+        if let rootError = rootAvailabilityError(roots) { throw rootError }
+        guard current.urls.count <= maximumFileCount else { throw TransferFileRetryError.tooManyFiles }
+        guard !current.urls.isEmpty else {
+            if current.skipped.unreadable > expected.skipped.unreadable {
+                throw TransferFileRetryError.accessExpired
+            }
+            throw TransferFileRetryError.sourceUnavailable
+        }
+        guard current.urls == expected.urls,
+              current.displayNames == expected.displayNames,
+              current.identities == expected.identities,
+              current.skipped.symbolicLinks == expected.skipped.symbolicLinks,
+              current.skipped.unreadable == expected.skipped.unreadable,
+              current.skipped.unsupported == expected.skipped.unsupported else {
+            if current.skipped.unreadable > expected.skipped.unreadable {
+                throw TransferFileRetryError.accessExpired
+            }
+            throw TransferFileRetryError.sourceChanged
+        }
+        return current
+    }
+
+    private static func rootAvailabilityError(_ roots: [URL]) -> TransferFileRetryError? {
+        for root in roots {
+            var status = stat()
+            let result = root.path.withCString { Darwin.lstat($0, &status) }
+            guard result != 0 else { continue }
+            switch errno {
+            case EACCES, EPERM:
+                return .accessExpired
+            case ENOENT, ENOTDIR:
+                return .sourceUnavailable
+            default:
+                return .sourceUnavailable
+            }
+        }
+        return nil
+    }
 
     public static func expandSelection(_ inputURLs: [URL]) -> TransferFileSelection {
         var urls: [URL] = []

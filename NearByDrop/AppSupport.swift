@@ -1,4 +1,172 @@
 import Cocoa
+import NearbyShare
+
+enum OutgoingAttemptPhase: String, Equatable {
+    case idle
+    case retrying
+    case connecting
+    case waitingForReceiver
+    case transferring
+    case failed
+    case completed
+    case cancelled
+
+    var isActive: Bool {
+        switch self {
+        case .retrying, .connecting, .waitingForReceiver, .transferring: true
+        case .idle, .failed, .completed, .cancelled: false
+        }
+    }
+}
+
+struct OutgoingAttemptLifecycle {
+    private(set) var attemptID: UUID?
+    private(set) var phase: OutgoingAttemptPhase = .idle
+    private(set) var retryAvailable = false
+
+    mutating func begin(retry: Bool) -> UUID? {
+        guard !phase.isActive else { return nil }
+        if retry && !(phase == .failed && retryAvailable) { return nil }
+
+        let id = UUID()
+        attemptID = id
+        phase = retry ? .retrying : .connecting
+        retryAvailable = false
+        return id
+    }
+
+    @discardableResult
+    mutating func transition(to next: OutgoingAttemptPhase, for id: UUID) -> Bool {
+        guard attemptID == id, phase.isActive else { return false }
+        phase = next
+        retryAvailable = false
+        return true
+    }
+
+    @discardableResult
+    mutating func fail(for id: UUID, retryAllowed: Bool) -> Bool {
+        guard attemptID == id, phase.isActive else { return false }
+        phase = .failed
+        retryAvailable = retryAllowed
+        return true
+    }
+
+    @discardableResult
+    mutating func complete(for id: UUID) -> Bool {
+        guard attemptID == id, phase.isActive else { return false }
+        phase = .completed
+        retryAvailable = false
+        return true
+    }
+
+    @discardableResult
+    mutating func cancel(for id: UUID) -> Bool {
+        guard attemptID == id, phase.isActive else { return false }
+        phase = .cancelled
+        retryAvailable = false
+        return true
+    }
+}
+
+enum OutgoingHistoryPolicy {
+    static func sourceURL(for url: URL?, isRetry: Bool) -> URL? {
+        isRetry ? nil : url
+    }
+}
+
+enum DiagnosticsNetworkState: String, Codable {
+    case ready
+    case starting
+    case unavailable
+    case paused
+}
+
+enum DiagnosticsErrorCategory: String, Codable {
+    case network
+    case fileAccess
+    case sourceChanged
+    case connection
+    case cancelled
+    case other
+}
+
+struct DiagnosticsReportSnapshot: Equatable {
+    let appVersion: String
+    let buildNumber: String
+    let macOSVersion: String
+    let architecture: String
+    let networkState: DiagnosticsNetworkState
+    let outgoingState: OutgoingAttemptPhase
+    let incomingTransferCount: Int
+    let outgoingTransferCount: Int
+    let lastErrorCategory: DiagnosticsErrorCategory?
+}
+
+enum DiagnosticsReportBuilder {
+    static func makeJSON(from snapshot: DiagnosticsReportSnapshot) throws -> String {
+        let report: [String: Any] = [
+            "format": "nearby-drop-diagnostics",
+            "format_version": 1,
+            "application": [
+                "version": snapshot.appVersion,
+                "build": snapshot.buildNumber
+            ],
+            "system": [
+                "macos_version": snapshot.macOSVersion,
+                "architecture": snapshot.architecture
+            ],
+            "status": [
+                "receiving": snapshot.networkState.rawValue,
+                "outgoing_transfer": snapshot.outgoingState.rawValue,
+                "active_incoming_transfers": max(0, snapshot.incomingTransferCount),
+                "active_outgoing_transfers": max(0, snapshot.outgoingTransferCount),
+                "last_error_category": snapshot.lastErrorCategory?.rawValue ?? "none"
+            ]
+        ]
+        let data = try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw CocoaError(.fileWriteInapplicableStringEncoding)
+        }
+        return text + "\n"
+    }
+
+    static func category(for error: Error?) -> DiagnosticsErrorCategory? {
+        guard let error else { return nil }
+        if let retryError = error as? TransferFileRetryError {
+            switch retryError {
+            case .sourceUnavailable, .accessExpired: return .fileAccess
+            case .sourceChanged: return .sourceChanged
+            case .tooManyFiles: return .other
+            }
+        }
+        if let nearbyError = error as? NearbyError {
+            switch nearbyError {
+            case .inputOutput:
+                return .fileAccess
+            case .ukey2, .protocolError, .requiredFieldMissing:
+                let message = nearbyError.localizedDescription.lowercased()
+                if message.contains("changed") { return .sourceChanged }
+                if message.contains("reachable") || message.contains("connection") || message.contains("network") {
+                    return .network
+                }
+                return .connection
+            case .canceled:
+                return .cancelled
+            case .receivingPaused:
+                return .cancelled
+            }
+        }
+        if (error as NSError).domain == NSURLErrorDomain { return .network }
+        return .other
+    }
+
+    @discardableResult
+    static func write(_ report: String, to destination: URL?) throws -> Bool {
+        guard let destination else { return false }
+        try Data(report.utf8).write(to: destination, options: .atomic)
+        return true
+    }
+}
 
 enum IncomingConsentPresentationState {
     static func applyDecision<Incoming, Progress>(

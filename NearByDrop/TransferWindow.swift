@@ -52,6 +52,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var sendMessage = ""
     @Published var progress: Double = 0
     @Published var sending = false
+    @Published private(set) var outgoingPhase: OutgoingAttemptPhase = .idle
+    @Published private(set) var outgoingStatusMessage = ""
     @Published var recipient = ""
     @Published var error: String?
     @Published var selectionNotice: String?
@@ -121,12 +123,29 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     var onConsent: ((String, Bool) -> Void)?
     private var chosenID: String?
     private var chosenPeer: RemoteDeviceInfo?
+    private var retryPeer: RemoteDeviceInfo?
     private var scopedURLs: [URL] = []
+    private var selectedSourceURLs: [URL] = []
+    private var selectedFileSnapshot: TransferFileSelection?
+    private var outgoingLifecycle = OutgoingAttemptLifecycle()
+    private var activeOutgoingAttemptID: UUID?
+    private var activeOutgoingDelegate: OutgoingAttemptDelegate?
+    private var activeAttemptIsRetry = false
+    private var lastDiagnosticsErrorCategory: DiagnosticsErrorCategory?
     private var selectionGeneration = UUID()
     private let fileSelectionQueue = DispatchQueue(label: "com.arslanbasharat.NearByDrop.file-selection", qos: .userInitiated)
     private var qrExpiry: DispatchWorkItem?
     private var timeout: DispatchWorkItem?
     private var adDebounce: DispatchWorkItem?
+
+    var canRetryFailedOutgoing: Bool {
+        outgoingPhase == .failed && outgoingLifecycle.retryAvailable && retryPeer?.id != nil
+    }
+
+    var retryPeerIsNearby: Bool {
+        guard canRetryFailedOutgoing, let id = retryPeer?.id else { return false }
+        return devices.contains { $0.id == id }
+    }
 
     private var isDiscoveringDevices = false
     func startSendingDiscovery() {
@@ -184,6 +203,15 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         let generation = selectionGeneration
         scopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
         scopedURLs = []
+        selectedSourceURLs = newURLs
+        selectedFileSnapshot = nil
+        outgoingLifecycle = OutgoingAttemptLifecycle()
+        activeOutgoingAttemptID = nil
+        activeOutgoingDelegate = nil
+        activeAttemptIsRetry = false
+        outgoingPhase = .idle
+        outgoingStatusMessage = ""
+        retryPeer = nil
         urls = []
         displayNames = []
         selectionIdentities = []
@@ -203,7 +231,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
                 newScopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
                 return
             }
-            self.scopedURLs = newScopedURLs
+            newScopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+            self.selectedFileSnapshot = selection
             self.urls = selection.urls
             self.displayNames = selection.displayNames
             self.selectionIdentities = selection.identities
@@ -261,37 +290,340 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         panel.presentForInteraction(completion: handler)
     }
     func send(to device: RemoteDeviceInfo) {
-        guard !sending, !urls.isEmpty, let id = device.id else { return }
+        guard !sending, !usb.busy, !urls.isEmpty, selectedFileSnapshot != nil, device.id != nil else { return }
         guard urls.filter(\.isFileURL).count <= TransferFileSafety.maximumFileCount else {
             error = "Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Choose fewer files and try again."
             return
         }
-        chosenID = id
+        guard let attemptID = outgoingLifecycle.begin(retry: false) else { return }
+        activeOutgoingAttemptID = attemptID
+        outgoingPhase = .connecting
+        outgoingStatusMessage = "Checking selected files…"
+        prepareOutgoingAttempt(device, attemptID: attemptID, isRetry: false)
+    }
+
+    func retryFailedOutgoing() {
+        guard !sending, !usb.busy, canRetryFailedOutgoing,
+              let retryPeer, let id = retryPeer.id else { return }
+        guard let device = devices.first(where: { $0.id == id }) else {
+            outgoingStatusMessage = "Device is no longer nearby. Select it again to start a new attempt."
+            return
+        }
+        guard let attemptID = outgoingLifecycle.begin(retry: true) else { return }
+        activeOutgoingAttemptID = attemptID
+        outgoingPhase = .retrying
+        outgoingStatusMessage = "Retrying…"
+        prepareOutgoingAttempt(device, attemptID: attemptID, isRetry: true)
+    }
+
+    private func prepareOutgoingAttempt(_ device: RemoteDeviceInfo, attemptID: UUID, isRetry: Bool) {
+        guard let expected = selectedFileSnapshot, !selectedSourceURLs.isEmpty,
+              let deviceID = device.id else {
+            failPreparation(attemptID, message: "Choose the files again before sending.", category: .fileAccess)
+            return
+        }
+        activeAttemptIsRetry = isRetry
+        let sourceRoots = selectedSourceURLs
+        let newlyScopedURLs = sourceRoots.filter { $0.startAccessingSecurityScopedResource() }
+        let generation = selectionGeneration
+        sending = true
+        chosenID = deviceID
         chosenPeer = device
         recipient = device.name
-        sending = true
         showingQR = false
         progress = 0
         error = nil
+        sendMessage = isRetry ? "Retrying…" : "Checking selected files…"
         resetSpeedTracking()
-        FeedbackManager.shared.playStart()
-        FeedbackManager.shared.vibrateClick()
-        sendMessage = "Connecting…"
-        let expiry = DispatchWorkItem { [weak self] in
-            guard let self, self.sending else { return }
-            self.cancelSend()
-            self.error = "The phone did not respond. Open Quick Share in Receive mode and try again."
+        timeout?.cancel()
+
+        fileSelectionQueue.async { [weak self] in
+            let validation = Result { try TransferFileSafety.revalidateSelection(roots: sourceRoots, matching: expected) }
+            DispatchQueue.main.async {
+                guard let self,
+                      self.activeOutgoingAttemptID == attemptID,
+                      self.selectionGeneration == generation else {
+                    newlyScopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+                    return
+                }
+                switch validation {
+                case .failure(let failure):
+                    newlyScopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+                    self.failPreparation(
+                        attemptID,
+                        message: failure.localizedDescription,
+                        category: DiagnosticsReportBuilder.category(for: failure) ?? .fileAccess
+                    )
+                case .success(let selection):
+                    self.scopedURLs = newlyScopedURLs
+                    self.urls = selection.urls
+                    self.displayNames = selection.displayNames
+                    self.selectionIdentities = selection.identities
+                    self.totalBytes = selection.identities.reduce(Int64(0)) { total, identity in
+                        let (sum, overflow) = total.addingReportingOverflow(identity.size)
+                        return overflow ? Int64.max : sum
+                    }
+                    guard self.outgoingLifecycle.transition(to: .connecting, for: attemptID) else {
+                        self.releaseOutgoingFileAccess()
+                        return
+                    }
+                    self.outgoingPhase = .connecting
+                    self.outgoingStatusMessage = "Connecting…"
+                    self.sendMessage = "Connecting…"
+                    self.retryPeer = device
+                    self.lastDiagnosticsErrorCategory = nil
+                    FeedbackManager.shared.playStart()
+                    FeedbackManager.shared.vibrateClick()
+                    let expiry = DispatchWorkItem { [weak self] in
+                        guard let self, self.activeOutgoingAttemptID == attemptID,
+                              self.sending else { return }
+                        NearbyConnectionManager.shared.cancelOutgoingTransfer(id: deviceID)
+                        self.finishOutgoingFailure(
+                            NearbyError.canceled(reason: .timedOut),
+                            attemptID: attemptID,
+                            retryAllowed: true
+                        )
+                    }
+                    self.timeout = expiry
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 45, execute: expiry)
+                    let attemptDelegate = OutgoingAttemptDelegate(model: self, attemptID: attemptID)
+                    self.activeOutgoingDelegate = attemptDelegate
+                    NearbyConnectionManager.shared.startOutgoingTransfer(
+                        deviceID: deviceID,
+                        delegate: attemptDelegate,
+                        urls: selection.urls,
+                        displayNames: selection.displayNames,
+                        fileIdentities: selection.identities
+                    )
+                    NearbyConnectionManager.shared.clearQrCodeKey()
+                }
+            }
         }
-        timeout?.cancel(); timeout = expiry
-        DispatchQueue.main.asyncAfter(deadline: .now() + 45, execute: expiry)
-        NearbyConnectionManager.shared.startOutgoingTransfer(deviceID: id, delegate: self, urls: urls, displayNames: displayNames.isEmpty ? nil : displayNames, fileIdentities: selectionIdentities)
-        NearbyConnectionManager.shared.clearQrCodeKey()
     }
+
+    private func failPreparation(_ attemptID: UUID, message: String, category: DiagnosticsErrorCategory) {
+        guard outgoingLifecycle.fail(for: attemptID, retryAllowed: false) else { return }
+        sending = false
+        chosenID = nil
+        chosenPeer = nil
+        retryPeer = nil
+        error = message
+        sendMessage = ""
+        outgoingPhase = .failed
+        outgoingStatusMessage = "Failed"
+        lastDiagnosticsErrorCategory = category
+        resetSpeedTracking()
+    }
+
+    private func releaseOutgoingFileAccess() {
+        scopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+        scopedURLs = []
+    }
+
     func cancelSend() {
         timeout?.cancel()
+        timeout = nil
         if let id = chosenID { NearbyConnectionManager.shared.cancelOutgoingTransfer(id: id) }
-        chosenID = nil; chosenPeer = nil; sending = false; sendMessage = "Canceled"
+        if let activeOutgoingAttemptID {
+            _ = outgoingLifecycle.cancel(for: activeOutgoingAttemptID)
+        }
+        activeOutgoingAttemptID = nil
+        activeOutgoingDelegate = nil
+        activeAttemptIsRetry = false
+        chosenID = nil
+        chosenPeer = nil
+        sending = false
+        sendMessage = "Cancelled"
+        outgoingPhase = .cancelled
+        outgoingStatusMessage = "Cancelled. Select a nearby device to start a new attempt."
+        releaseOutgoingFileAccess()
         resetSpeedTracking()
+    }
+
+    private func finishOutgoingFailure(_ error: Error, attemptID: UUID, retryAllowed: Bool) {
+        guard outgoingLifecycle.fail(for: attemptID, retryAllowed: retryAllowed) else { return }
+        timeout?.cancel()
+        timeout = nil
+        sending = false
+        chosenID = nil
+        retryPeer = chosenPeer
+        chosenPeer = nil
+        self.error = Self.errorMessage(error)
+        sendMessage = ""
+        outgoingPhase = .failed
+        outgoingStatusMessage = "Failed"
+        lastDiagnosticsErrorCategory = DiagnosticsReportBuilder.category(for: error)
+        activeOutgoingDelegate = nil
+        releaseOutgoingFileAccess()
+        resetSpeedTracking()
+        FeedbackManager.shared.playError()
+        FeedbackManager.shared.vibrateTap()
+    }
+
+    fileprivate func receiveOutgoingConnectionEstablished(pinCode: String, attemptID: UUID) {
+        DispatchQueue.main.async {
+            guard self.activeOutgoingAttemptID == attemptID,
+                  self.outgoingLifecycle.transition(to: .waitingForReceiver, for: attemptID) else { return }
+            self.outgoingPhase = .waitingForReceiver
+            self.outgoingStatusMessage = "Waiting for receiver approval"
+            self.sendMessage = "Confirm code \(pinCode) on \(self.recipient)"
+        }
+    }
+
+    fileprivate func receiveOutgoingAccepted(attemptID: UUID) {
+        DispatchQueue.main.async {
+            guard self.activeOutgoingAttemptID == attemptID,
+                  self.outgoingLifecycle.transition(to: .transferring, for: attemptID) else { return }
+            self.timeout?.cancel()
+            self.outgoingPhase = .transferring
+            self.outgoingStatusMessage = "Transferring"
+            self.sendMessage = "Sending to \(self.recipient)…"
+            FeedbackManager.shared.vibrateTap()
+        }
+    }
+
+    fileprivate func receiveOutgoingProgress(_ progress: Double, attemptID: UUID) {
+        DispatchQueue.main.async {
+            guard self.activeOutgoingAttemptID == attemptID,
+                  self.outgoingLifecycle.phase == .transferring else { return }
+            self.progress = min(1, max(0, progress))
+            let currentBytes = Int64(Double(self.totalBytes) * self.progress)
+            self.updateSpeedAndETA(currentBytes: currentBytes, total: self.totalBytes)
+        }
+    }
+
+    fileprivate func receiveOutgoingFailure(_ error: Error, attemptID: UUID) {
+        DispatchQueue.main.async {
+            guard self.activeOutgoingAttemptID == attemptID else { return }
+            let isUserCancellation: Bool
+            if let nearbyError = error as? NearbyError,
+               case .canceled(reason: .userCanceled) = nearbyError {
+                isUserCancellation = true
+            } else {
+                isUserCancellation = false
+            }
+            let retryAllowed = !isUserCancellation
+            self.finishOutgoingFailure(error, attemptID: attemptID, retryAllowed: retryAllowed)
+        }
+    }
+
+    fileprivate func receiveOutgoingFinished(attemptID: UUID) {
+        DispatchQueue.main.async { [self] in
+            guard activeOutgoingAttemptID == attemptID,
+                  outgoingLifecycle.complete(for: attemptID) else { return }
+            timeout?.cancel()
+            timeout = nil
+            let peer = recipient
+            let peerInfo = chosenPeer
+            chosenPeer = nil
+            chosenID = nil
+            retryPeer = nil
+            progress = 1
+            sendMessage = "Sent to \(peer)"
+            outgoingPhase = .completed
+            outgoingStatusMessage = "Completed"
+            let fileName = displayNames.first ?? urls.first?.lastPathComponent ?? "Files"
+            let display = urls.count > 1 ? "\(fileName) (+\(urls.count - 1))" : fileName
+            recordTransfer(
+                fileName: display,
+                fileSize: totalBytes,
+                direction: .outgoing,
+                peerName: peer,
+                fileURL: OutgoingHistoryPolicy.sourceURL(for: urls.first, isRetry: activeAttemptIsRetry)
+            )
+            activeAttemptIsRetry = false
+            if let peerInfo { UsageAnalytics.completedTransfer(direction: "outgoing", peer: peerInfo) }
+            releaseOutgoingFileAccess()
+            FeedbackManager.shared.playSuccess()
+            FeedbackManager.shared.vibrateSuccess()
+            resetSpeedTracking()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+                guard let self, self.chosenID == nil else { return }
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    self.sending = false
+                    self.setFiles([])
+                    self.sendMessage = ""
+                    self.progress = 0
+                }
+            }
+        }
+    }
+
+    func setReceivingPaused(_ paused: Bool) {
+        guard receivingPaused != paused else { return }
+        receivingPaused = paused
+        if paused {
+            scanning = false
+            if waitingForQR {
+                stopQRReceive()
+                qrStatus = .failed(error: "Receiving is paused. Resume receiving before scanning again.")
+            }
+        }
+        NearbyConnectionManager.shared.setReceivingPaused(paused)
+    }
+
+    func scan(_ value: String) -> String? {
+        guard !receivingPaused else { return "Receiving is paused. Resume receiving before scanning a QR code." }
+        guard let url = URL(string: value) else { return "Invalid QR code" }
+        do {
+            try NearbyConnectionManager.shared.receiveQRCode(value)
+            lastScannedURL = url
+            scanning = false
+            waitingForQR = true
+            qrStatus = .connecting(sender: "Phone")
+            receiveMessage = "Waiting for phone to connect…"
+            qrExpiry?.cancel()
+            let expiry = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                if case .completed = self.qrStatus {}
+                else {
+                    self.stopQRReceive()
+                    self.qrStatus = .failed(error: "Transfer timed out. Try scanning again.")
+                }
+            }
+            qrExpiry = expiry
+            DispatchQueue.main.asyncAfter(deadline: .now() + 120, execute: expiry)
+            return nil
+        } catch { return Self.errorMessage(error) }
+    }
+
+    var diagnosticsReportSnapshot: DiagnosticsReportSnapshot {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        let networkState: DiagnosticsNetworkState
+        if receivingPaused {
+            networkState = .paused
+        } else {
+            networkState = switch advertisement {
+            case .published: .ready
+            case .paused: .paused
+            case .failed: .unavailable
+            case .starting, .idle: .starting
+            }
+        }
+        return DiagnosticsReportSnapshot(
+            appVersion: version,
+            buildNumber: build,
+            macOSVersion: "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)",
+            architecture: Self.processArchitecture,
+            networkState: networkState,
+            outgoingState: outgoingPhase,
+            incomingTransferCount: incoming.count,
+            outgoingTransferCount: sending ? 1 : 0,
+            lastErrorCategory: lastDiagnosticsErrorCategory
+        )
+    }
+
+    private static var processArchitecture: String {
+        #if arch(arm64)
+        "arm64"
+        #elseif arch(x86_64)
+        "x86_64"
+        #else
+        "other"
+        #endif
     }
     func showQR() {
         guard !urls.isEmpty, !sending else { return }
@@ -325,29 +657,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         showingQR = false
         qrImage = nil
         qrTransferStatus = "Waiting for phone to scan…"
-    }
-    func scan(_ value: String) -> String? {
-        guard let url = URL(string: value) else { return "Invalid QR code" }
-        do {
-            try NearbyConnectionManager.shared.receiveQRCode(value)
-            lastScannedURL = url
-            scanning = false
-            waitingForQR = true
-            qrStatus = .connecting(sender: "Phone")
-            receiveMessage = "Waiting for phone to connect…"
-            qrExpiry?.cancel()
-            let expiry = DispatchWorkItem { [weak self] in
-                guard let self = self else { return }
-                if case .completed = self.qrStatus {}
-                else {
-                    self.stopQRReceive()
-                    self.qrStatus = .failed(error: "Transfer timed out. Try scanning again.")
-                }
-            }
-            qrExpiry = expiry
-            DispatchQueue.main.asyncAfter(deadline: .now() + 120, execute: expiry)
-            return nil
-        } catch { return Self.errorMessage(error) }
     }
     func stopQRReceive() {
         qrExpiry?.cancel()
@@ -600,6 +909,25 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     static func openDownloads() {
         NSWorkspace.shared.open(NearbyConnectionManager.downloadDirectory)
     }
+}
+
+private final class OutgoingAttemptDelegate: ShareExtensionDelegate {
+    private weak var model: TransferModel?
+    private let attemptID: UUID
+
+    init(model: TransferModel, attemptID: UUID) {
+        self.model = model
+        self.attemptID = attemptID
+    }
+
+    func addDevice(device: RemoteDeviceInfo) { model?.addDevice(device: device) }
+    func removeDevice(id: String) { model?.removeDevice(id: id) }
+    func startTransferWithQrCode(device: RemoteDeviceInfo) { model?.startTransferWithQrCode(device: device) }
+    func connectionWasEstablished(pinCode: String) { model?.receiveOutgoingConnectionEstablished(pinCode: pinCode, attemptID: attemptID) }
+    func connectionFailed(with error: Error) { model?.receiveOutgoingFailure(error, attemptID: attemptID) }
+    func transferAccepted() { model?.receiveOutgoingAccepted(attemptID: attemptID) }
+    func transferProgress(progress: Double) { model?.receiveOutgoingProgress(progress, attemptID: attemptID) }
+    func transferFinished() { model?.receiveOutgoingFinished(attemptID: attemptID) }
 }
 
 struct TransferCompletionCard: View {

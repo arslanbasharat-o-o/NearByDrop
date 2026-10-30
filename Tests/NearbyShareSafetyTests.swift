@@ -336,7 +336,223 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
     func outboundConnectionTransferFinished(connection: OutboundNearbyConnection) { sent.fulfill() }
 }
 
+final class RetryConsentLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, OutboundNearbyConnectionDelegate {
+    private var listener: NWListener!
+    private var sourceURL: URL!
+    private var destinationDirectory: URL!
+    private var outbounds: [OutboundNearbyConnection] = []
+    private var inbounds: [InboundNearbyConnection] = []
+    private var consentCount = 0
+    private var failedAttempts = 0
+    private var firstAttemptRejected: XCTestExpectation!
+    private var secondAttemptFinished: XCTestExpectation!
+    private var inboundTerminations: XCTestExpectation!
+    private var terminationCount = 0
+    private var terminationErrors: [Error?] = []
+    private var payload = Data()
+
+    func testPeerRejectionThenRetryStartsFreshConsentBeforePayloadWrite() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        destinationDirectory = root.appendingPathComponent("received", isDirectory: true)
+        try FileManager.default.createDirectory(at: destinationDirectory, withIntermediateDirectories: true)
+        sourceURL = root.appendingPathComponent("retry-payload.bin")
+        payload = Data((0..<64 * 1024).map { UInt8(truncatingIfNeeded: $0) })
+        try payload.write(to: sourceURL)
+        defer {
+            listener?.cancel()
+            outbounds.forEach { $0.cancel() }
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let defaults = UserDefaults.standard
+        let previousPath = defaults.object(forKey: "downloadDirectoryURL")
+        let previousBookmark = defaults.object(forKey: "downloadDirectoryBookmark")
+        defer {
+            defaults.set(previousPath, forKey: "downloadDirectoryURL")
+            defaults.set(previousBookmark, forKey: "downloadDirectoryBookmark")
+        }
+        NearbyConnectionManager.downloadDirectory = destinationDirectory
+
+        firstAttemptRejected = expectation(description: "First attempt was rejected by the receiver")
+        secondAttemptFinished = expectation(description: "Fresh retry completed")
+        inboundTerminations = expectation(description: "Both inbound sessions terminated")
+        inboundTerminations.expectedFulfillmentCount = 2
+
+        listener = try NWListener(using: .tcp, on: .any)
+        listener.newConnectionHandler = { [weak self] connection in
+            guard let self else { return }
+            let inbound = InboundNearbyConnection(connection: connection, id: "retry-inbound-\(UUID().uuidString)")
+            inbound.delegate = self
+            self.inbounds.append(inbound)
+            inbound.start()
+        }
+        listener.stateUpdateHandler = { [weak self] state in
+            guard let self, state == .ready, let port = self.listener.port else { return }
+            self.startOutboundAttempt(port: port, name: "first")
+        }
+        listener.start(queue: .main)
+
+        wait(for: [firstAttemptRejected, secondAttemptFinished, inboundTerminations], timeout: 30)
+        XCTAssertEqual(consentCount, 2, "Every attempt must receive a new approval decision")
+        XCTAssertEqual(failedAttempts, 1)
+        XCTAssertEqual(terminationErrors.count, 2)
+        XCTAssertEqual(terminationErrors.filter { $0 != nil }.count, 1)
+        XCTAssertEqual(try Data(contentsOf: destinationDirectory.appendingPathComponent(sourceURL.lastPathComponent)), payload)
+    }
+
+    private func startOutboundAttempt(port: NWEndpoint.Port, name: String) {
+        let connection = NWConnection(host: "127.0.0.1", port: port, using: .tcp)
+        let identity = try? TransferFileSafety.readableIdentity(at: sourceURL)
+        let outbound = OutboundNearbyConnection(
+            connection: connection,
+            id: "retry-outbound-\(name)",
+            urlsToSend: [sourceURL],
+            displayNames: [sourceURL.lastPathComponent],
+            fileIdentities: identity.map { [$0] }
+        )
+        outbound.delegate = self
+        outbounds.append(outbound)
+        outbound.start()
+    }
+
+    func obtainUserConsent(for transfer: TransferMetadata, from device: RemoteDeviceInfo, connection: InboundNearbyConnection) {
+        consentCount += 1
+        for file in transfer.files {
+            if let destination = file.destinationURL {
+                XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "Payload files must not exist before consent")
+            }
+        }
+        if consentCount == 1 {
+            connection.submitUserConsent(accepted: false)
+            return
+        }
+        guard consentCount == 2 else {
+            XCTFail("Duplicate consent callback for retry session")
+            return
+        }
+        NearbyConnection.connectionQueue.async {
+            var acknowledgement = Location_Nearby_Connections_OfflineFrame()
+            acknowledgement.version = .v1
+            acknowledgement.v1.type = .payloadTransfer
+            acknowledgement.v1.payloadTransfer.packetType = .payloadAck
+            acknowledgement.v1.payloadTransfer.payloadHeader.id = 0
+            do { try connection.encryptAndSendOfflineFrame(acknowledgement) }
+            catch { XCTFail("Could not send transfer acknowledgement: \(error)") }
+            connection.submitUserConsent(accepted: true)
+        }
+    }
+
+    func inboundTransferProgress(connection: InboundNearbyConnection, id: String, bytesTransferred: Int64, totalBytes: Int64) {}
+
+    func connectionWasTerminated(connection: InboundNearbyConnection, error: Error?) {
+        terminationErrors.append(error)
+        terminationCount += 1
+        inboundTerminations.fulfill()
+    }
+
+    func outboundConnectionWasEstablished(connection: OutboundNearbyConnection) {}
+    func outboundConnection(connection: OutboundNearbyConnection, transferProgress: Double) {}
+    func outboundConnectionTransferAccepted(connection: OutboundNearbyConnection) {}
+
+    func outboundConnection(connection: OutboundNearbyConnection, failedWithError: Error) {
+        failedAttempts += 1
+        guard failedAttempts == 1 else {
+            XCTFail("The retry attempt failed: \(failedWithError.localizedDescription)")
+            return
+        }
+        XCTAssertEqual(consentCount, 1, "The first attempt must reach receiver consent before rejection")
+        firstAttemptRejected.fulfill()
+        guard let port = listener.port else {
+            XCTFail("Listener has no port for the retry")
+            return
+        }
+        startOutboundAttempt(port: port, name: "retry")
+    }
+
+    func outboundConnectionTransferFinished(connection: OutboundNearbyConnection) {
+        secondAttemptFinished.fulfill()
+    }
+}
+
 final class TransferFileSafetyTests: XCTestCase {
+    func testRetryRevalidationAcceptsUnchangedSelection() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("retry.txt")
+        try Data("same source".utf8).write(to: file)
+
+        let original = TransferFileSafety.expandSelection([file])
+        let validated = try TransferFileSafety.revalidateSelection(roots: [file], matching: original)
+        XCTAssertEqual(validated.urls, original.urls)
+        XCTAssertEqual(validated.identities, original.identities)
+    }
+
+    func testRetryRevalidationRejectsModifiedSource() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("retry.txt")
+        try Data("original".utf8).write(to: file)
+        let original = TransferFileSafety.expandSelection([file])
+        try Data("modified with a new length".utf8).write(to: file)
+
+        XCTAssertThrowsError(try TransferFileSafety.revalidateSelection(roots: [file], matching: original)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("changed"))
+        }
+    }
+
+    func testRetryRevalidationExplainsMissingSource() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("retry.txt")
+        try Data("source".utf8).write(to: file)
+        let original = TransferFileSafety.expandSelection([file])
+        try FileManager.default.removeItem(at: file)
+
+        XCTAssertThrowsError(try TransferFileSafety.revalidateSelection(roots: [file], matching: original)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("no longer available"))
+        }
+    }
+
+    func testRetryRevalidationExplainsExpiredAccess() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("retry.txt")
+        try Data("private source".utf8).write(to: file)
+        let original = TransferFileSafety.expandSelection([file])
+        XCTAssertEqual(file.path.withCString { Darwin.chmod($0, mode_t(0)) }, 0)
+        defer { _ = file.path.withCString { Darwin.chmod($0, mode_t(0o600)) } }
+
+        let probe = file.path.withCString { Darwin.open($0, O_RDONLY | O_CLOEXEC) }
+        if probe >= 0 {
+            Darwin.close(probe)
+            throw XCTSkip("The test runner can read files despite cleared POSIX permissions.")
+        }
+
+        XCTAssertThrowsError(try TransferFileSafety.revalidateSelection(roots: [file], matching: original)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("has expired"))
+        }
+    }
+
+    func testRetryRevalidationReappliesSymlinkProtection() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let folder = root.appendingPathComponent("folder", isDirectory: true)
+        let external = root.appendingPathComponent("external.txt")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("inside".utf8).write(to: folder.appendingPathComponent("inside.txt"))
+        try Data("outside".utf8).write(to: external)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let original = TransferFileSafety.expandSelection([folder])
+        try FileManager.default.createSymbolicLink(at: folder.appendingPathComponent("escape.txt"), withDestinationURL: external)
+
+        XCTAssertThrowsError(try TransferFileSafety.revalidateSelection(roots: [folder], matching: original)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("changed"))
+        }
+    }
+
     func testEmptyFoldersAndUnreadableFilesAreExplained() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let emptyFolder = root.appendingPathComponent("empty", isDirectory: true)
@@ -532,6 +748,216 @@ final class TransferFileSafetyTests: XCTestCase {
             XCTAssertEqual(selection.identities.count, count)
         }
         XCTAssertEqual(TransferFileSafety.maximumFileCount, 128)
+    }
+}
+
+final class OutgoingAttemptLifecycleTests: XCTestCase {
+    func testRetryCreatesNewAttemptAndRejectsRepeatedClicks() throws {
+        var lifecycle = OutgoingAttemptLifecycle()
+        let first = try XCTUnwrap(lifecycle.begin(retry: false))
+        XCTAssertEqual(lifecycle.phase, .connecting)
+        XCTAssertTrue(lifecycle.transition(to: .waitingForReceiver, for: first))
+        XCTAssertTrue(lifecycle.transition(to: .transferring, for: first))
+        XCTAssertTrue(lifecycle.fail(for: first, retryAllowed: true))
+        XCTAssertEqual(lifecycle.phase, .failed)
+
+        let retry = try XCTUnwrap(lifecycle.begin(retry: true))
+        XCTAssertNotEqual(retry, first)
+        XCTAssertEqual(lifecycle.phase, .retrying)
+        XCTAssertNil(lifecycle.begin(retry: true), "A second click cannot start a concurrent retry")
+        XCTAssertFalse(lifecycle.transition(to: .transferring, for: first), "Late callbacks from the first attempt are stale")
+        XCTAssertTrue(lifecycle.transition(to: .connecting, for: retry))
+    }
+
+    func testCancellationEndsRetryWithoutMarkingItFailed() throws {
+        var lifecycle = OutgoingAttemptLifecycle()
+        let first = try XCTUnwrap(lifecycle.begin(retry: false))
+        XCTAssertTrue(lifecycle.fail(for: first, retryAllowed: true))
+        let retry = try XCTUnwrap(lifecycle.begin(retry: true))
+        XCTAssertTrue(lifecycle.cancel(for: retry))
+        XCTAssertEqual(lifecycle.phase, .cancelled)
+        XCTAssertFalse(lifecycle.retryAvailable)
+        XCTAssertNil(lifecycle.begin(retry: true))
+        XCTAssertNotNil(lifecycle.begin(retry: false), "The user can select a device for a fresh attempt")
+    }
+
+    func testCompletedTransferCannotBeRetried() throws {
+        var lifecycle = OutgoingAttemptLifecycle()
+        let attempt = try XCTUnwrap(lifecycle.begin(retry: false))
+        XCTAssertTrue(lifecycle.complete(for: attempt))
+        XCTAssertEqual(lifecycle.phase, .completed)
+        XCTAssertNil(lifecycle.begin(retry: true))
+    }
+
+    func testRetriedTransfersDoNotPersistTheirSourceURLInHistory() {
+        let source = URL(fileURLWithPath: "/private/selected/source.txt")
+        XCTAssertNil(OutgoingHistoryPolicy.sourceURL(for: source, isRetry: true))
+        XCTAssertEqual(OutgoingHistoryPolicy.sourceURL(for: source, isRetry: false), source)
+    }
+}
+
+final class DiagnosticsReportTests: XCTestCase {
+    private func snapshot(
+        network: DiagnosticsNetworkState = .ready,
+        phase: OutgoingAttemptPhase = .idle,
+        incoming: Int = 0,
+        outgoing: Int = 0,
+        error: DiagnosticsErrorCategory? = nil
+    ) -> DiagnosticsReportSnapshot {
+        DiagnosticsReportSnapshot(
+            appVersion: "2.4.0-β🛰️",
+            buildNumber: "local-7",
+            macOSVersion: "15.4.1",
+            architecture: "arm64",
+            networkState: network,
+            outgoingState: phase,
+            incomingTransferCount: incoming,
+            outgoingTransferCount: outgoing,
+            lastErrorCategory: error
+        )
+    }
+
+    func testReportIsValidJSONAndContainsOnlyAllowlistedFields() throws {
+        let text = try DiagnosticsReportBuilder.makeJSON(from: snapshot(network: .paused, phase: .waitingForReceiver, incoming: 2, outgoing: 1, error: .network))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+        XCTAssertEqual(object["format"] as? String, "nearby-drop-diagnostics")
+        let app = try XCTUnwrap(object["application"] as? [String: String])
+        XCTAssertEqual(app["version"], "2.4.0-β🛰️")
+        let status = try XCTUnwrap(object["status"] as? [String: Any])
+        XCTAssertEqual(status["receiving"] as? String, "paused")
+        XCTAssertEqual(status["outgoing_transfer"] as? String, "waitingForReceiver")
+        XCTAssertEqual(status["active_incoming_transfers"] as? Int, 2)
+        XCTAssertEqual(status["last_error_category"] as? String, "network")
+        XCTAssertFalse(text.contains("file_path"))
+        XCTAssertFalse(text.contains("device_name"))
+        XCTAssertFalse(text.contains("peer_id"))
+        XCTAssertFalse(text.contains("DiagnosticEventsEndpoint"))
+        XCTAssertFalse(text.contains("diagnosticsPendingEvents"))
+    }
+
+    func testEmptyReportUsesSafeZeroStateAndValidUnicode() throws {
+        let text = try DiagnosticsReportBuilder.makeJSON(from: snapshot())
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+        let app = try XCTUnwrap(object["application"] as? [String: String])
+        let status = try XCTUnwrap(object["status"] as? [String: Any])
+        XCTAssertEqual(app["version"], "2.4.0-β🛰️")
+        XCTAssertEqual(status["active_incoming_transfers"] as? Int, 0)
+        XCTAssertEqual(status["last_error_category"] as? String, "none")
+    }
+
+    func testUnexpectedErrorTextIsReducedToSafeCategory() throws {
+        let sentinel = "/Users/sentinel/Private Folder/token-SECRET-1234"
+        let unexpected = NSError(domain: "SENTINEL_DEVICE_9F2B", code: 71, userInfo: [NSLocalizedDescriptionKey: sentinel])
+        let category = try XCTUnwrap(DiagnosticsReportBuilder.category(for: unexpected))
+        let report = try DiagnosticsReportBuilder.makeJSON(from: snapshot(error: category))
+        XCTAssertFalse(report.contains(sentinel))
+        XCTAssertFalse(report.contains("SENTINEL_DEVICE_9F2B"))
+        XCTAssertFalse(report.contains("SECRET-1234"))
+        XCTAssertTrue(report.contains("\"last_error_category\" : \"other\""))
+    }
+
+    func testSaveCancellationAndFailureDoNotCreateReportFiles() throws {
+        XCTAssertFalse(try DiagnosticsReportBuilder.write("{}", to: nil))
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let destination = root.appendingPathComponent("report.json")
+        XCTAssertThrowsError(try DiagnosticsReportBuilder.write("{}", to: destination))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+    }
+
+    func testSaveWritesOnlyTheReviewedReport() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let destination = root.appendingPathComponent("report.json")
+        let report = try DiagnosticsReportBuilder.makeJSON(from: snapshot())
+        XCTAssertTrue(try DiagnosticsReportBuilder.write(report, to: destination))
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), report)
+    }
+}
+
+final class ReceivingPausePolicyTests: XCTestCase {
+    private func waitForListenerReady(_ manager: NearbyConnectionManager, timeout: TimeInterval = 5) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if manager.inboundListenerReadyForTesting { return true }
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        return manager.inboundListenerReadyForTesting
+    }
+
+    func testPausedStateRejectsNewSessionsAndOnlyCancelsUnapprovedConnections() {
+        XCTAssertFalse(ReceivingPausePolicy.mayAcceptNewSession(isPaused: true))
+        XCTAssertTrue(ReceivingPausePolicy.mayAcceptNewSession(isPaused: false))
+        XCTAssertTrue(NearbyError.receivingPaused.localizedDescription.contains("Resume receiving"))
+        XCTAssertFalse(ReceivingPausePolicy.mayHonorConsent(accepted: true, isPaused: true))
+        XCTAssertTrue(ReceivingPausePolicy.mayHonorConsent(accepted: false, isPaused: true))
+        XCTAssertEqual(
+            ReceivingPausePolicy.sessionsToCancel(activeIDs: ["pending", "approved", "handshake"], approvedIDs: ["approved"], isPaused: true),
+            ["pending", "handshake"]
+        )
+        XCTAssertTrue(ReceivingPausePolicy.sessionsToCancel(activeIDs: ["approved"], approvedIDs: ["approved"], isPaused: false).isEmpty)
+    }
+
+    func testPausePreferenceRestoresAcrossManagerRecreation() throws {
+        let suite = "ReceivingPausePolicyTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(true, forKey: ReceivingPausePolicy.preferenceKey)
+        XCTAssertTrue(ReceivingPausePolicy.restored(defaults: defaults))
+        defaults.set(false, forKey: ReceivingPausePolicy.preferenceKey)
+        XCTAssertFalse(ReceivingPausePolicy.restored(defaults: defaults))
+    }
+
+    func testPauseStopsInboundListenerButPreservesOutgoingDiscovery() {
+        let manager = NearbyConnectionManager.shared
+        let defaults = UserDefaults.standard
+        let previousPreference = defaults.object(forKey: ReceivingPausePolicy.preferenceKey)
+        let previousDiscoveryCount = manager.discoveryReferenceCountForTesting
+        defer {
+            manager.stopDeviceDiscovery()
+            _ = manager.discoveryReferenceCountForTesting
+            let restore = (previousPreference as? Bool) ?? false
+            manager.setReceivingPaused(restore)
+            _ = manager.receivingPausedForTesting
+            if !restore { XCTAssertTrue(waitForListenerReady(manager), "Restored receiving must publish a ready TCP listener") }
+        }
+
+        manager.setReceivingPaused(false)
+        manager.becomeVisible()
+        XCTAssertTrue(waitForListenerReady(manager), "Receiving must have a ready TCP listener before pause")
+        XCTAssertTrue(manager.inboundListenerExistsForTesting)
+        manager.startDeviceDiscovery()
+        XCTAssertEqual(manager.discoveryReferenceCountForTesting, previousDiscoveryCount + 1)
+
+        manager.setReceivingPaused(true)
+        XCTAssertTrue(manager.receivingPausedForTesting)
+        XCTAssertFalse(manager.inboundListenerExistsForTesting)
+        XCTAssertFalse(manager.inboundAdvertisementExistsForTesting)
+        XCTAssertEqual(manager.discoveryReferenceCountForTesting, previousDiscoveryCount + 1)
+    }
+
+    func testRapidPauseResumeLeavesFinalPreferenceAndListenerStateConsistent() {
+        let manager = NearbyConnectionManager.shared
+        let defaults = UserDefaults.standard
+        let previousPreference = defaults.object(forKey: ReceivingPausePolicy.preferenceKey)
+        defer {
+            let restore = (previousPreference as? Bool) ?? false
+            manager.setReceivingPaused(restore)
+            _ = manager.receivingPausedForTesting
+            if !restore { XCTAssertTrue(waitForListenerReady(manager), "Restored receiving must publish a ready TCP listener") }
+        }
+
+        manager.setReceivingPaused(true)
+        manager.setReceivingPaused(false)
+        manager.setReceivingPaused(true)
+        XCTAssertTrue(manager.receivingPausedForTesting)
+        XCTAssertFalse(manager.inboundListenerExistsForTesting)
+
+        manager.setReceivingPaused(false)
+        XCTAssertFalse(manager.receivingPausedForTesting)
+        XCTAssertTrue(manager.inboundListenerExistsForTesting)
+        XCTAssertTrue(waitForListenerReady(manager), "Rapid pause/resume must leave a ready TCP listener")
     }
 }
 

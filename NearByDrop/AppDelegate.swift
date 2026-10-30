@@ -953,10 +953,18 @@ struct MenuView: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("Transfer progress")
                     .accessibilityValue("\(Int(model.progress * 100)) percent")
-                    HStack {
-                        Text(model.sendMessage.isEmpty ? "Connecting…" : model.sendMessage)
-                            .font(.caption)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(model.outgoingStatusMessage.isEmpty ? "Connecting…" : model.outgoingStatusMessage)
+                            .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
+                        if model.outgoingPhase == .waitingForReceiver || model.outgoingPhase == .transferring || model.outgoingPhase == .completed {
+                            Text(model.sendMessage)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    HStack {
                         Spacer()
                         if !model.transferSpeed.isEmpty || !model.timeRemaining.isEmpty {
                             HStack(spacing: 4) {
@@ -1027,12 +1035,35 @@ struct MenuView: View {
             }
 
             if let error = model.error {
-                Text(error)
-                    .foregroundStyle(.red)
-                    .font(.caption)
-                    .lineLimit(4)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityLabel("Transfer message")
+                VStack(alignment: .leading, spacing: 6) {
+                    if model.outgoingPhase == .failed {
+                        Label("Failed", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.red)
+                    }
+                    Text(error)
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel("Transfer message")
+                    if model.canRetryFailedOutgoing {
+                        HStack {
+                            Spacer()
+                            Button("Retry", action: model.retryFailedOutgoing)
+                                .buttonStyle(.borderedProminent)
+                                .tint(theme.currentAccent.color)
+                                .controlSize(.small)
+                                .disabled(!model.retryPeerIsNearby)
+                                .help(model.retryPeerIsNearby ? "Start a new transfer attempt. The receiver must approve it again." : "Waiting for the receiver to appear nearby again.")
+                        }
+                        if !model.retryPeerIsNearby {
+                            Text("The device is no longer nearby. It must reappear before Retry is available.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
         }
         .padding(.horizontal, 14)
