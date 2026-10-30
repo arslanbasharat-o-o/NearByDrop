@@ -333,7 +333,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         model.tab = .usb
         showPopover()
     }
-    @objc func sendFiles(_ sender: Any?) {
+    @MainActor @objc func sendFiles(_ sender: Any?) {
         model.tab = .send
         model.chooseFiles()
     }

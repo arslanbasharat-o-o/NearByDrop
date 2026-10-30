@@ -177,7 +177,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         NearbyConnectionManager.shared.addShareExtensionDelegate(self)
     }
 
-    func setFiles(_ newURLs: [URL], completion: (() -> Void)? = nil) {
+    @MainActor
+    func setFiles(_ newURLs: [URL], completion: (@MainActor @Sendable () -> Void)? = nil) {
         guard !sending, !usb.busy else { return }
         selectionGeneration = UUID()
         let generation = selectionGeneration
@@ -197,37 +198,42 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             return
         }
         let newScopedURLs = newURLs.filter { $0.startAccessingSecurityScopedResource() }
-        fileSelectionQueue.async { [weak self] in
+        let applySelection: @MainActor @Sendable (TransferFileSelection) -> Void = { [weak self] selection in
+            guard let self, self.selectionGeneration == generation else {
+                newScopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
+                return
+            }
+            self.scopedURLs = newScopedURLs
+            self.urls = selection.urls
+            self.displayNames = selection.displayNames
+            self.selectionIdentities = selection.identities
+            self.totalBytes = selection.identities.reduce(Int64(0)) { total, identity in
+                let (sum, overflow) = total.addingReportingOverflow(identity.size)
+                return overflow ? Int64.max : sum
+            }
+            self.selectionNotice = selection.skipped.message
+            if selection.urls.isEmpty {
+                self.error = selection.emptyMessage
+            } else if selection.urls.count > TransferFileSafety.maximumFileCount {
+                let limitNotice = "Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Choose fewer files."
+                self.selectionNotice = [self.selectionNotice, limitNotice].compactMap { $0 }.joined(separator: " ")
+            }
+            completion?()
+        }
+        fileSelectionQueue.async {
             let selection = TransferFileSafety.expandSelection(newURLs)
             DispatchQueue.main.async {
-                guard let self, self.selectionGeneration == generation else {
-                    newScopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
-                    return
-                }
-                self.scopedURLs = newScopedURLs
-                self.urls = selection.urls
-                self.displayNames = selection.displayNames
-                self.selectionIdentities = selection.identities
-                self.totalBytes = selection.identities.reduce(Int64(0)) { total, identity in
-                    let (sum, overflow) = total.addingReportingOverflow(identity.size)
-                    return overflow ? Int64.max : sum
-                }
-                self.selectionNotice = selection.skipped.message
-                if selection.urls.isEmpty {
-                    self.error = selection.emptyMessage
-                } else if selection.urls.count > TransferFileSafety.maximumFileCount {
-                    let limitNotice = "Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Choose fewer files."
-                    self.selectionNotice = [self.selectionNotice, limitNotice].compactMap { $0 }.joined(separator: " ")
-                }
-                completion?()
+                applySelection(selection)
             }
         }
     }
 
+    @MainActor
     func chooseFiles() {
         chooseFiles(thenSendTo: nil)
     }
 
+    @MainActor
     func chooseFiles(thenSendTo device: RemoteDeviceInfo?, thenShowQR: Bool = false) {
         guard !sending, !usb.busy else { return }
         scanning = false
@@ -238,12 +244,11 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         panel.canChooseDirectories = true
         panel.canChooseFiles = true
         panel.prompt = "Choose"
-        let handler: (NSApplication.ModalResponse) -> Void = { [weak self] result in
-            DispatchQueue.main.async {
-                self?.isChoosingFiles = false
-                NotificationCenter.default.post(name: .didFinishChoosingFiles, object: nil)
-            }
-            guard result == .OK, let self else { return }
+        let handler: @MainActor @Sendable (NSApplication.ModalResponse) -> Void = { [weak self] result in
+            guard let self else { return }
+            self.isChoosingFiles = false
+            NotificationCenter.default.post(name: .didFinishChoosingFiles, object: nil)
+            guard result == .OK else { return }
             self.setFiles(panel.urls) {
                 FeedbackManager.shared.vibrateClick()
                 if let device = device {
