@@ -440,7 +440,7 @@ final class TransferFileSafetyTests: XCTestCase {
         XCTAssertThrowsError(try TransferFileSafety.openReadOnlyFile(at: source, expected: identity))
     }
 
-    func testParentDirectorySymlinkReplacementIsRejectedBeforeOpening() throws {
+    func testParentDirectorySymlinkReplacementFailsDescriptorIdentityCheck() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let selectedParent = root.appendingPathComponent("selected", isDirectory: true)
         let outsideParent = root.appendingPathComponent("outside", isDirectory: true)
