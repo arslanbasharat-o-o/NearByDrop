@@ -332,67 +332,21 @@ struct SettingsView: View {
     // MARK: - Devices Tab (Trusted Devices)
     private var devicesTab: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(title: "Trusted Devices", subtitle: "Transfers from these devices are accepted automatically.")
-
-            let list = Array(Set(UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? [])).sorted()
-            if list.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "shield.slash")
-                        .font(.system(size: 28))
-                        .foregroundStyle(.secondary)
-                    Text("No Trusted Devices")
-                        .font(.headline)
-                    Text("Transfers from trusted devices are accepted automatically.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(24)
-                .frame(maxWidth: .infinity)
-                .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-            } else {
-                VStack(spacing: 6) {
-                    ForEach(list, id: \.self) { key in
-                        let parts = key.split(separator: "#", omittingEmptySubsequences: false)
-                        let displayName = parts.count > 1 ? parts.dropLast().joined(separator: "#") : (key.contains("|") ? String(key.split(separator: "|", maxSplits: 1).last ?? "") : key)
-                        let identitySuffix = parts.count > 1 ? String(parts.last ?? "").suffix(6) : nil
-                        HStack {
-                            Image(systemName: "iphone")
-                                .foregroundStyle(theme.currentAccent.color)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(displayName)
-                                    .font(.subheadline)
-                                if let identitySuffix, !identitySuffix.isEmpty {
-                                    Text("Connection ID · …\(identitySuffix)")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer()
-                            Button("Remove", role: .destructive) {
-                                removeTrusted(key)
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                            .help("Remove trust for \(displayName)")
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-                    }
-
-                    HStack {
-                        Spacer()
-                        Button("Revoke All", role: .destructive) {
-                            UserDefaults.standard.removeObject(forKey: "trustedDevices")
-                            model.trustedDevices.removeAll()
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                    .padding(.top, 4)
-                }
+            sectionHeader(
+                title: "Trusted Devices",
+                subtitle: "Automatic acceptance is unavailable because Quick Share does not provide a persistent authenticated device identity."
+            )
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Every incoming transfer requires your approval.", systemImage: "hand.raised.fill")
+                    .font(.subheadline.weight(.medium))
+                Text("Saved trust entries from earlier versions are cleared because display names and connection IDs cannot securely identify a device.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
         }
     }
 
@@ -485,10 +439,4 @@ struct SettingsView: View {
         }
     }
 
-    private func removeTrusted(_ key: String) {
-        var list = UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? []
-        list.removeAll { $0 == key }
-        UserDefaults.standard.set(list, forKey: "trustedDevices")
-        model.trustedDevices.remove(key)
-    }
 }

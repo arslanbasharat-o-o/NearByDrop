@@ -111,7 +111,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var isChoosingDirectory: Bool = false
     @Published var isChoosingFiles: Bool = false
     @Published var launchAtLogin: Bool = false
-    @Published var trustedDevices: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? [])
     @Published var history: [TransferHistoryItem] = []
     private static let historyKey = "transferHistory"
 
@@ -124,7 +123,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     private var qrExpiry: DispatchWorkItem?
     private var timeout: DispatchWorkItem?
     private var adDebounce: DispatchWorkItem?
-    @Published private var pendingTrust: [String: Bool] = [:]
 
     private var isDiscoveringDevices = false
     func startSendingDiscovery() {
@@ -510,44 +508,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         let total = info.transfer.files.reduce(0) { $0 + $1.size }
         recordTransfer(fileName: name, fileSize: total, direction: .incoming, peerName: info.device.name, fileURL: fileURLs.first)
         UsageAnalytics.completedTransfer(direction: "incoming", peer: info.device)
-    }
-
-    func isDeviceTrusted(_ device: RemoteDeviceInfo) -> Bool {
-        let key = NearbyConnectionManager.trustedDeviceKey(name: device.name, id: device.id)
-        return trustedDevices.contains(key) || NearbyConnectionManager.isTrusted(name: device.name, id: device.id)
-    }
-
-    func isDeviceTrusted(for transferID: String, device: RemoteDeviceInfo) -> Bool {
-        pendingTrust[transferID] ?? isDeviceTrusted(device)
-    }
-
-    func setPendingDeviceTrusted(_ transferID: String, device: RemoteDeviceInfo, trusted: Bool) {
-        pendingTrust[transferID] = trusted
-    }
-
-    func commitPendingDeviceTrust(_ transferID: String, device: RemoteDeviceInfo) {
-        guard let trusted = pendingTrust.removeValue(forKey: transferID) else { return }
-        setDeviceTrusted(device, trusted: trusted)
-    }
-
-    func discardPendingDeviceTrust(_ transferID: String) {
-        pendingTrust.removeValue(forKey: transferID)
-    }
-
-    func setDeviceTrusted(_ device: RemoteDeviceInfo, trusted: Bool) {
-        NearbyConnectionManager.setTrusted(name: device.name, id: device.id, trusted: trusted)
-        var list = UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? []
-        let key = NearbyConnectionManager.trustedDeviceKey(name: device.name, id: device.id)
-        if trusted {
-            // Keep new entries keyed to the device identity; raw names and IDs
-            // make two devices with the same display name affect each other.
-            list.removeAll { $0 == device.name || (device.id != nil && $0 == device.id) }
-            if !list.contains(key) { list.append(key) }
-        } else {
-            list.removeAll { $0 == key || $0 == device.name || (device.id != nil && $0 == device.id) }
-        }
-        UserDefaults.standard.set(list, forKey: "trustedDevices")
-        trustedDevices = Set(list)
     }
 
     func setDownloadDirectory(_ url: URL) {

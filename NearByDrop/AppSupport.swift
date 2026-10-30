@@ -1,5 +1,34 @@
 import Cocoa
 
+enum IncomingConsentPresentationState {
+    static func applyDecision<Incoming, Progress>(
+        transferID: String,
+        accepted: Bool,
+        incoming: inout [String: Incoming],
+        progress: inout [String: Progress],
+        acceptedIDs: inout Set<String>
+    ) {
+        if accepted {
+            acceptedIDs.insert(transferID)
+        } else {
+            incoming.removeValue(forKey: transferID)
+            progress.removeValue(forKey: transferID)
+            acceptedIDs.remove(transferID)
+        }
+    }
+
+    static func finish<Incoming, Progress>(
+        transferID: String,
+        incoming: inout [String: Incoming],
+        progress: inout [String: Progress],
+        acceptedIDs: inout Set<String>
+    ) {
+        incoming.removeValue(forKey: transferID)
+        progress.removeValue(forKey: transferID)
+        acceptedIDs.remove(transferID)
+    }
+}
+
 extension NSWindow {
     func positionOnInteractionScreen() {
         guard let screen = NSScreen.screens.first(where: { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) }) ?? NSScreen.main else { return }

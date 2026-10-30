@@ -44,13 +44,67 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
     private var lastReceivedBytes: Int64 = 0
     private var cancelAfterAcceptance = false
     private var rejectQR = false
+    private var rejectIncoming = false
+    private var duplicateIntroduction = false
+    private var prematureURLPayload = false
     private var earlyResponse = false
     private var safeDisconnectOnly = false
     private var legacyCloseOnly = false
     private var dataTransferStarted: Date?
     private var dataTransferFinished: Date?
+    private var consentRequestCount = 0
+    private var expectedPeerName: String?
+    private var expectedPeerID: String?
 
-    func testEncryptedFilesAndEmptyFileRoundTrip() throws { try runRoundTrip() }
+    func testExplicitApprovalCompletesEncryptedFilesAndEmptyFileRoundTrip() throws {
+        try runRoundTrip()
+        XCTAssertEqual(consentRequestCount, 1)
+    }
+    func testUntrustedSenderReachesManualConsentFlow() throws {
+        try runRoundTrip(payloadSize: 64 * 1024)
+        XCTAssertEqual(consentRequestCount, 1)
+    }
+    func testLegacyTrustedNameDoesNotBypassConsent() throws {
+        let (name, _) = senderIdentity()
+        try runRoundTrip(payloadSize: 64 * 1024, trustedEntries: [name], expectedName: name)
+        XCTAssertEqual(consentRequestCount, 1)
+    }
+    func testLegacyTrustWithChangedEndpointIDDoesNotBypassConsent() throws {
+        let (name, endpointID) = senderIdentity()
+        let staleEndpointID = "stale-\(endpointID)"
+        XCTAssertNotEqual(endpointID, staleEndpointID)
+        try runRoundTrip(
+            payloadSize: 64 * 1024,
+            trustedEntries: ["\(name)#\(staleEndpointID)"],
+            expectedName: name,
+            expectedID: endpointID
+        )
+        XCTAssertEqual(consentRequestCount, 1)
+    }
+    func testMatchingCompositeTrustDoesNotAuthorizeUnverifiedSender() throws {
+        let (name, endpointID) = senderIdentity()
+        try runRoundTrip(
+            payloadSize: 64 * 1024,
+            trustedEntries: ["\(name)#\(endpointID)"],
+            expectedName: name,
+            expectedID: endpointID
+        )
+        XCTAssertEqual(consentRequestCount, 1)
+    }
+    func testDeclinedTransferWritesNoFilesAndClearsConsentState() throws {
+        rejectIncoming = true
+        try runRoundTrip(payloadSize: 64 * 1024)
+        XCTAssertEqual(consentRequestCount, 1)
+    }
+    func testDuplicateIntroductionCannotReplaceConsentMetadata() throws {
+        duplicateIntroduction = true
+        try runRoundTrip(payloadSize: 64 * 1024)
+        XCTAssertEqual(consentRequestCount, 1)
+    }
+    func testURLPayloadBeforeApprovalIsNotOpened() throws {
+        prematureURLPayload = true
+        try runRoundTrip(prematureURLPayload: true)
+    }
     func testLargeEncryptedTransferThroughput() throws { try runRoundTrip(payloadSize: 64 * 1024 * 1024) }
     func testReceiverCanCompleteWithCleanSocketClose() throws {
         legacyCloseOnly = true
@@ -64,25 +118,53 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         earlyResponse = true
         try runRoundTrip(qr: true)
     }
-    func testQRAuthenticatedRoundTrip() throws { try runRoundTrip(qr: true) }
+    func testQRAuthenticationStillRequiresAndCompletesManualApproval() throws {
+        try runRoundTrip(qr: true)
+        XCTAssertEqual(consentRequestCount, 1)
+    }
     func testQRRejectsADifferentSenderKey() throws {
         rejectQR = true
         try runRoundTrip(qr: true)
+        XCTAssertEqual(consentRequestCount, 0)
     }
     func testCancellationRemovesPartialFiles() throws {
         cancelAfterAcceptance = true
         try runRoundTrip()
     }
 
-    private func runRoundTrip(qr: Bool = false, payloadSize: Int = 8 * 1024 * 1024) throws {
+    private func senderIdentity() -> (name: String, endpointID: String) {
+        let manager = NearbyConnectionManager.shared
+        let endpointID = String(bytes: manager.endpointID, encoding: .ascii) ?? "ABCD"
+        return (NearbyConnectionManager.currentDeviceName, endpointID)
+    }
+
+    private func runRoundTrip(
+        qr: Bool = false,
+        payloadSize: Int = 8 * 1024 * 1024,
+        trustedEntries: [String] = [],
+        expectedName: String? = nil,
+        expectedID: String? = nil,
+        prematureURLPayload: Bool = false
+    ) throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let downloads = root.appendingPathComponent("received")
         try FileManager.default.createDirectory(at: downloads, withIntermediateDirectories: true)
         let oldPath = UserDefaults.standard.object(forKey: "downloadDirectoryURL")
         let oldBookmark = UserDefaults.standard.object(forKey: "downloadDirectoryBookmark")
+        let oldTrustedEntries = UserDefaults.standard.object(forKey: "trustedDevices")
+        UserDefaults.standard.set(trustedEntries, forKey: "trustedDevices")
+        expectedPeerName = expectedName
+        expectedPeerID = expectedID
+        consentRequestCount = 0
+        destinations = []
         defer {
             UserDefaults.standard.set(oldPath, forKey: "downloadDirectoryURL")
             UserDefaults.standard.set(oldBookmark, forKey: "downloadDirectoryBookmark")
+            if let oldTrustedEntries {
+                UserDefaults.standard.set(oldTrustedEntries, forKey: "trustedDevices")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "trustedDevices")
+            }
             try? FileManager.default.removeItem(at: root)
         }
         NearbyConnectionManager.downloadDirectory = downloads
@@ -113,7 +195,8 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         listener.stateUpdateHandler = { state in
             guard state == .ready, let port = listener.port else { return }
             let connection = NWConnection(host: "127.0.0.1", port: port, using: .tcp)
-            let outbound = OutboundNearbyConnection(connection: connection, id: "test-outgoing", urlsToSend: [file, empty])
+            let urlsToSend = prematureURLPayload ? [URL(string: "https://example.invalid")!] : [file, empty]
+            let outbound = OutboundNearbyConnection(connection: connection, id: "test-outgoing", urlsToSend: urlsToSend)
             outbound.qrCodePrivateKey = qrKey
             outbound.delegate = self
             self.outbound = outbound
@@ -122,8 +205,17 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         let start = Date()
         listener.start(queue: .main)
         wait(for: [received, sent], timeout: 30)
-        if cancelAfterAcceptance || rejectQR {
+        if cancelAfterAcceptance || rejectQR || rejectIncoming || duplicateIntroduction || prematureURLPayload {
             if rejectQR { XCTAssertTrue(destinations.isEmpty) }
+            if rejectIncoming {
+                XCTAssertEqual(consentRequestCount, 1)
+                XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: downloads.path).isEmpty)
+            }
+            if duplicateIntroduction { XCTAssertEqual(consentRequestCount, 1) }
+            if prematureURLPayload {
+                XCTAssertEqual(consentRequestCount, 1)
+                XCTAssertEqual((inbound as? IndexedInboundConnection)?.openedURLCount, 0)
+            }
             XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: downloads.path).isEmpty)
             return
         }
@@ -138,7 +230,48 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
     }
 
     func obtainUserConsent(for transfer: TransferMetadata, from device: RemoteDeviceInfo, connection: InboundNearbyConnection) {
+        consentRequestCount += 1
+        if let expectedPeerName { XCTAssertEqual(device.name, expectedPeerName) }
+        if let expectedPeerID { XCTAssertEqual(device.id, expectedPeerID) }
         destinations = transfer.files.compactMap(\.destinationURL)
+        for destination in destinations {
+            XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "Files must not be created before explicit consent")
+        }
+        if duplicateIntroduction {
+            if consentRequestCount == 1 {
+                var duplicate = Sharing_Nearby_Frame()
+                duplicate.version = .v1
+                duplicate.v1.type = .introduction
+                duplicate.v1.introduction.startTransfer = true
+                duplicate.v1.introduction.useCase = .nearbyShare
+                var file = Sharing_Nearby_FileMetadata()
+                file.id = 999
+                file.name = "unapproved.bin"
+                file.size = 1
+                file.mimeType = "application/octet-stream"
+                file.payloadID = Int64.random(in: Int64.min...Int64.max)
+                duplicate.v1.introduction.fileMetadata = [file]
+                do { try outbound?.sendTransferSetupFrame(duplicate) }
+                catch { XCTFail("Could not send duplicate introduction: \(error)") }
+            } else {
+                connection.submitUserConsent(accepted: false)
+            }
+            return
+        }
+        if prematureURLPayload {
+            guard let payloadID = (connection as? IndexedInboundConnection)?.latestTextPayloadID,
+                  let outbound else {
+                XCTFail("The URL introduction must expose a test payload ID")
+                return
+            }
+            do { try outbound.sendBytesPayload(data: Data("https://example.invalid".utf8), id: payloadID) }
+            catch { XCTFail("Could not send premature URL payload: \(error)") }
+            return
+        }
+        if rejectIncoming {
+            connection.submitUserConsent(accepted: false)
+            return
+        }
         NearbyConnection.connectionQueue.async {
             var acknowledgement = Location_Nearby_Connections_OfflineFrame()
             acknowledgement.version = .v1
@@ -159,6 +292,10 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         dataTransferFinished = Date()
         if rejectQR {
             XCTAssertTrue(String(describing: error).contains("does not match the scanned QR code"))
+        } else if rejectIncoming {
+            XCTAssertNotNil(error)
+        } else if duplicateIntroduction || prematureURLPayload {
+            XCTAssertNotNil(error)
         } else if cancelAfterAcceptance { XCTAssertNotNil(error) }
         else { XCTAssertNil(error) }
         received.fulfill()
@@ -170,7 +307,9 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         if cancelAfterAcceptance { connection.cancel() }
     }
     func outboundConnection(connection: OutboundNearbyConnection, failedWithError: Error) {
-        if !cancelAfterAcceptance && !rejectQR { XCTFail(failedWithError.localizedDescription) }
+        if !cancelAfterAcceptance && !rejectQR && !rejectIncoming && !duplicateIntroduction && !prematureURLPayload {
+            XCTFail(failedWithError.localizedDescription)
+        }
         sent.fulfill()
     }
     func outboundConnectionTransferFinished(connection: OutboundNearbyConnection) { sent.fulfill() }
@@ -203,6 +342,71 @@ final class AppSupportTests: XCTestCase {
         let link = root.appendingPathComponent("Link")
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: first)
         XCTAssertNotEqual(try ReceivedFolder.create(in: root, name: "Link"), link)
+    }
+}
+
+final class TrustedDevicePreferenceMigrationTests: XCTestCase {
+    func testLegacyTrustEntriesAreInvalidatedOnRepeatedLaunches() throws {
+        let suiteName = "TrustedDevicePreferenceMigrationTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        defaults.set(["Known Phone", "Known Phone#old-endpoint", "Known Phone#new-endpoint"], forKey: "trustedDevices")
+        NearbyConnectionManager.invalidateLegacyTrustedDevices(in: defaults)
+        XCTAssertNil(defaults.object(forKey: "trustedDevices"))
+
+        // A repeated launch, including a value restored by a downgraded build,
+        // invalidates the same unsafe preference again.
+        defaults.set(["Known Phone"], forKey: "trustedDevices")
+        NearbyConnectionManager.invalidateLegacyTrustedDevices(in: defaults)
+        XCTAssertNil(defaults.object(forKey: "trustedDevices"))
+    }
+}
+
+final class IncomingConsentPresentationStateTests: XCTestCase {
+    func testDeclineRemovesPendingRequestAndApprovalState() {
+        var incoming = ["transfer-1": "metadata"]
+        var progress = ["transfer-1": "pending"]
+        var accepted: Set<String> = []
+
+        IncomingConsentPresentationState.applyDecision(
+            transferID: "transfer-1",
+            accepted: false,
+            incoming: &incoming,
+            progress: &progress,
+            acceptedIDs: &accepted
+        )
+
+        XCTAssertTrue(incoming.isEmpty)
+        XCTAssertTrue(progress.isEmpty)
+        XCTAssertTrue(accepted.isEmpty)
+    }
+
+    func testApprovedTransferStaysVisibleUntilCompletionThenResets() {
+        var incoming = ["transfer-1": "metadata"]
+        var progress = ["transfer-1": "receiving"]
+        var accepted: Set<String> = []
+
+        IncomingConsentPresentationState.applyDecision(
+            transferID: "transfer-1",
+            accepted: true,
+            incoming: &incoming,
+            progress: &progress,
+            acceptedIDs: &accepted
+        )
+        XCTAssertNotNil(incoming["transfer-1"])
+        XCTAssertNotNil(progress["transfer-1"])
+        XCTAssertTrue(accepted.contains("transfer-1"))
+
+        IncomingConsentPresentationState.finish(
+            transferID: "transfer-1",
+            incoming: &incoming,
+            progress: &progress,
+            acceptedIDs: &accepted
+        )
+        XCTAssertTrue(incoming.isEmpty)
+        XCTAssertTrue(progress.isEmpty)
+        XCTAssertTrue(accepted.isEmpty)
     }
 }
 
@@ -374,6 +578,8 @@ final class PayloadControlTests: XCTestCase {
 private final class IndexedInboundConnection: InboundNearbyConnection {
     var reorderHandshake = false
     private var heldClientFinish: Data?
+    private(set) var latestTextPayloadID: Int64?
+    private(set) var openedURLCount = 0
     override func processReceivedFrame(frameData: Data) {
         if reorderHandshake,
            let frame=try? Securegcm_Ukey2Message(serializedData: frameData),
@@ -405,8 +611,12 @@ private final class IndexedInboundConnection: InboundNearbyConnection {
             let ids = frame.v1.introduction.fileMetadata.map(\.id)
             XCTAssertEqual(Set(ids).count, ids.count)
             XCTAssertFalse(ids.contains(0))
+            latestTextPayloadID = frame.v1.introduction.textMetadata.first?.payloadID
         }
         try super.processTransferSetupFrame(frame)
+    }
+    override func openReceivedURL(_ url: URL) {
+        openedURLCount += 1
     }
     override func acknowledgePayload(_ header: Location_Nearby_Connections_PayloadTransferFrame.PayloadHeader) throws {
         if !safeDisconnectOnly && !legacyCloseOnly { try super.acknowledgePayload(header) }

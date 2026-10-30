@@ -339,30 +339,12 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		customDeviceName ?? Host.current().localizedName ?? ProcessInfo.processInfo.hostName
 	}
 
-	private static let trustedKey="trustedDevices"
-
-	public static func trustedDeviceKey(name:String, id:String?) -> String{
-		if let id = id, !id.isEmpty {
-			return "\(name)#\(id)"
-		}
-		return name
-	}
-
-	public static func isTrusted(name:String, id:String?) -> Bool{
-		guard let list = UserDefaults.standard.stringArray(forKey: trustedKey) else { return false }
-		let key = trustedDeviceKey(name: name, id: id)
-		return list.contains(key) || list.contains(name)
-	}
-
-	public static func setTrusted(name:String, id:String?, trusted:Bool){
-		var list = UserDefaults.standard.stringArray(forKey: trustedKey) ?? []
-		let key = trustedDeviceKey(name: name, id: id)
-		if trusted{
-			if !list.contains(key){ list.append(key) }
-		}else{
-			list.removeAll{ $0==key || $0==name }
-		}
-		UserDefaults.standard.set(list, forKey: trustedKey)
+	/// Older releases stored display names and connection IDs as trusted identities.
+	/// Neither value is a persistent authenticated peer identity, so discard them
+	/// whenever the app starts. Repeating this is safe and also clears values
+	/// written by a downgraded older release.
+	public static func invalidateLegacyTrustedDevices(in defaults: UserDefaults = .standard) {
+		defaults.removeObject(forKey: "trustedDevices")
 	}
 	private let pathMonitor=NWPathMonitor()
     private var hasNetworkPath=false
@@ -395,7 +377,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
                 if path.status != .satisfied { self.updateAdvertisementState(.failed) }
                 else if hadPath && self._mainAppDelegate != nil {
                     // Switching Wi-Fi networks can keep the same interface name and path status.
-                    NearbyLogger.log("[NearByDrop] Network changed; refreshing Bonjour on \(Self.currentLocalIPv4Address() ?? "no IPv4 address")")
+					NearbyLogger.log("[NearByDrop] Network changed; refreshing Bonjour")
                     self.refreshMDNSOnStateQueue()
                 }
             }
@@ -547,12 +529,12 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			listener.newConnectionHandler={(connection:NWConnection) in
 				self.stateQueue.async {
 					guard self.activeConnections.count < Self.maxActiveConnections else {
-						NearbyLogger.log("[NearByDrop] Rejected inbound connection from \(connection.endpoint): max connections reached")
+						NearbyLogger.log("[NearByDrop] Rejected inbound connection: max connections reached")
 						connection.cancel()
 						return
 					}
 					let id=UUID().uuidString
-					NearbyLogger.log("[NearByDrop] Inbound TCP connection accepted from \(connection.endpoint) (id: \(id))")
+					NearbyLogger.log("[NearByDrop] Inbound TCP connection accepted")
 					let conn=InboundNearbyConnection(connection: connection, id: id)
 					conn.qrSenderPublicKey=self.receivingCode?.publicKey
                     conn.qrReceiverCode=self.receivingCode
@@ -596,7 +578,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	public func netServiceDidPublish(_ sender: NetService){
 		stateQueue.async {
 			guard sender === self.mdnsService else { return }
-			NearbyLogger.log("[NearByDrop] Bonjour published on \(Self.currentLocalIPv4Address() ?? "no IPv4 address"):\(sender.port)")
+			NearbyLogger.log("[NearByDrop] Bonjour advertisement published")
 			self.updateAdvertisementState(.published)
 		}
 	}
@@ -605,7 +587,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
         stateQueue.async {
         guard sender === self.mdnsService else { return }
 #if DEBUG
-		print("Bonjour advertisement failed: \(errorDict)")
+		NearbyLogger.log("[NearByDrop] Bonjour advertisement failed")
 #endif
 		self.updateAdvertisementState(.failed)
         }
@@ -730,19 +712,19 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	
 	private func maybeAddFoundDevice(service:NWBrowser.Result){
 		#if DEBUG
-		print("found service \(service)")
+			NearbyLogger.log("[NearByDrop] Found a nearby service")
 		#endif
 		for interface in service.interfaces{
 			if case .loopback=interface.type{
 				#if DEBUG
-				print("ignoring localhost service")
+				NearbyLogger.log("[NearByDrop] Ignored a local service")
 				#endif
 				return
 			}
 		}
 		guard let endpointID=endpointID(for: service), endpointID != String(bytes: self.endpointID, encoding: .ascii) else {return}
 		#if DEBUG
-		print("service name is valid, endpoint ID \(endpointID)")
+			NearbyLogger.log("[NearByDrop] Nearby service metadata parsed")
 		#endif
 		var foundService=FoundServiceInfo(service: service)
 		
@@ -758,7 +740,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		
 		if let qrData=endpointInfo.qrCodeData, let qrCodeAdvertisingToken=qrCodeAdvertisingToken{
 #if DEBUG
-			print("Device has QR data: \(qrData.base64EncodedString()), our advertising token is \(qrCodeAdvertisingToken.base64EncodedString())")
+			NearbyLogger.log("[NearByDrop] Nearby service has QR pairing metadata")
 #endif
 			if qrData==qrCodeAdvertisingToken{
 				let targetDevice = deviceInfo ?? addFoundDevice(foundService: &foundService, endpointInfo: endpointInfo, endpointID: endpointID)
@@ -778,7 +760,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 					}
 				}catch{
 #if DEBUG
-					print("Error decrypting QR code data of an invisible device: \(error)")
+					NearbyLogger.log("[NearByDrop] Could not decrypt nearby QR metadata")
 #endif
 				}
 			}
@@ -935,7 +917,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			if let last = self.lastBLEDiscoveryTime, now.timeIntervalSince(last) < 2.0 { return }
 			self.lastBLEDiscoveryTime = now
 			#if DEBUG
-			print("Discovered Quick Share BLE beacon (0xFE2C), RSSI: \(RSSI).")
+			NearbyLogger.log("[NearByDrop] Discovered a Quick Share BLE beacon")
 			#endif
 			if self.mdnsService == nil { self.initMDNS() }
 		}

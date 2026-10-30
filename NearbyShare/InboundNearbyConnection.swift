@@ -28,7 +28,7 @@ class InboundNearbyConnection: NearbyConnection{
 	private var earlyConnectionResponse: Location_Nearby_Connections_OfflineFrame?
 	private var cipherCommitment:Data?
 	
-	private var textPayloadID:Int64=0
+	private var textPayloadID:Int64?
 	private var timeoutWorkItem:DispatchWorkItem?
 	private var terminationReported=false
 	private var createdDirectories:Set<URL>=[]
@@ -59,13 +59,13 @@ class InboundNearbyConnection: NearbyConnection{
 			currentState = .disconnected
 		}
 		super.handleConnectionClosure()
-		NearbyLogger.log("[NearByDrop] Inbound connection closed in state: \(currentState), lastError: \(String(describing: lastError))")
+		NearbyLogger.log("[NearByDrop] Inbound connection closed in state: \(currentState)")
 		terminationReported=true
 		if currentState != .completed {
 			do{
 				try deletePartiallyReceivedFiles()
 			}catch{
-				print("Error deleting partially received files: \(error)")
+				print("Could not delete partial inbound files")
 			}
 		}else{
 			createdDirectories.removeAll()
@@ -120,7 +120,7 @@ class InboundNearbyConnection: NearbyConnection{
 				ukeyClientInitMsgData=frameData
 				try processUkey2ClientInit(msg)
 			case .sentUkeyServerInit:
-				NearbyLogger.log("[NearByDrop] sentUkeyServerInit received \(frameData.count) bytes: \(frameData.prefix(64).hexEncodedString())")
+				NearbyLogger.log("[NearByDrop] Received UKEY2 handshake data")
 				if let offline = try? Location_Nearby_Connections_OfflineFrame(serializedData: frameData) {
 					NearbyLogger.log("[NearByDrop] sentUkeyServerInit matched OfflineFrame: hasV1=\(offline.hasV1), type=\(offline.v1.hasType ? String(describing: offline.v1.type) : "none")")
 					if offline.hasV1 && offline.v1.hasType && offline.v1.type == .keepAlive {
@@ -134,11 +134,8 @@ class InboundNearbyConnection: NearbyConnection{
 					}
 				}
 				if let ukey = try? Securegcm_Ukey2Message(serializedData: frameData) {
-					NearbyLogger.log("[NearByDrop] sentUkeyServerInit matched Ukey2Message: hasType=\(ukey.hasMessageType), type=\(ukey.messageType), hasData=\(ukey.hasMessageData), dataLen=\(ukey.messageData.count)")
 					if ukey.hasMessageType && ukey.messageType == .alert {
-						if let alert = try? Securegcm_Ukey2Alert(serializedData: ukey.messageData) {
-							NearbyLogger.log("[NearByDrop] Client sent Ukey2Alert: type=\(alert.type), error=\(alert.errorMessage)")
-						}
+						NearbyLogger.log("[NearByDrop] Peer sent a UKEY2 alert")
 					}
 					try processUkey2ClientFinish(ukey, raw: frameData)
 				} else {
@@ -167,9 +164,8 @@ class InboundNearbyConnection: NearbyConnection{
 			}
 		}catch{
 			lastError=error
-			Self.logger.error("Incoming protocol error: \(String(describing: error), privacy: .public)")
-			NearbyLogger.log("[NearByDrop] Inbound error: \(error) in state: \(currentState)")
-			print("Deserialization error: \(error) in state \(currentState)")
+			Self.logger.error("Incoming protocol processing failed")
+			NearbyLogger.log("[NearByDrop] Inbound protocol processing failed")
 			protocolError()
 		}
 	}
@@ -184,18 +180,27 @@ class InboundNearbyConnection: NearbyConnection{
 			return
 		}
 		if frame.v1.hasPairedKeyEncryption {
+			guard frame.v1.type == .pairedKeyEncryption, currentState == .sentConnectionResponse else {
+				throw NearbyError.protocolError("Unexpected paired key encryption frame")
+			}
 			try processPairedKeyEncryptionFrame(frame)
 			return
 		}
 		if frame.v1.hasPairedKeyResult {
+			guard frame.v1.type == .pairedKeyResult, currentState == .sentPairedKeyResult else {
+				throw NearbyError.protocolError("Unexpected paired key result frame")
+			}
 			try processPairedKeyResultFrame(frame)
 			return
 		}
 		if frame.v1.hasIntroduction {
+			guard frame.v1.type == .introduction, currentState == .receivedPairedKeyResult else {
+				throw NearbyError.protocolError("Unexpected transfer introduction")
+			}
 			try processIntroductionFrame(frame)
 			return
 		}
-		print("Unexpected or unhandled frame in processTransferSetupFrame: \(frame)")
+		NearbyLogger.log("[NearByDrop] Received an unsupported transfer setup frame")
 	}
 	
 	override func isServer() -> Bool {
@@ -221,6 +226,9 @@ class InboundNearbyConnection: NearbyConnection{
 	}
 
 	override func processFileChunk(frame: Location_Nearby_Connections_PayloadTransferFrame) throws{
+		guard currentState == .receivingFiles, !terminationReported else {
+			throw NearbyError.protocolError("File payload arrived before transfer approval")
+		}
 		let id=frame.payloadHeader.id
 		guard let fileInfo=transferredFiles[id] else { throw NearbyError.protocolError("File payload ID \(id) is not known") }
 		guard frame.payloadHeader.totalSize == fileInfo.meta.size,
@@ -266,14 +274,17 @@ class InboundNearbyConnection: NearbyConnection{
 	}
 	
 	override func processBytesPayload(payload: Data, id: Int64) throws -> Bool {
-		if id==textPayloadID{
+		if let textPayloadID, id == textPayloadID {
+			guard currentState == .receivingFiles, !terminationReported else {
+				throw NearbyError.protocolError("URL payload arrived before transfer approval")
+			}
 			// Only open http(s). Any other scheme would make the Mac launch an
 			// arbitrary URL handler after the user consented to a generic "link".
 			guard let urlStr=String(data: payload, encoding: .utf8), let url=URL(string: urlStr),
 				  url.scheme=="http" || url.scheme=="https" else {
 				throw NearbyError.protocolError("Invalid URL payload")
 			}
-			NSWorkspace.shared.open(url)
+			openReceivedURL(url)
 			beginFinishing()
 			return true
 		}else if let fileInfo=transferredFiles[id]{
@@ -304,6 +315,12 @@ class InboundNearbyConnection: NearbyConnection{
 		}
 		return false
 	}
+
+	func openReceivedURL(_ url: URL) {
+		DispatchQueue.main.async {
+			NSWorkspace.shared.open(url)
+		}
+	}
 	
 	private func processConnectionRequestFrame(_ frame:Location_Nearby_Connections_OfflineFrame) throws{
 		guard frame.hasV1 && frame.v1.hasConnectionRequest && frame.v1.connectionRequest.hasEndpointInfo else { throw NearbyError.requiredFieldMissing("connectionRequest.endpointInfo") }
@@ -312,7 +329,7 @@ class InboundNearbyConnection: NearbyConnection{
 		// the shared parser handles the "hidden" case where the name is absent.
 		guard let endpointInfo=EndpointInfo(data: frame.v1.connectionRequest.endpointInfo) else { throw NearbyError.protocolError("Endpoint info could not be parsed") }
 		let name=endpointInfo.name ?? "Unknown device"
-		NearbyLogger.log("[NearByDrop] Inbound ConnectionRequest from device '\(name)' (type: \(endpointInfo.deviceType))")
+		NearbyLogger.log("[NearByDrop] Inbound connection request received")
 		remoteDeviceInfo=RemoteDeviceInfo(name: name, type: endpointInfo.deviceType, id: frame.v1.connectionRequest.endpointID.isEmpty ? nil : frame.v1.connectionRequest.endpointID)
 		setState(.receivedConnectionRequest)
 	}
@@ -393,7 +410,7 @@ class InboundNearbyConnection: NearbyConnection{
 		sha.update(data: msg.messageData)
 		let dataHash=Data(sha.finalize())
 		guard cipherCommitment == rawHash || cipherCommitment == dataHash else {
-			NearbyLogger.log("[NearByDrop] UKEY2 cipher commitment mismatch! rawHash: \(rawHash.hexEncodedString()), dataHash: \(dataHash.hexEncodedString()), expected: \(cipherCommitment?.hexEncodedString() ?? "nil")")
+			NearbyLogger.log("[NearByDrop] UKEY2 cipher commitment mismatch")
 			throw NearbyError.ukey2
 		}
 		
@@ -443,7 +460,7 @@ class InboundNearbyConnection: NearbyConnection{
 			try sendTransferSetupFrame(pairedEncryption)
 			setState(.sentConnectionResponse)
 		} else {
-			print("Unhandled offline frame plaintext: \(frame)")
+			NearbyLogger.log("[NearByDrop] Received an unsupported offline frame")
 		}
 	}
 	
@@ -514,7 +531,7 @@ class InboundNearbyConnection: NearbyConnection{
 			  !(introduction.fileMetadata.isEmpty && introduction.textMetadata.isEmpty) else {
 			throw NearbyError.protocolError("Malformed introduction payload")
 		}
-		NearbyLogger.log("[NearByDrop] Inbound Introduction received: \(introduction.fileMetadata.count) files, \(introduction.textMetadata.count) text items")
+		NearbyLogger.log("[NearByDrop] Inbound transfer introduction received")
 		if !introduction.fileMetadata.isEmpty {
 			var payloadIDs=Set<Int64>()
 			let downloadsDirectory=NearbyConnectionManager.downloadDirectory.resolvingSymlinksInPath()
@@ -530,7 +547,7 @@ class InboundNearbyConnection: NearbyConnection{
 			}
 			setState(.waitingForUserConsent)
 			let metadata=TransferMetadata(files: transferredFiles.map({$0.value.meta}), id: id, pinCode: pinCode)
-			requestOrAutomaticConsent(metadata: metadata)
+			requestUserConsent(metadata: metadata)
 		}else if !introduction.textMetadata.isEmpty {
 			let meta=introduction.textMetadata[0]
 			guard meta.size >= 0, meta.size <= Int64(NearbyConnection.SANE_FRAME_LENGTH) else {
@@ -540,7 +557,7 @@ class InboundNearbyConnection: NearbyConnection{
 				let metadata=TransferMetadata(files: [], id: id, pinCode: pinCode, textDescription: meta.textTitle)
 				textPayloadID=meta.payloadID
 				setState(.waitingForUserConsent)
-				requestOrAutomaticConsent(metadata: metadata)
+				requestUserConsent(metadata: metadata)
 			}else{
 				let downloadsDirectory=NearbyConnectionManager.downloadDirectory.resolvingSymlinksInPath()
 				let dateFormatter=DateFormatter()
@@ -551,15 +568,16 @@ class InboundNearbyConnection: NearbyConnection{
 											  destinationURL: dest)
 				transferredFiles[meta.payloadID]=info
 				setState(.waitingForUserConsent)
-				requestOrAutomaticConsent(metadata: TransferMetadata(files: [info.meta], id: self.id, pinCode: self.pinCode))
+				requestUserConsent(metadata: TransferMetadata(files: [info.meta], id: self.id, pinCode: self.pinCode))
 			}
 		}else{
 			rejectTransfer(with: .unsupportedAttachmentType)
 		}
 	}
 
-	// Trusted devices skip the prompt; every other sender sees the consent card.
-	private func requestOrAutomaticConsent(metadata:TransferMetadata){
+	// Quick Share does not expose a persistent authenticated peer identity.
+	// Every transfer therefore goes through the explicit consent callback.
+	private func requestUserConsent(metadata:TransferMetadata){
 		guard let device=remoteDeviceInfo else { return }
         DispatchQueue.main.async {
             self.delegate?.obtainUserConsent(for: metadata, from: device, connection: self)

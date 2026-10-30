@@ -12,6 +12,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     private var localClickMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NearbyConnectionManager.invalidateLegacyTrustedDevices()
         UsageAnalytics.start()
         AppUpdater.shared.canInstall = { [weak self] in
             guard let model=self?.model else { return false }
@@ -359,14 +360,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
 
     private func consent(_ id: String, accept: Bool) {
         guard model.incoming[id] != nil, !model.accepted.contains(id) else { return }
-        let device = model.incoming[id]?.device
+        IncomingConsentPresentationState.applyDecision(
+            transferID: id,
+            accepted: accept,
+            incoming: &model.incoming,
+            progress: &model.incomingProgress,
+            acceptedIDs: &model.accepted
+        )
         if accept {
-            if let device { model.commitPendingDeviceTrust(id, device: device) }
-            model.accepted.insert(id)
+            if model.qrTransferID == id, let info = model.incoming[id] {
+                let desc: String
+                if let first = info.transfer.files.first {
+                    desc = info.transfer.files.count > 1 ? "\(first.name) (+\(info.transfer.files.count - 1))" : first.name
+                } else {
+                    desc = info.transfer.textDescription ?? "Files"
+                }
+                model.qrStatus = .downloading(sender: info.device.name, description: desc)
+            }
             FeedbackManager.shared.vibrateClick()
         } else {
-            model.discardPendingDeviceTrust(id)
-            model.incoming.removeValue(forKey: id)
+            if model.qrTransferID == id {
+                model.qrTransferID = nil
+                model.qrStatus = .idle
+            }
             FeedbackManager.shared.vibrateTap()
         }
         NearbyConnectionManager.shared.submitUserConsent(transferID: id, accept: accept)
@@ -383,29 +399,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             if scannedTransfer {
                 self.model.qrTransferID = transfer.id
                 self.model.stopQRReceive()
-            }
-
-            // When receiving via QR code scanner, the user actively initiated by scanning the sender's code
-            if scannedTransfer {
-                let desc: String
-                if let text = transfer.textDescription {
-                    desc = text
-                } else if let first = transfer.files.first {
-                    desc = transfer.files.count > 1 ? "\(first.name) (+\(transfer.files.count - 1))" : first.name
-                } else {
-                    desc = "Files"
-                }
-                self.model.qrStatus = .downloading(sender: device.name, description: desc)
-                self.consent(transfer.id, accept: true)
-                FeedbackManager.shared.playIncoming()
-                FeedbackManager.shared.vibrateTap()
-                return
-            }
-
-            // Auto-accept transfers from trusted devices
-            if self.model.isDeviceTrusted(device) {
-                self.consent(transfer.id, accept: true)
-                return
+                // QR proof authenticates this session, but is not a reusable
+                // trusted identity. Show the same approval card as other peers.
+                self.model.qrStatus = .idle
             }
 
             FeedbackManager.shared.playIncoming()
@@ -432,7 +428,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             }
 
             if error == nil {
-                self.model.commitPendingDeviceTrust(id, device: info.device)
                 let receivedURLs = info.transfer.files.compactMap(\.destinationURL)
                 self.model.recordIncoming(info: info, fileURLs: receivedURLs)
                 FeedbackManager.shared.playSuccess()
@@ -451,8 +446,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
                     self.model.qrStatus = .completed(filename: fileName, count: info.transfer.files.count)
                 }
             } else if let error {
-                self.model.discardPendingDeviceTrust(id)
-                NearbyLogger.log("[Nearby Drop] Inbound transfer \(id) finished with error: \(error)")
+                NearbyLogger.log("[Nearby Drop] Inbound transfer failed")
                 FeedbackManager.shared.playError()
                 FeedbackManager.shared.vibrateTap()
 
@@ -463,9 +457,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
                     self.model.qrStatus = .failed(error: TransferModel.errorMessage(error))
                 }
             }
-            self.model.incoming.removeValue(forKey: id)
-            self.model.incomingProgress.removeValue(forKey: id)
-            self.model.accepted.remove(id)
+            IncomingConsentPresentationState.finish(
+                transferID: id,
+                incoming: &self.model.incoming,
+                progress: &self.model.incomingProgress,
+                acceptedIDs: &self.model.accepted
+            )
             self.model.receiveMessage = error.map(TransferModel.errorMessage) ?? "Saved to \(self.model.downloadDirectoryDisplayPath)"
         }
     }
@@ -1137,21 +1134,6 @@ struct MenuView: View {
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                             .lineLimit(2)
-
-                                        Button {
-                                            let current = model.isDeviceTrusted(for: id, device: item.device)
-                                            model.setPendingDeviceTrusted(id, device: item.device, trusted: !current)
-                                        } label: {
-                                            HStack(spacing: 5) {
-                                                Image(systemName: model.isDeviceTrusted(for: id, device: item.device) ? "checkmark.square.fill" : "square")
-                                                    .font(.system(size: 12))
-                                                    .foregroundStyle(model.isDeviceTrusted(for: id, device: item.device) ? theme.currentAccent.color : .secondary)
-                                                Text("Trust this device")
-                                                    .font(.caption)
-                                                    .foregroundStyle(.primary)
-                                            }
-                                        }
-                                        .buttonStyle(.borderless)
 
                                         HStack(spacing: 8) {
                                             Spacer()
