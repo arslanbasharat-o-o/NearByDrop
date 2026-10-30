@@ -4,7 +4,8 @@
   "scripts": {
     "build:css": "tailwindcss -i ./scripts/tailwind.css -o ./docs/assets/site.css --minify",
     "build:components": "vite build --config vite.config.mts",
-    "test:site": "node --test scripts/scroll-draw-progress.test.mjs"
+    "test:site": "node --test scripts/scroll-draw-progress.test.mjs",
+    "check:release-version": "python3 scripts/check_release_version.py"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",

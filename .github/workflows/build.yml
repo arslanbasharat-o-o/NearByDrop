@@ -50,6 +50,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO test | tee tests.log
       - name: Check diagnostics client
         run: bash scripts/tests/diagnostics-client.sh
+      - name: Test installer safety and rollback
+        run: bash scripts/tests/install.sh
       - name: Static analysis
         run: |
           set -o pipefail
