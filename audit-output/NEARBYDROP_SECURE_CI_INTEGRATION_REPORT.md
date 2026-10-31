@@ -12,7 +12,7 @@ The workflow change removes the production Sparkle key from the current PR and o
 
 I did not open a PR. GitHub currently stores SPARKLE_PRIVATE_KEY as a repository-level Actions secret, and no release-signing environment is configured. Repository secrets are available to workflows in the repository. A same-repository PR could change a workflow to reference that secret, so the absence of a reference in the current PR workflow is not sufficient proof of isolation. The release job is disabled because RELEASE_SIGNING_ENABLED is not configured. The environment and secret migration must be completed before a PR can safely run.
 
-The feature branch is authorized to push without triggering a workflow. This work will be pushed without force; no PR, merge, tag, release, signing job, appcast update, or deployment is part of this handoff.
+The feature branch was pushed to origin without force, and the remote feature head matched the report commit when verified. No PR, merge, tag, release, signing job, appcast update, or deployment is part of this handoff.
 
 ## Original security issue and corrections
 
@@ -92,7 +92,7 @@ The Site SEO IndexNow step is restricted to a successful push to main after the 
 | Website | PASS — npm ci, TypeScript, version consistency, site tests/interactions, 11 sitemap URLs, and npm audit with zero vulnerabilities. The generated component bundle matched. |
 | Site CSS reproduction | Local Node 24.21/npm 12 generation differed from the committed CSS, as previously observed at origin/main with the same toolchain. The tracked stylesheet was restored byte-for-byte. A recent Site SEO run on main passed, but it is not feature-branch CI. |
 | Gitleaks staged diff | PASS — no leaks. |
-| Gitleaks commit range | PASS — 17 commits from origin/main scanned, no leaks. |
+| Gitleaks commit range | PASS — 18 commits from origin/main scanned, no leaks. |
 | Full-tree Gitleaks | Two generic-api-key matches were found at PROTOCOL.md:155 and Tests/NearbyShareSafetyTests.swift:1182. Both lines were verified to exist in origin/main; they are existing protocol/test-fixture false positives. Values remained redacted. |
 | Diff integrity | PASS — git diff --check. |
 
@@ -100,7 +100,7 @@ No GitHub CI result exists for the feature head because no PR was opened and fea
 
 ## Feature branch, changed files, and commits
 
-The feature branch is 17 commits ahead of origin/main and zero behind. The workflow implementation commit is 7cafa27ada7d1d351dfff662d74bee0f60ab9f0a. The pre-existing untracked master audit remains untouched.
+At the workflow implementation commit, the feature branch was 17 commits ahead of origin/main and zero behind. The first report push brought it to 18 commits ahead at remote head 1f731173ae83843d5e0788eb9d60e02ada8f86f4. The workflow implementation commit is 7cafa27ada7d1d351dfff662d74bee0f60ab9f0a. The pre-existing untracked master audit remains untouched.
 
 The diff against origin/main contained 35 paths, 4,206 insertions, and 441 deletions before this report. The complete list including this report is:
 
