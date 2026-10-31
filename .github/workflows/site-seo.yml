@@ -39,6 +39,8 @@ jobs:
           fetch-depth: 0
       - name: Install site dependencies
         run: npm ci
+      - name: Audit site dependencies
+        run: npm audit --audit-level=moderate
       - name: Type-check site components
         run: npx tsc --noEmit
       - name: Check public release version references

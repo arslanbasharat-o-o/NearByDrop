@@ -1,0 +1,61 @@
+name: Signed release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  signed-release:
+    name: Signed release (protected)
+    # Set this only as an environment variable after release-signing protections are configured.
+    if: >-
+      github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/tags/v') &&
+      vars.RELEASE_SIGNING_ENABLED == 'true'
+    environment:
+      name: release-signing
+    runs-on: macos-26
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Verify release tag is on main and matches app version
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          tag_version="${GITHUB_REF_NAME#v}"
+          app_version="$(python3 -c 'import json; from pathlib import Path; print(json.loads(Path("scripts/release-version.json").read_text())["version"])')"
+          if [[ "$tag_version" != "$app_version" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match app version $app_version." >&2
+            exit 1
+          fi
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
+        with:
+          xcode-version: latest-stable
+      - name: Build universal release
+        run: |
+          set -o pipefail
+          xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop \
+            -configuration Release -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=NO build | tee build.log
+      - name: Sign Sparkle appcast and package release
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: scripts/package-release.sh build dist --release
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          name: Nearby Drop ${{ github.ref_name }}
+          files: |
+            dist/*.dmg
+            dist/*.zip
+            dist/SHA256SUMS.txt
+            dist/appcast.xml
+          generate_release_notes: true
