@@ -4,15 +4,17 @@
 - Branch: feature/nearbydrop-product-sprint-1
 - Comparison base: b930be3705632465dcb144d28ae2798767f734d3
 - Secure CI implementation commit: 7cafa27ada7d1d351dfff662d74bee0f60ab9f0a
-- Final status: INTEGRATION BLOCKED
+- Current status: Draft PR #13 open; CI passed on source head `d2aea1edcf39891e79785908ca2d84babf9dd83d`.
+
+> The configuration and blocker sections below describe the state before the 2026-10-31 recovery. This update supersedes their old current-state conclusions. The report-only follow-up commit is validated by the latest checks linked from [PR #13](https://github.com/arslanbasharat-o-o/NearByDrop/pull/13).
 
 ## Executive result
 
-The workflow change removes the production Sparkle key from the current PR and ordinary build jobs. PR and main/beta validation now packages only unsigned, clearly nonpublic CI artifacts. Release packaging and GitHub Release publication live in a separate tag-only workflow with an environment gate, a trusted-main ancestry check, and an exact tag-to-app-version check.
+The existing Sparkle identity was recovered from the Mac login Keychain and verified against both the app and published v2.3.5 archive. The same identity was exported only into a permission-restricted temporary directory for transfer and piped to GitHub CLI over standard input. The temporary export was automatically removed. No private key material was printed, logged, committed, or stored in the repository.
 
-I did not open a PR. GitHub currently stores SPARKLE_PRIVATE_KEY as a repository-level Actions secret, and no release-signing environment is configured. Repository secrets are available to workflows in the repository. A same-repository PR could change a workflow to reference that secret, so the absence of a reference in the current PR workflow is not sufficient proof of isolation. The release job is disabled because RELEASE_SIGNING_ENABLED is not configured. The environment and secret migration must be completed before a PR can safely run.
+The `release-signing` environment now contains the verified key. It allows only `v*` tags, has administrator bypass disabled, and the repository-level `SPARKLE_PRIVATE_KEY` was deleted only after the environment secret name was confirmed. The repository Actions variable `RELEASE_SIGNING_ENABLED` is explicitly `false`. Only the owner account has write access, so no independent release approver can be configured; production signing remains disabled.
 
-The feature branch was pushed to origin without force, and the remote feature head matched the report commit when verified. No PR, merge, tag, release, signing job, appcast update, or deployment is part of this handoff.
+Draft PR [#13](https://github.com/arslanbasharat-o-o/NearByDrop/pull/13) targets `main`. On source head `d2aea1edcf39891e79785908ca2d84babf9dd83d`, all six GitHub checks passed. No merge, new tag, signed-release run, release-signing deployment, appcast publication, or new release occurred.
 
 ## Original security issue and corrections
 
@@ -29,13 +31,13 @@ The implementation commit makes these changes:
 
 All actions referenced by the repository workflows are pinned to full commit SHAs. No Apple Developer ID signing credential was added or used.
 
-## Current GitHub configuration and remaining blocker
+## Original GitHub configuration before recovery (historical snapshot)
 
 Read-only GitHub inspection confirmed:
 
 - The repository is public.
 - The only configured environment is github-pages, with a branch policy. release-signing does not exist.
-- The Actions secret metadata lists SPARKLE_PRIVATE_KEY at repository scope. No secret value was read, printed, downloaded, copied, or rotated.
+- The initial read-only inspection found SPARKLE_PRIVATE_KEY at repository scope and did not read or display its value. Its verified existing value was migrated later as documented in the current update above.
 - No Actions variables are configured, so RELEASE_SIGNING_ENABLED is unset and the signed release job remains skipped.
 - The active Protect main and beta ruleset prevents deletion and non-fast-forward updates. It has no required status checks or pull-request requirement configured.
 - Default workflow token permissions are contents: read.
@@ -43,16 +45,16 @@ Read-only GitHub inspection confirmed:
 
 GitHub documents that repository secrets are available to workflows in the repository, while environment secrets are limited to jobs that reference the environment and are withheld until its protection rules pass. See [GitHub Actions secrets](https://docs.github.com/en/actions/reference/security/secrets) and [deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).
 
-Required administrative setup before PR creation:
+The pending setup is now complete, with the second-reviewer requirement handled by leaving signing disabled:
 
-1. Create a release-signing environment.
-2. Require approval from an authorized maintainer and enable prevention of self-review.
-3. Restrict the environment to selected tags matching v*; do not allow branches or pull-request refs.
-4. Add the existing SPARKLE_PRIVATE_KEY directly as an environment secret through GitHub settings. Do not copy it through a shell, CLI argument, log, or repository file.
-5. After the environment secret is set, remove the repository-level SPARKLE_PRIVATE_KEY so PR workflows cannot reference a repository-scoped copy.
-6. Set RELEASE_SIGNING_ENABLED=true as a variable on the protected release-signing environment, and only after steps 1–5 are verified.
+1. Created the `release-signing` environment.
+2. Confirmed no independent maintainer has write access; no impossible self-review rule was configured.
+3. Restricted the environment to `v*` tags and disabled administrator bypass.
+4. Exported the verified existing key to a permission-restricted temporary file and sent it to the environment secret using standard input.
+5. Confirmed the environment secret name, then deleted the repository-level secret.
+6. Set `RELEASE_SIGNING_ENABLED=false` at repository scope and kept signed release publication disabled.
 
-Until this setup is complete, signed-release.yml will skip its job, and I will not open a PR. The public repository supports required-reviewer environment protection. The main/beta ruleset also needs a separate maintainer decision about requiring the PR checks before merge; no existing required check names are configured today.
+GitHub has only the owner as a collaborator with write access, so a self-review rule would make releases impossible. The environment therefore has no reviewer requirement; its `v*` tag-only policy and disabled repository variable keep signing isolated and off. The main/beta ruleset still has no required status checks; recommendations are listed in the current update below.
 
 ## Workflow execution matrix
 
@@ -62,7 +64,7 @@ Until this setup is complete, signed-release.yml will skip its job, and I will n
 | Feature branch push | No workflow currently matches this branch. |
 | Push to main | Build runs unprivileged checks and unsigned packaging, except markdown/docs-only paths excluded by its filter. Site SEO runs for its configured paths. Legacy Pages may publish main/docs changes; IndexNow is conditional on a successful main Pages deployment. The beta mirror performs a fast-forward-only update. |
 | Push to beta | Build runs unprivileged checks and unsigned packaging, except ignored paths. Site SEO runs for its configured paths. No beta-to-main synchronization or release signing. |
-| Push of a v* tag | Build remains unprivileged and produces nonpublic CI artifacts. Signed release is eligible only for a protected, enabled release-signing environment; it validates tag ancestry and version before building and publishing. It is currently disabled by the missing environment variable. |
+| Push of a v* tag | Build remains unprivileged and produces nonpublic CI artifacts. Signed release additionally requires the protected `release-signing` environment and `RELEASE_SIGNING_ENABLED=true`; it remains disabled because the repository variable is explicitly false. |
 | Manual dispatch | Build and Site SEO can run their unprivileged checks. There is no manual signing trigger. |
 
 The Site SEO IndexNow step is restricted to a successful push to main after the Pages deployment. Main-to-beta synchronization remains restricted to a main push. No reusable workflows or secret inheritance are configured.
@@ -96,11 +98,17 @@ The Site SEO IndexNow step is restricted to a successful push to main after the 
 | Full-tree Gitleaks | Two generic-api-key matches were found at PROTOCOL.md:155 and Tests/NearbyShareSafetyTests.swift:1182. Both lines were verified to exist in origin/main; they are existing protocol/test-fixture false positives. Values remained redacted. |
 | Diff integrity | PASS — git diff --check. |
 
-No GitHub CI result exists for the feature head because no PR was opened and feature pushes do not match workflow filters. The unrelated successful main Site SEO run does not validate this branch.
+GitHub CI passed on PR source head `d2aea1edcf39891e79785908ca2d84babf9dd83d`:
+
+- Build run [41194713723](https://github.com/arslanbasharat-o-o/NearByDrop/actions/runs/41194713723): `Workflow security policy`, `Diagnostics backend`, `Test (macos-15-intel)`, `Test (macos-26)`, and `Universal app` all passed.
+- Site SEO run [41194713722](https://github.com/arslanbasharat-o-o/NearByDrop/actions/runs/41194713722): `site-seo` passed, including website/SEO and dependency audit checks.
+- The uploaded `nearby-drop-ci-nonpublic` artifact was inspected. It contains the nonpublic marker, `ci-unsigned` DMG/ZIP names, and no appcast. Its marker states it is for engineering validation only, not installation or distribution.
+
+The PR check names currently observed and recommended for the main ruleset are `Workflow security policy`, `Diagnostics backend`, `Test (macos-15-intel)`, `Test (macos-26)`, `Universal app`, and `site-seo`. The ruleset was not changed; it currently prevents deletion and non-fast-forward updates only.
 
 ## Feature branch, changed files, and commits
 
-At the workflow implementation commit, the feature branch was 17 commits ahead of origin/main and zero behind. The first report push brought it to 18 commits ahead at remote head 1f731173ae83843d5e0788eb9d60e02ada8f86f4. The workflow implementation commit is 7cafa27ada7d1d351dfff662d74bee0f60ab9f0a. The pre-existing untracked master audit remains untouched.
+At PR creation, the feature branch head was `d2aea1edcf39891e79785908ca2d84babf9dd83d`; this added a workflow-comment correction identifying the repository-level variable scope for the pre-environment gate. A report-only follow-up is included in PR #13; its latest head and checks are linked above. The pre-existing untracked master audit remains untouched.
 
 The diff against origin/main contained 35 paths, 4,206 insertions, and 441 deletions before this report. The complete list including this report is:
 
@@ -143,10 +151,10 @@ scripts/tests/install.sh
 scripts/tests/package-release-modes.sh
 ~~~
 
-No PR URL exists. Proposed PR title: Nearby Drop: Security, Transfer Reliability, New Features & Secure CI.
+PR: [#13](https://github.com/arslanbasharat-o-o/NearByDrop/pull/13), draft, title “Nearby Drop — Security, Reliability, New Features & Secure CI”.
 
 ## Remaining release gates
 
-The earlier audit's GUI, accessibility, hardware interoperability, minimum macOS 14 runtime, sleep/wake/network recovery, notarization, Gatekeeper clean-install, and Sparkle update verification remain incomplete. No public release is approved by this integration work.
+The earlier audit's isolated GUI and accessibility checks, hardware interoperability, minimum macOS 14 runtime, sleep/wake/network recovery, Developer ID signing/notarization, and Gatekeeper clean-install remain incomplete. The existing v2.3.5 appcast/archive signature was cryptographically verified, but no new public update was built or published. No public release is approved by this integration work.
 
-Final status: INTEGRATION BLOCKED — repository-level signing secret and missing protected release-signing environment prevent proving same-repository PR isolation.
+Final status: INTEGRATION COMPLETE — draft PR open, CI passed, release signing disabled, and no merge or release performed.
