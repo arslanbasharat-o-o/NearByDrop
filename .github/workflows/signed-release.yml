@@ -10,7 +10,8 @@ permissions:
 jobs:
   signed-release:
     name: Signed release (protected)
-    # Set this only as an environment variable after release-signing protections are configured.
+    # This gate uses a repository Actions variable, which is available before environment resolution.
+    # Keep it false until a second maintainer reviewer is configured for release signing.
     if: >-
       github.event_name == 'push' &&
       startsWith(github.ref, 'refs/tags/v') &&
