@@ -168,11 +168,10 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 
     func setAdvertisementState(_ state: NearbyConnectionManager.AdvertisementState) {
         adDebounce?.cancel()
+        receivingPaused = state == .paused
         if state == .published || state == .paused {
             advertisement = state
-            receivingPaused = state == .paused
         } else {
-            if state == .failed { receivingPaused = false }
             let work = DispatchWorkItem { [weak self] in
                 self?.advertisement = state
             }

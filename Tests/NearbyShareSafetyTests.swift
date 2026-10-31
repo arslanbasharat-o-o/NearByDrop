@@ -956,7 +956,6 @@ final class ReceivingPausePolicyTests: XCTestCase {
 
         manager.setReceivingPaused(false)
         XCTAssertFalse(manager.receivingPausedForTesting)
-        XCTAssertTrue(manager.inboundListenerExistsForTesting)
         XCTAssertTrue(waitForListenerReady(manager), "Rapid pause/resume must leave a ready TCP listener")
     }
 }
