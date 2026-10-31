@@ -20,7 +20,7 @@
 
 ## Verified facts
 
-- Current public release: Nearby Drop v2.3.4 (checked October 24, 2026).
+- Current public release: Nearby Drop v2.3.5 (checked October 31, 2026).
 - Supports macOS 14 or later on Apple silicon and Intel.
 - Free to download; the app and repository are proprietary except for components with separate third-party licenses.
 - Wireless Quick Share transfers use a reachable local network and do not use a Nearby Drop cloud relay. USB MTP uses a direct cable.

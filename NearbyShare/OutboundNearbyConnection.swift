@@ -21,6 +21,7 @@ class OutboundNearbyConnection:NearbyConnection{
         didSet { Self.logger.notice("Outgoing stage: \(String(describing: self.currentState), privacy: .public)") }
     }
 	private let urlsToSend:[URL]
+	private let fileIdentities:[TransferFileIdentity]?
 	// Names sent in the introduction; entries may contain "/" (relative paths when
 	// the user selected directories). Falls back to the URL's last path component.
 	private let displayNames:[String]?
@@ -44,9 +45,10 @@ class OutboundNearbyConnection:NearbyConnection{
 		case initial, sentUkeyClientInit, sentUkeyClientFinish, sentPairedKeyEncryption, sentPairedKeyResult, sentIntroduction, sendingFiles, finishing, completed, failed, cancelled, disconnected
 	}
 	
-	init(connection: NWConnection, id: String, urlsToSend:[URL], displayNames:[String]?=nil){
+	init(connection: NWConnection, id: String, urlsToSend:[URL], displayNames:[String]?=nil, fileIdentities:[TransferFileIdentity]?=nil){
 		self.urlsToSend=urlsToSend
 		self.displayNames=displayNames
+		self.fileIdentities=fileIdentities
 		super.init(connection: connection, id: id)
 		if urlsToSend.count==1 && !urlsToSend[0].isFileURL{
 			textPayloadID=Int64.random(in: Int64.min...Int64.max)
@@ -111,7 +113,7 @@ class OutboundNearbyConnection:NearbyConnection{
 	override func processReceivedFrame(frameData: Data) {
 		do{
 			#if DEBUG
-			print("received \(frameData), state is \(currentState)")
+			print("received a \(frameData.count)-byte frame while \(currentState)")
 			#endif
 			switch currentState {
 			case .initial:
@@ -291,7 +293,7 @@ class OutboundNearbyConnection:NearbyConnection{
 	
 	private func processConnectionResponse(frame:Location_Nearby_Connections_OfflineFrame) throws{
 		#if DEBUG
-		print("connection response: \(frame)")
+		print("connection response status: \(frame.v1.connectionResponse.status)")
 		#endif
 		guard frame.version == .v1 else {throw NearbyError.protocolError("Unexpected offline frame version \(frame.version)")}
 		guard frame.v1.type == .connectionResponse else {throw NearbyError.protocolError("Unexpected frame type \(frame.v1.type)")}
@@ -328,6 +330,9 @@ class OutboundNearbyConnection:NearbyConnection{
 	
 	private func processPairedKeyResult(frame:Sharing_Nearby_Frame) throws{
 		guard frame.hasV1, frame.v1.hasPairedKeyResult else { throw NearbyError.requiredFieldMissing("sharingNearbyFrame.v1.pairedKeyResult") }
+		guard urlsToSend.filter(\.isFileURL).count <= TransferFileSafety.maximumFileCount else {
+			throw NearbyError.protocolError("Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Select fewer files and try again.")
+		}
 		
 		var introduction=Sharing_Nearby_Frame()
 		introduction.version = .v1
@@ -348,9 +353,13 @@ class OutboundNearbyConnection:NearbyConnection{
                 meta.id = Int64(index + 1)
 				let displayName = displayNames != nil && displayNames!.count==urlsToSend.count ? displayNames![index] : url.lastPathComponent
 				meta.name=OutboundNearbyConnection.sanitizeFileName(name: displayName)
-				let attrs=try FileManager.default.attributesOfItem(atPath: url.path)
-				guard let fileSize=attrs[FileAttributeKey.size] as? NSNumber else { throw NearbyError.inputOutput }
-				meta.size=fileSize.int64Value
+				let currentIdentity=try TransferFileSafety.readableIdentity(at: url)
+				if let fileIdentities, fileIdentities.count == urlsToSend.count,
+				   fileIdentities[index] != currentIdentity {
+					throw NearbyError.protocolError("A selected file changed after it was chosen. Select it again and retry.")
+				}
+				let identity = fileIdentities?.count == urlsToSend.count ? fileIdentities![index] : currentIdentity
+				meta.size=identity.size
 				let typeID=try? url.resourceValues(forKeys: [.typeIdentifierKey]).typeIdentifier
 				meta.mimeType="application/octet-stream"
 				if let typeID=typeID{
@@ -378,13 +387,15 @@ class OutboundNearbyConnection:NearbyConnection{
 				}
 				meta.payloadID=Int64.random(in: Int64.min...Int64.max)
                 pendingAcknowledgements.insert(meta.payloadID)
-				queue.append(OutgoingFileTransfer(url: url, payloadID: meta.payloadID, handle: try FileHandle(forReadingFrom: url), totalBytes: meta.size, currentOffset: 0))
+				queue.append(OutgoingFileTransfer(url: url, payloadID: meta.payloadID, identity: identity, handle: nil, totalBytes: meta.size, currentOffset: 0))
 				introduction.v1.introduction.fileMetadata.append(meta)
-				totalBytesToSend+=meta.size
+				let (updatedTotal, overflow) = totalBytesToSend.addingReportingOverflow(meta.size)
+				guard !overflow else { throw NearbyError.protocolError("The selected files exceed the supported total transfer size.") }
+				totalBytesToSend=updatedTotal
 			}
 		}
 		#if DEBUG
-		print("sent introduction: \(introduction)")
+		print("sent introduction with \(introduction.v1.introduction.fileMetadata.count) files and \(totalBytesToSend) bytes")
 		#endif
 		try sendTransferSetupFrame(introduction)
 		
@@ -453,7 +464,12 @@ class OutboundNearbyConnection:NearbyConnection{
 				beginFinishing()
 				return
 			}
-			currentTransfer=queue.removeFirst()
+			var next=queue.removeFirst()
+			next.handle=try TransferFileSafety.openReadOnlyFile(at: next.url, expected: next.identity)
+			currentTransfer=next
+		}
+		if let transfer=currentTransfer, let handle=transfer.handle {
+			try TransferFileSafety.verifyUnchanged(handle, expected: transfer.identity)
 		}
 		if currentTransfer!.totalBytes==0{
 			// Zero-byte file: read(upToCount:) returns nil at EOF, so there is no
@@ -471,16 +487,11 @@ class OutboundNearbyConnection:NearbyConnection{
 			return
 		}
 
-		let fileBuffer:Data
-		if #available(macOS 10.15.4, *) {
-			guard let _fileBuffer=try currentTransfer!.handle!.read(upToCount: Int(min(512*1024, currentTransfer!.totalBytes-currentTransfer!.currentOffset))) else{
-				throw NearbyError.inputOutput
-			}
-			guard !_fileBuffer.isEmpty else { throw NearbyError.inputOutput }
-			fileBuffer=_fileBuffer
-		} else {
-			fileBuffer=currentTransfer!.handle!.readData(ofLength: 512*1024)
-		}
+		let fileBuffer = try TransferFileSafety.readVerifiedChunk(
+			from: currentTransfer!.handle!,
+			expected: currentTransfer!.identity,
+			maximumCount: Int(min(512*1024, currentTransfer!.totalBytes-currentTransfer!.currentOffset))
+		)
 		
 		var transfer=Location_Nearby_Connections_PayloadTransferFrame()
 		transfer.packetType = .data
@@ -559,7 +570,7 @@ class OutboundNearbyConnection:NearbyConnection{
 		wrapper.v1.payloadTransfer=frameTransfer
 		try encryptAndSendOfflineFrame(wrapper, completion: completion, failure: failure)
 		#if DEBUG
-		print("sent EOF, current transfer: \(String(describing: transfer))")
+		print("sent EOF for payload \(transfer.payloadID) at offset \(transfer.currentOffset)")
 		#endif
 	}
 
@@ -629,6 +640,7 @@ class OutboundNearbyConnection:NearbyConnection{
 fileprivate struct OutgoingFileTransfer{
 	let url:URL
 	let payloadID:Int64
+	let identity:TransferFileIdentity
 	var handle:FileHandle?
 	let totalBytes:Int64
 	var currentOffset:Int64

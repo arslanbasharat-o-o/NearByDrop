@@ -16,7 +16,11 @@ on:
       - "tsconfig.json"
       - "scripts/tailwind.css"
       - "scripts/check_site_seo.py"
+      - "scripts/check_release_version.py"
+      - "scripts/release-version.json"
       - "scripts/indexnow_payload.py"
+      - "CHANGELOG.md"
+      - "NearByDrop.xcodeproj/project.pbxproj"
       - ".github/workflows/site-seo.yml"
   pull_request:
     branches: [main, beta]
@@ -35,8 +39,12 @@ jobs:
           fetch-depth: 0
       - name: Install site dependencies
         run: npm ci
+      - name: Audit site dependencies
+        run: npm audit --audit-level=moderate
       - name: Type-check site components
         run: npx tsc --noEmit
+      - name: Check public release version references
+        run: npm run check:release-version
       - name: Test scroll drawing progress
         run: npm run test:site
       - name: Test site interactions

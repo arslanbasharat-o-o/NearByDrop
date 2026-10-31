@@ -2,6 +2,7 @@ import Cocoa
 import SwiftUI
 import ServiceManagement
 import NearbyShare
+import UniformTypeIdentifiers
 
 final class SettingsWindowController: NSWindowController, ObservableObject {
     let model: TransferModel
@@ -36,6 +37,43 @@ final class SettingsWindowController: NSWindowController, ObservableObject {
     }
 }
 
+private struct DiagnosticsReportPreview: View {
+    let report: String
+    let onSave: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Preview Diagnostics Report")
+                .font(.title3.weight(.semibold))
+            Text("This report contains app and macOS versions, architecture, receiving status, transfer counts, and a safe error category. It excludes file names and paths, device names and identifiers, network addresses, pairing data, secrets, and raw logs. Saving does not send it to the developer.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ScrollView {
+                Text(report)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+            }
+            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.primary.opacity(0.12)))
+
+            HStack {
+                Button("Cancel", role: .cancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Save Report…", action: onSave)
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(18)
+    }
+}
+
 enum SettingsTab: String, CaseIterable, Identifiable, Hashable {
     case general = "General"
     case appearance = "Appearance"
@@ -62,6 +100,9 @@ struct SettingsView: View {
     @ObservedObject private var feedback = FeedbackManager.shared
     @State private var customName: String = ""
     @State private var usageAnalyticsEnabled = UsageAnalytics.isEnabled
+    @State private var showingDiagnosticsPreview = false
+    @State private var diagnosticsReport = ""
+    @State private var diagnosticsSaveError: String?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -119,6 +160,18 @@ struct SettingsView: View {
             .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
         }
         .frame(width: 660, height: 500)
+        .sheet(isPresented: $showingDiagnosticsPreview) {
+            DiagnosticsReportPreview(report: diagnosticsReport, onSave: saveDiagnosticsReport)
+                .frame(width: 580, height: 440)
+        }
+        .alert("Could Not Save Report", isPresented: Binding(
+            get: { diagnosticsSaveError != nil },
+            set: { if !$0 { diagnosticsSaveError = nil } }
+        )) {
+            Button("OK", role: .cancel) { diagnosticsSaveError = nil }
+        } message: {
+            Text(diagnosticsSaveError ?? "Choose another location and try again.")
+        }
         .onAppear {
             customName = UserDefaults.standard.string(forKey: "customDeviceName") ?? model.deviceName
         }
@@ -196,6 +249,10 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                Button("Preview & Export Diagnostics…", action: prepareDiagnosticsPreview)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .accessibilityHint("Creates a local report for review. It excludes file names, paths, device names, identifiers, addresses, secrets, and logs. Nothing is sent.")
                 DisclosureGroup("Timing and installation details") {
                     Text("Reports include first launch and app opens, using a random installation ID and hour-rounded timestamps. Turn reports off anytime here.")
                         .font(.caption)
@@ -234,6 +291,33 @@ struct SettingsView: View {
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    private func prepareDiagnosticsPreview() {
+        do {
+            diagnosticsReport = try DiagnosticsReportBuilder.makeJSON(from: model.diagnosticsReportSnapshot)
+            showingDiagnosticsPreview = true
+        } catch {
+            diagnosticsSaveError = error.localizedDescription
+        }
+    }
+
+    private func saveDiagnosticsReport() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "Nearby Drop Diagnostics.json"
+        panel.title = "Export Diagnostics Report"
+        panel.prompt = "Save Report"
+        panel.message = "Saving creates a local file. Nearby Drop will not send this report."
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                _ = try DiagnosticsReportBuilder.write(diagnosticsReport, to: url)
+                showingDiagnosticsPreview = false
+            } catch {
+                diagnosticsSaveError = error.localizedDescription
+            }
         }
     }
 
@@ -332,67 +416,21 @@ struct SettingsView: View {
     // MARK: - Devices Tab (Trusted Devices)
     private var devicesTab: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(title: "Trusted Devices", subtitle: "Transfers from these devices are accepted automatically.")
-
-            let list = Array(Set(UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? [])).sorted()
-            if list.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "shield.slash")
-                        .font(.system(size: 28))
-                        .foregroundStyle(.secondary)
-                    Text("No Trusted Devices")
-                        .font(.headline)
-                    Text("Transfers from trusted devices are accepted automatically.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(24)
-                .frame(maxWidth: .infinity)
-                .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-            } else {
-                VStack(spacing: 6) {
-                    ForEach(list, id: \.self) { key in
-                        let parts = key.split(separator: "#", omittingEmptySubsequences: false)
-                        let displayName = parts.count > 1 ? parts.dropLast().joined(separator: "#") : (key.contains("|") ? String(key.split(separator: "|", maxSplits: 1).last ?? "") : key)
-                        let identitySuffix = parts.count > 1 ? String(parts.last ?? "").suffix(6) : nil
-                        HStack {
-                            Image(systemName: "iphone")
-                                .foregroundStyle(theme.currentAccent.color)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(displayName)
-                                    .font(.subheadline)
-                                if let identitySuffix, !identitySuffix.isEmpty {
-                                    Text("Connection ID · …\(identitySuffix)")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer()
-                            Button("Remove", role: .destructive) {
-                                removeTrusted(key)
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                            .help("Remove trust for \(displayName)")
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-                    }
-
-                    HStack {
-                        Spacer()
-                        Button("Revoke All", role: .destructive) {
-                            UserDefaults.standard.removeObject(forKey: "trustedDevices")
-                            model.trustedDevices.removeAll()
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                    .padding(.top, 4)
-                }
+            sectionHeader(
+                title: "Trusted Devices",
+                subtitle: "Automatic acceptance is unavailable because Quick Share does not provide a persistent authenticated device identity."
+            )
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Every incoming transfer requires your approval.", systemImage: "hand.raised.fill")
+                    .font(.subheadline.weight(.medium))
+                Text("Saved trust entries from earlier versions are cleared because display names and connection IDs cannot securely identify a device.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
         }
     }
 
@@ -485,10 +523,4 @@ struct SettingsView: View {
         }
     }
 
-    private func removeTrusted(_ key: String) {
-        var list = UserDefaults.standard.stringArray(forKey: "trustedDevices") ?? []
-        list.removeAll { $0 == key }
-        UserDefaults.standard.set(list, forKey: "trustedDevices")
-        model.trustedDevices.remove(key)
-    }
 }

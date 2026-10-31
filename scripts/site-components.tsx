@@ -25,16 +25,16 @@ if (appPreviewRoot) createRoot(appPreviewRoot).render(
 
 const headerDownloadRoot = document.getElementById("header-download-root")
 if (headerDownloadRoot) createRoot(headerDownloadRoot).render(
-  <GradientButton href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg" className="gradient-button--small">
+  <GradientButton href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.5/Nearby-Drop-2.3.5.dmg" className="gradient-button--small">
     <span>GET .DMG</span><span aria-hidden="true">→</span>
   </GradientButton>,
 )
 
 const heroDownloadRoot = document.getElementById("hero-download-root")
 if (heroDownloadRoot) createRoot(heroDownloadRoot).render(
-  <GradientButton href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.4/Nearby-Drop-2.3.4.dmg">
+  <GradientButton href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v2.3.5/Nearby-Drop-2.3.5.dmg">
     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-    <span>DOWNLOAD FOR MAC · V2.3.4</span>
+    <span>DOWNLOAD FOR MAC · V2.3.5</span>
   </GradientButton>,
 )
 
