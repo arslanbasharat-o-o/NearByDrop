@@ -255,6 +255,10 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	}
 	
 	private var tcpListener:NWListener?
+	private var tcpListenerUsesFixedPort = false
+	private var tcpListenerHasStarted = false
+	private var listenerCancellationID:UUID?
+	private var cancellingListener:NWListener?
 	private let stateQueue=DispatchQueue(label: "com.arslanbasharat.NearByDrop.manager-state", qos: .userInitiated)
 	private static let maxActiveConnections=8
 	public private(set) var endpointID:[UInt8]=generateEndpointID()
@@ -382,7 +386,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
     private var receivingCode: QuickShareCode?
     private var receivingCodeExpiry: DispatchWorkItem?
 	
-    private static func makeListener() -> NWListener? {
+    private static func makeListener(preferFixedPort: Bool = true) -> (listener: NWListener, usesFixedPort: Bool)? {
         let tcpOptions=NWProtocolTCP.Options()
         tcpOptions.noDelay=true
         tcpOptions.enableKeepalive=true
@@ -390,11 +394,26 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
         let params=NWParameters(tls: .none, tcp: tcpOptions)
         params.preferNoProxies=true
         params.allowLocalEndpointReuse=true
-        return (try? NWListener(using: params, on: NWEndpoint.Port(rawValue: 52843)!)) ?? (try? NWListener(using: params))
+        if preferFixedPort, let listener = try? NWListener(using: params, on: NWEndpoint.Port(rawValue: 52843)!) {
+            return (listener, true)
+        }
+        guard let listener = try? NWListener(using: params) else { return nil }
+        return (listener, false)
+    }
+
+    private func createInboundListener(preferFixedPort: Bool = true) {
+        let binding = Self.makeListener(preferFixedPort: preferFixedPort)
+        tcpListener = binding?.listener
+        tcpListenerUsesFixedPort = binding?.usesFixedPort ?? false
+        tcpListenerHasStarted = false
     }
 
     override init() {
-		tcpListener=ReceivingPausePolicy.restored() ? nil : Self.makeListener()
+		if !ReceivingPausePolicy.restored() {
+			let binding = Self.makeListener()
+			tcpListener = binding?.listener
+			tcpListenerUsesFixedPort = binding?.usesFixedPort ?? false
+		}
         super.init()
         startPathMonitoring()
     }
@@ -429,15 +448,20 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			updateAdvertisementState(.paused)
 			return
 		}
+		guard listenerCancellationID == nil else {
+			updateAdvertisementState(.starting)
+			return
+		}
         if tcpListener == nil || tcpListener?.state == .cancelled {
-            tcpListener=Self.makeListener()
+            createInboundListener()
             startTCPListener()
             return
         }
         if case .failed = tcpListener?.state {
+            let retryWithEphemeralPort = tcpListenerUsesFixedPort
             tcpListener?.stateUpdateHandler=nil
             tcpListener?.cancel()
-            tcpListener=Self.makeListener()
+            createInboundListener(preferFixedPort: !retryWithEphemeralPort)
             let previous=mdnsService
             mdnsService=nil
             previous?.delegate=nil
@@ -568,17 +592,78 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 				previousService?.remove(from: .main, forMode: .default)
 				previousService?.stop()
 
-				self.tcpListener?.stateUpdateHandler = nil
-				self.tcpListener?.newConnectionHandler = nil
-				self.tcpListener?.cancel()
-				self.tcpListener = nil
+				if let listener = self.tcpListener {
+					let listenerWasStarted = self.tcpListenerHasStarted
+					self.tcpListener = nil
+					self.tcpListenerUsesFixedPort = false
+					let waitForCancellation: Bool
+					switch listener.state {
+					case .waiting, .ready:
+						waitForCancellation = true
+					case .setup:
+						waitForCancellation = true
+					case .failed, .cancelled:
+						waitForCancellation = false
+					@unknown default:
+						waitForCancellation = true
+					}
+					self.tcpListenerHasStarted = false
+					if !waitForCancellation {
+						listener.stateUpdateHandler = nil
+						listener.newConnectionHandler = nil
+						listener.cancel()
+						self.listenerCancellationID = nil
+						self.cancellingListener = nil
+					} else {
+						let cancellationID = UUID()
+						self.listenerCancellationID = cancellationID
+						self.cancellingListener = listener
+						// Listener events are delivered on stateQueue, so this callback can update manager state directly.
+						listener.stateUpdateHandler = { [self] state in
+							switch state {
+							case .cancelled, .failed:
+								guard self.listenerCancellationID == cancellationID else { return }
+								self.cancellingListener?.stateUpdateHandler = nil
+								self.listenerCancellationID = nil
+								self.cancellingListener = nil
+								if self.receivingPaused {
+									self.updateAdvertisementState(.paused)
+								} else {
+									self.startReceivingListenerOnStateQueue()
+								}
+							default:
+								break
+							}
+						}
+						listener.newConnectionHandler = nil
+						if listener.state == .setup && !listenerWasStarted {
+							listener.start(queue: self.stateQueue)
+						}
+						listener.cancel()
+					}
+				}
 				self.updateAdvertisementState(.paused)
 			} else {
-				self.tcpListener = Self.makeListener()
 				self.updateAdvertisementState(.starting)
-				self.startTCPListener()
+				self.startReceivingListenerOnStateQueue()
 			}
 		}
+	}
+
+	private func startReceivingListenerOnStateQueue() {
+		guard !receivingPaused else {
+			updateAdvertisementState(.paused)
+			return
+		}
+		guard listenerCancellationID == nil else {
+			updateAdvertisementState(.starting)
+			return
+		}
+		if tcpListener == nil || tcpListener?.state == .cancelled {
+			createInboundListener()
+		}
+		updateAdvertisementState(.starting)
+		startTCPListener()
 	}
 
     private func updateAdvertisementState(_ state:AdvertisementState){
@@ -597,6 +682,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
                 self.updateAdvertisementState(.paused)
                 return
             }
+			guard self.listenerCancellationID == nil else { return }
             guard let listener=self.tcpListener else { self.updateAdvertisementState(.failed); return }
             if listener.state == .ready {
                 if self.mdnsService == nil { self.initMDNS() }
@@ -616,7 +702,19 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 
 					case let .failed(error):
 						NearbyLogger.log("[NearByDrop] TCP listener failed: \(error)")
-						self.updateAdvertisementState(.failed)
+						if self.tcpListener === listener,
+						   self.tcpListenerUsesFixedPort,
+						   case NWError.posix(.EADDRINUSE) = error {
+							listener.stateUpdateHandler = nil
+							listener.newConnectionHandler = nil
+							self.tcpListener = nil
+							self.tcpListenerUsesFixedPort = false
+							listener.cancel()
+							self.createInboundListener(preferFixedPort: false)
+							self.startTCPListener()
+						} else {
+							self.updateAdvertisementState(.failed)
+						}
 					default:
 						break
 					}
@@ -645,6 +743,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 				}
 			}
 			listener.start(queue: self.stateQueue)
+			self.tcpListenerHasStarted = true
         }
 	}
 	

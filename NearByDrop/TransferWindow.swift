@@ -170,7 +170,9 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         adDebounce?.cancel()
         if state == .published || state == .paused {
             advertisement = state
+            receivingPaused = state == .paused
         } else {
+            if state == .failed { receivingPaused = false }
             let work = DispatchWorkItem { [weak self] in
                 self?.advertisement = state
             }
@@ -553,7 +555,6 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 
     func setReceivingPaused(_ paused: Bool) {
         guard receivingPaused != paused else { return }
-        receivingPaused = paused
         if paused {
             scanning = false
             if waitingForQR {
