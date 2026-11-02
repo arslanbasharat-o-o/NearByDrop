@@ -27,4 +27,5 @@ project.xcworkspace/xcuserdata/
 # Local test & verification logs
 *-TEST-*.md
 RELEASE-VERIFICATION*.md
+*MASTER_AUDIT*.md
 
