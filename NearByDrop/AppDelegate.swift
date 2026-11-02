@@ -14,6 +14,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !PreviewRuntime.isSwiftUIPreviews else { return }
+#if DEBUG
+        if let idx = CommandLine.arguments.firstIndex(of: "--generate-screenshots"),
+           CommandLine.arguments.count > idx + 1 {
+            generateWebsiteScreenshots(to: URL(fileURLWithPath: CommandLine.arguments[idx + 1]))
+            exit(0)
+        }
+#endif
         NearbyConnectionManager.invalidateLegacyTrustedDevices()
         NearbyConnectionManager.cleanupAbandonedPartialFiles()
         TransferNotificationManager.configure()
@@ -524,6 +531,83 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     func advertisementStateDidChange(_ state: NearbyConnectionManager.AdvertisementState) {
         DispatchQueue.main.async { self.model.setAdvertisementState(state) }
     }
+
+#if DEBUG
+    func generateWebsiteScreenshots(to outputDirectory: URL) {
+        let tabs: [(TransferModel.Tab, TransferModel.PreviewState, String)] = [
+            (.send, .sendReady, "send.jpg"),
+            (.receive, .receiveReady, "receive.jpg"),
+            (.history, .historyEmpty, "transfers.jpg"),
+            (.usb, .usbEmpty, "usb.jpg")
+        ]
+        
+        let fileManager = FileManager.default
+        try? fileManager.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
+        
+        for (tab, state, filename) in tabs {
+            let fixture = TransferModel.makePreviewFixture(tab: tab, state: state)
+            let view = MenuView(
+                model: fixture,
+                send: {},
+                scan: {},
+                settings: {},
+                guide: {},
+                privacy: {}
+            )
+            .preferredColorScheme(.dark)
+            
+            let width: CGFloat = 386
+            let height: CGFloat = 506
+            let hostingView = NSHostingView(rootView: view)
+            hostingView.frame = NSRect(x: 0, y: 0, width: width, height: height)
+            
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+                styleMask: [.borderless],
+                backing: .buffered,
+                defer: false
+            )
+            window.isOpaque = true
+            window.backgroundColor = NSColor(red: 0.07, green: 0.07, blue: 0.09, alpha: 1.0)
+            window.contentView = hostingView
+            window.layoutIfNeeded()
+            hostingView.layoutSubtreeIfNeeded()
+            
+            let scale: CGFloat = 2.0
+            let pixelWidth = Int(width * scale)
+            let pixelHeight = Int(height * scale)
+            
+            guard let rep = NSBitmapImageRep(
+                bitmapDataPlanes: nil,
+                pixelsWide: pixelWidth,
+                pixelsHigh: pixelHeight,
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            ) else { continue }
+            
+            rep.size = NSSize(width: width, height: height)
+            
+            NSGraphicsContext.saveGraphicsState()
+            if let context = NSGraphicsContext(bitmapImageRep: rep) {
+                NSGraphicsContext.current = context
+                context.imageInterpolation = .high
+                hostingView.displayIgnoringOpacity(hostingView.bounds, in: context)
+            }
+            NSGraphicsContext.restoreGraphicsState()
+            
+            if let jpegData = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.92]) {
+                let fileURL = outputDirectory.appendingPathComponent(filename)
+                try? jpegData.write(to: fileURL)
+                print("Generated website screenshot: \(fileURL.path) (\(pixelWidth)x\(pixelHeight))")
+            }
+        }
+    }
+#endif
 }
 
 struct TransferInfo { let device: RemoteDeviceInfo; let transfer: TransferMetadata }
