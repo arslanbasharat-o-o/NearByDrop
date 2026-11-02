@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        AC0000000000000000000001 /* TransferFileSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0000000000000000000002 /* TransferFileSafety.swift */; };
         AD0000000000000000000006 = {isa = PBXBuildFile; fileRef = AD0000000000000000000004; };
         AD0000000000000000000007 = {isa = PBXBuildFile; productRef = AD0000000000000000000008; };
         AD0000000000000000000001 = {isa = PBXBuildFile; productRef = AD0000000000000000000002; };
@@ -144,6 +145,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        AC0000000000000000000002 /* TransferFileSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferFileSafety.swift; sourceTree = "<group>"; };
         AD0000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		AA0000000000000000000002 /* NearbyShareSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyShareSafetyTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000004 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
@@ -340,6 +342,7 @@
 		69DCF4822AB70D0600CBE2CC /* NearbyShare */ = {
 			isa = PBXGroup;
 			children = (
+				AC0000000000000000000002 /* TransferFileSafety.swift */,
 				69DA9A2729E18CB500A442DA /* Protobuf */,
 				69DA9A1E29E0C0B300A442DA /* NearbyConnectionManager.swift */,
 				69DA9A2229E17F0400A442DA /* InboundNearbyConnection.swift */,
@@ -585,6 +588,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AC0000000000000000000001 /* TransferFileSafety.swift in Sources */,
 				69DCF48D2AB70E8C00CBE2CC /* offline_wire_formats.pb.swift in Sources */,
 				69DCF48F2AB70E8C00CBE2CC /* securemessage.pb.swift in Sources */,
 				69DCF4912AB70E9700CBE2CC /* NearbyConnection.swift in Sources */,
