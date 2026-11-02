@@ -1,3 +1,21 @@
+# Unreleased
+
+- Require approval for every incoming transfer, including valid QR pairings.
+- Exclude symbolic links and reject files changed during outbound reads.
+- Enforce the 128-file limit and open source files only while sending.
+- Verify installer checksums and preserve the existing app on failed upgrades.
+- Retry failed outgoing transfers as new attempts after rechecking selected sources.
+- Pause incoming visibility while preserving outgoing discovery and approved transfers.
+- Preview and export allowlisted diagnostics locally without uploading the report.
+
+# 2.3.5 (19)
+
+- Add first-party diagnostics with a reviewable choice in onboarding and Settings.
+- Document report fields, including device names, and make reporting optional.
+- Queue reports for up to seven days with a 200-event limit; expire server data after 90 days.
+- Preserve local-only transfer behavior and exclude filenames, paths, contents, history, and peer identifiers from reports.
+- Distribute a universal macOS 14+ build with ad hoc signing; notarization remains unavailable.
+
 # 2.3.4 (18)
 
 - Polish the menu-bar experience with clearer settings, transfer, QR, and USB surfaces.

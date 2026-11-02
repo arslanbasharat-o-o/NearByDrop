@@ -11,7 +11,7 @@ import CryptoKit
 import SwiftECC
 import CoreBluetooth
 
-public struct RemoteDeviceInfo{
+public struct RemoteDeviceInfo: Sendable {
 	public let name:String
 	public let type:DeviceType
 	public let qrCodeData:Data?
@@ -31,7 +31,7 @@ public struct RemoteDeviceInfo{
 		self.id=id
 	}
 	
-	public enum DeviceType:Int32{
+	public enum DeviceType:Int32, Sendable{
 		case unknown=0
 		case phone
 		case tablet
@@ -55,14 +55,15 @@ public struct RemoteDeviceInfo{
 }
 
 
-public enum NearbyError: LocalizedError {
+public enum NearbyError: LocalizedError, Sendable {
 	case protocolError(_ message:String)
 	case requiredFieldMissing(_ message:String)
 	case ukey2
 	case inputOutput
 	case canceled(reason:CancellationReason)
+	case receivingPaused
 	
-	public enum CancellationReason {
+	public enum CancellationReason: Sendable {
 		case userRejected, userCanceled, notEnoughSpace, unsupportedType, timedOut
 	}
 
@@ -92,11 +93,13 @@ public enum NearbyError: LocalizedError {
 			case .timedOut:
 				return "The transfer timed out."
 			}
+		case .receivingPaused:
+			return "Receiving is paused. Resume receiving to accept new transfers."
 		}
 	}
 }
 
-public struct TransferMetadata{
+public struct TransferMetadata: Sendable {
 	public let files:[FileMetadata]
 	public let id:String
 	public let pinCode:String?
@@ -110,7 +113,7 @@ public struct TransferMetadata{
 	}
 }
 
-public struct FileMetadata{
+public struct FileMetadata: Sendable {
 	public let name:String
 	public let size:Int64
 	public let mimeType:String
@@ -137,7 +140,7 @@ struct OutgoingTransferInfo{
 	var cancelled=false
 }
 
-struct EndpointInfo{
+struct EndpointInfo: Sendable {
 	var name:String?
 	let deviceType:RemoteDeviceInfo.DeviceType
 	let qrCodeData:Data?
@@ -223,21 +226,46 @@ public protocol ShareExtensionDelegate:AnyObject{
 	func transferFinished()
 }
 
+enum ReceivingPausePolicy {
+	static let preferenceKey = "receivingPaused"
+
+	static func restored(defaults: UserDefaults = .standard) -> Bool {
+		defaults.bool(forKey: preferenceKey)
+	}
+
+	static func mayAcceptNewSession(isPaused: Bool) -> Bool { !isPaused }
+
+	static func mayHonorConsent(accepted: Bool, isPaused: Bool) -> Bool {
+		!accepted || !isPaused
+	}
+
+	static func sessionsToCancel(activeIDs: Set<String>, approvedIDs: Set<String>, isPaused: Bool) -> Set<String> {
+		guard isPaused else { return [] }
+		return activeIDs.subtracting(approvedIDs)
+	}
+}
+
 public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNearbyConnectionDelegate, OutboundNearbyConnectionDelegate, CBCentralManagerDelegate{
-	public enum AdvertisementState:Equatable{
+	public enum AdvertisementState:Equatable, Sendable{
 		case idle
 		case starting
 		case published
 		case failed
+		case paused
 	}
 	
 	private var tcpListener:NWListener?
+	private var tcpListenerUsesFixedPort = false
+	private var tcpListenerHasStarted = false
+	private var listenerCancellationID:UUID?
+	private var cancellingListener:NWListener?
 	private let stateQueue=DispatchQueue(label: "com.arslanbasharat.NearByDrop.manager-state", qos: .userInitiated)
 	private static let maxActiveConnections=8
 	public private(set) var endpointID:[UInt8]=generateEndpointID()
 	private var mdnsService:NetService?
 	public private(set) var advertisementState:AdvertisementState = .idle
 	private var activeConnections:[String:InboundNearbyConnection]=[:]
+	private var approvedInboundTransferIDs:Set<String>=[]
 	private var foundServices:[String:FoundServiceInfo]=[:]
 	private var shareExtensionDelegates:[ShareExtensionDelegate]=[]
 	private var outgoingTransfers:[String:OutgoingTransferInfo]=[:]
@@ -247,6 +275,13 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		set { stateQueue.sync { _mainAppDelegate=newValue } }
 	}
 	private var discoveryRefCount=0
+	private var receivingPaused = ReceivingPausePolicy.restored()
+
+	var receivingPausedForTesting: Bool { stateQueue.sync { receivingPaused } }
+	var inboundListenerExistsForTesting: Bool { stateQueue.sync { tcpListener != nil } }
+	var inboundListenerReadyForTesting: Bool { stateQueue.sync { !receivingPaused && tcpListener?.state == .ready } }
+	var inboundAdvertisementExistsForTesting: Bool { stateQueue.sync { mdnsService != nil } }
+	var discoveryReferenceCountForTesting: Int { stateQueue.sync { discoveryRefCount } }
 	
 	private var browser:NWBrowser?
 	private var centralManager:CBCentralManager?
@@ -339,37 +374,19 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		customDeviceName ?? Host.current().localizedName ?? ProcessInfo.processInfo.hostName
 	}
 
-	private static let trustedKey="trustedDevices"
-
-	public static func trustedDeviceKey(name:String, id:String?) -> String{
-		if let id = id, !id.isEmpty {
-			return "\(name)#\(id)"
-		}
-		return name
-	}
-
-	public static func isTrusted(name:String, id:String?) -> Bool{
-		guard let list = UserDefaults.standard.stringArray(forKey: trustedKey) else { return false }
-		let key = trustedDeviceKey(name: name, id: id)
-		return list.contains(key) || list.contains(name)
-	}
-
-	public static func setTrusted(name:String, id:String?, trusted:Bool){
-		var list = UserDefaults.standard.stringArray(forKey: trustedKey) ?? []
-		let key = trustedDeviceKey(name: name, id: id)
-		if trusted{
-			if !list.contains(key){ list.append(key) }
-		}else{
-			list.removeAll{ $0==key || $0==name }
-		}
-		UserDefaults.standard.set(list, forKey: trustedKey)
+	/// Older releases stored display names and connection IDs as trusted identities.
+	/// Neither value is a persistent authenticated peer identity, so discard them
+	/// whenever the app starts. Repeating this is safe and also clears values
+	/// written by a downgraded older release.
+	public static func invalidateLegacyTrustedDevices(in defaults: UserDefaults = .standard) {
+		defaults.removeObject(forKey: "trustedDevices")
 	}
 	private let pathMonitor=NWPathMonitor()
     private var hasNetworkPath=false
     private var receivingCode: QuickShareCode?
     private var receivingCodeExpiry: DispatchWorkItem?
 	
-    private static func makeListener() -> NWListener? {
+    private static func makeListener(preferFixedPort: Bool = true) -> (listener: NWListener, usesFixedPort: Bool)? {
         let tcpOptions=NWProtocolTCP.Options()
         tcpOptions.noDelay=true
         tcpOptions.enableKeepalive=true
@@ -377,11 +394,26 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
         let params=NWParameters(tls: .none, tcp: tcpOptions)
         params.preferNoProxies=true
         params.allowLocalEndpointReuse=true
-        return (try? NWListener(using: params, on: NWEndpoint.Port(rawValue: 52843)!)) ?? (try? NWListener(using: params))
+        if preferFixedPort, let listener = try? NWListener(using: params, on: NWEndpoint.Port(rawValue: 52843)!) {
+            return (listener, true)
+        }
+        guard let listener = try? NWListener(using: params) else { return nil }
+        return (listener, false)
+    }
+
+    private func createInboundListener(preferFixedPort: Bool = true) {
+        let binding = Self.makeListener(preferFixedPort: preferFixedPort)
+        tcpListener = binding?.listener
+        tcpListenerUsesFixedPort = binding?.usesFixedPort ?? false
+        tcpListenerHasStarted = false
     }
 
     override init() {
-        tcpListener=Self.makeListener()
+		if !ReceivingPausePolicy.restored() {
+			let binding = Self.makeListener()
+			tcpListener = binding?.listener
+			tcpListenerUsesFixedPort = binding?.usesFixedPort ?? false
+		}
         super.init()
         startPathMonitoring()
     }
@@ -390,12 +422,16 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
         pathMonitor.pathUpdateHandler={ [weak self] path in
             self?.stateQueue.async {
                 guard let self=self else { return }
+                if !ReceivingPausePolicy.mayAcceptNewSession(isPaused: self.receivingPaused) {
+                    self.updateAdvertisementState(.paused)
+                    return
+                }
                 let hadPath=self.hasNetworkPath
                 self.hasNetworkPath=true
                 if path.status != .satisfied { self.updateAdvertisementState(.failed) }
                 else if hadPath && self._mainAppDelegate != nil {
                     // Switching Wi-Fi networks can keep the same interface name and path status.
-                    NearbyLogger.log("[NearByDrop] Network changed; refreshing Bonjour on \(Self.currentLocalIPv4Address() ?? "no IPv4 address")")
+					NearbyLogger.log("[NearByDrop] Network changed; refreshing Bonjour")
                     self.refreshMDNSOnStateQueue()
                 }
             }
@@ -408,15 +444,24 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
     }
 
     private func refreshMDNSOnStateQueue(){
+			guard ReceivingPausePolicy.mayAcceptNewSession(isPaused: receivingPaused) else {
+			updateAdvertisementState(.paused)
+			return
+		}
+		guard listenerCancellationID == nil else {
+			updateAdvertisementState(.starting)
+			return
+		}
         if tcpListener == nil || tcpListener?.state == .cancelled {
-            tcpListener=Self.makeListener()
+            createInboundListener()
             startTCPListener()
             return
         }
         if case .failed = tcpListener?.state {
+            let retryWithEphemeralPort = tcpListenerUsesFixedPort
             tcpListener?.stateUpdateHandler=nil
             tcpListener?.cancel()
-            tcpListener=Self.makeListener()
+            createInboundListener(preferFixedPort: !retryWithEphemeralPort)
             let previous=mdnsService
             mdnsService=nil
             previous?.delegate=nil
@@ -436,7 +481,8 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 
     public func receiveQRCode(_ value:String) throws {
         let code=try QuickShareCode(value)
-        stateQueue.sync {
+		try stateQueue.sync {
+			guard !receivingPaused else { throw NearbyError.receivingPaused }
             receivingCodeExpiry?.cancel()
             // Android caches endpoint metadata by ID; a QR session needs fresh discovery.
             endpointID=Self.generateEndpointID()
@@ -503,6 +549,119 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
     private func updateAdvertisementRecord(){ mdnsService?.setTXTRecord(advertisementRecord()) }
 
 	public func becomeVisible(){
+		stateQueue.async {
+			guard !self.receivingPaused else {
+				self.updateAdvertisementState(.paused)
+				return
+			}
+			self.updateAdvertisementState(.starting)
+			self.startTCPListener()
+		}
+	}
+
+	public func setReceivingPaused(_ paused: Bool) {
+		stateQueue.async {
+			guard self.receivingPaused != paused else {
+				if paused { self.updateAdvertisementState(.paused) }
+				return
+			}
+			self.receivingPaused = paused
+			UserDefaults.standard.set(paused, forKey: ReceivingPausePolicy.preferenceKey)
+			if paused {
+				self.receivingCodeExpiry?.cancel()
+				self.receivingCodeExpiry = nil
+				self.receivingCode = nil
+
+				let pendingIDs = ReceivingPausePolicy.sessionsToCancel(
+					activeIDs: Set(self.activeConnections.keys),
+					approvedIDs: self.approvedInboundTransferIDs,
+					isPaused: true
+				)
+				for id in pendingIDs {
+					guard let connection = self.activeConnections[id] else { continue }
+					NearbyConnection.connectionQueue.async {
+						connection.lastError = NearbyError.receivingPaused
+						connection.disconnect()
+					}
+					self.approvedInboundTransferIDs.remove(id)
+				}
+
+				let previousService = self.mdnsService
+				self.mdnsService = nil
+				previousService?.delegate = nil
+				previousService?.remove(from: .main, forMode: .default)
+				previousService?.stop()
+
+				if let listener = self.tcpListener {
+					let listenerWasStarted = self.tcpListenerHasStarted
+					self.tcpListener = nil
+					self.tcpListenerUsesFixedPort = false
+					let waitForCancellation: Bool
+					switch listener.state {
+					case .waiting, .ready:
+						waitForCancellation = true
+					case .setup:
+						waitForCancellation = true
+					case .failed, .cancelled:
+						waitForCancellation = false
+					@unknown default:
+						waitForCancellation = true
+					}
+					self.tcpListenerHasStarted = false
+					if !waitForCancellation {
+						listener.stateUpdateHandler = nil
+						listener.newConnectionHandler = nil
+						listener.cancel()
+						self.listenerCancellationID = nil
+						self.cancellingListener = nil
+					} else {
+						let cancellationID = UUID()
+						self.listenerCancellationID = cancellationID
+						self.cancellingListener = listener
+						// Listener events are delivered on stateQueue, so this callback can update manager state directly.
+						listener.stateUpdateHandler = { [self] state in
+							switch state {
+							case .cancelled, .failed:
+								guard self.listenerCancellationID == cancellationID else { return }
+								self.cancellingListener?.stateUpdateHandler = nil
+								self.listenerCancellationID = nil
+								self.cancellingListener = nil
+								if self.receivingPaused {
+									self.updateAdvertisementState(.paused)
+								} else {
+									self.startReceivingListenerOnStateQueue()
+								}
+							default:
+								break
+							}
+						}
+						listener.newConnectionHandler = nil
+						if listener.state == .setup && !listenerWasStarted {
+							listener.start(queue: self.stateQueue)
+						}
+						listener.cancel()
+					}
+				}
+				self.updateAdvertisementState(.paused)
+			} else {
+				self.updateAdvertisementState(.starting)
+				self.startReceivingListenerOnStateQueue()
+			}
+		}
+	}
+
+	private func startReceivingListenerOnStateQueue() {
+		guard !receivingPaused else {
+			updateAdvertisementState(.paused)
+			return
+		}
+		guard listenerCancellationID == nil else {
+			updateAdvertisementState(.starting)
+			return
+		}
+		if tcpListener == nil || tcpListener?.state == .cancelled {
+			createInboundListener()
+		}
 		updateAdvertisementState(.starting)
 		startTCPListener()
 	}
@@ -519,6 +678,11 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	private func startTCPListener(){
         stateQueue.async { [weak self] in
             guard let self=self else { return }
+            guard ReceivingPausePolicy.mayAcceptNewSession(isPaused: self.receivingPaused) else {
+                self.updateAdvertisementState(.paused)
+                return
+            }
+			guard self.listenerCancellationID == nil else { return }
             guard let listener=self.tcpListener else { self.updateAdvertisementState(.failed); return }
             if listener.state == .ready {
                 if self.mdnsService == nil { self.initMDNS() }
@@ -538,7 +702,19 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 
 					case let .failed(error):
 						NearbyLogger.log("[NearByDrop] TCP listener failed: \(error)")
-						self.updateAdvertisementState(.failed)
+						if self.tcpListener === listener,
+						   self.tcpListenerUsesFixedPort,
+						   case NWError.posix(.EADDRINUSE) = error {
+							listener.stateUpdateHandler = nil
+							listener.newConnectionHandler = nil
+							self.tcpListener = nil
+							self.tcpListenerUsesFixedPort = false
+							listener.cancel()
+							self.createInboundListener(preferFixedPort: false)
+							self.startTCPListener()
+						} else {
+							self.updateAdvertisementState(.failed)
+						}
 					default:
 						break
 					}
@@ -546,13 +722,18 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			}
 			listener.newConnectionHandler={(connection:NWConnection) in
 				self.stateQueue.async {
+					guard ReceivingPausePolicy.mayAcceptNewSession(isPaused: self.receivingPaused) else {
+						NearbyLogger.log("[NearByDrop] Rejected inbound connection while receiving is paused")
+						connection.cancel()
+						return
+					}
 					guard self.activeConnections.count < Self.maxActiveConnections else {
-						NearbyLogger.log("[NearByDrop] Rejected inbound connection from \(connection.endpoint): max connections reached")
+						NearbyLogger.log("[NearByDrop] Rejected inbound connection: max connections reached")
 						connection.cancel()
 						return
 					}
 					let id=UUID().uuidString
-					NearbyLogger.log("[NearByDrop] Inbound TCP connection accepted from \(connection.endpoint) (id: \(id))")
+					NearbyLogger.log("[NearByDrop] Inbound TCP connection accepted")
 					let conn=InboundNearbyConnection(connection: connection, id: id)
 					conn.qrSenderPublicKey=self.receivingCode?.publicKey
                     conn.qrReceiverCode=self.receivingCode
@@ -562,6 +743,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 				}
 			}
 			listener.start(queue: self.stateQueue)
+			self.tcpListenerHasStarted = true
         }
 	}
 	
@@ -575,7 +757,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	}
 	
 	private func initMDNS(){
-        guard mdnsService == nil else { return }
+        guard !receivingPaused, mdnsService == nil else { return }
 		let nameBytes:[UInt8]=[
 			0x23, // PCP
 			endpointID[0], endpointID[1], endpointID[2], endpointID[3],
@@ -596,7 +778,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	public func netServiceDidPublish(_ sender: NetService){
 		stateQueue.async {
 			guard sender === self.mdnsService else { return }
-			NearbyLogger.log("[NearByDrop] Bonjour published on \(Self.currentLocalIPv4Address() ?? "no IPv4 address"):\(sender.port)")
+			NearbyLogger.log("[NearByDrop] Bonjour advertisement published")
 			self.updateAdvertisementState(.published)
 		}
 	}
@@ -605,7 +787,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
         stateQueue.async {
         guard sender === self.mdnsService else { return }
 #if DEBUG
-		print("Bonjour advertisement failed: \(errorDict)")
+		NearbyLogger.log("[NearByDrop] Bonjour advertisement failed")
 #endif
 		self.updateAdvertisementState(.failed)
         }
@@ -635,6 +817,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	func connectionWasTerminated(connection:InboundNearbyConnection, error:Error?){
 		stateQueue.async {
 			self.activeConnections.removeValue(forKey: connection.id)
+			self.approvedInboundTransferIDs.remove(connection.id)
 			guard let delegate=self._mainAppDelegate else { return }
 			DispatchQueue.main.async { delegate.incomingTransfer(id: connection.id, didFinishWith: error) }
 		}
@@ -642,15 +825,26 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	
 	public func submitUserConsent(transferID:String, accept:Bool){
 		stateQueue.async {
-			self.activeConnections[transferID]?.submitUserConsent(accepted: accept)
+			guard let connection = self.activeConnections[transferID] else { return }
+			if !ReceivingPausePolicy.mayHonorConsent(accepted: accept, isPaused: self.receivingPaused) {
+				connection.submitUserConsent(accepted: false)
+				return
+			}
+			if accept {
+				self.approvedInboundTransferIDs.insert(transferID)
+			} else {
+				self.approvedInboundTransferIDs.remove(transferID)
+			}
+			connection.submitUserConsent(accepted: accept)
 		}
 	}
 
 	public func cancelIncomingTransfer(id: String) {
 		stateQueue.async {
+			self.approvedInboundTransferIDs.remove(id)
 			if let connection=self.activeConnections[id] {
                 NearbyConnection.connectionQueue.async {
-                    connection.lastError=NearbyError.canceled(reason: .userCanceled)
+						connection.lastError=NearbyError.canceled(reason: .userCanceled)
                     connection.disconnect()
                 }
             }
@@ -711,8 +905,9 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	
 	public func cancelOutgoingTransfer(id:String){
 		stateQueue.async {
-            self.outgoingTransfers[id]?.cancelled=true
-            self.outgoingTransfers[id]?.connection.cancel()
+			guard var transfer = self.outgoingTransfers.removeValue(forKey: id) else { return }
+            transfer.cancelled=true
+            transfer.connection.cancel()
         }
 	}
 	
@@ -730,19 +925,19 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	
 	private func maybeAddFoundDevice(service:NWBrowser.Result){
 		#if DEBUG
-		print("found service \(service)")
+			NearbyLogger.log("[NearByDrop] Found a nearby service")
 		#endif
 		for interface in service.interfaces{
 			if case .loopback=interface.type{
 				#if DEBUG
-				print("ignoring localhost service")
+				NearbyLogger.log("[NearByDrop] Ignored a local service")
 				#endif
 				return
 			}
 		}
 		guard let endpointID=endpointID(for: service), endpointID != String(bytes: self.endpointID, encoding: .ascii) else {return}
 		#if DEBUG
-		print("service name is valid, endpoint ID \(endpointID)")
+			NearbyLogger.log("[NearByDrop] Nearby service metadata parsed")
 		#endif
 		var foundService=FoundServiceInfo(service: service)
 		
@@ -758,7 +953,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		
 		if let qrData=endpointInfo.qrCodeData, let qrCodeAdvertisingToken=qrCodeAdvertisingToken{
 #if DEBUG
-			print("Device has QR data: \(qrData.base64EncodedString()), our advertising token is \(qrCodeAdvertisingToken.base64EncodedString())")
+			NearbyLogger.log("[NearByDrop] Nearby service has QR pairing metadata")
 #endif
 			if qrData==qrCodeAdvertisingToken{
 				let targetDevice = deviceInfo ?? addFoundDevice(foundService: &foundService, endpointInfo: endpointInfo, endpointID: endpointID)
@@ -778,7 +973,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 					}
 				}catch{
 #if DEBUG
-					print("Error decrypting QR code data of an invisible device: \(error)")
+					NearbyLogger.log("[NearByDrop] Could not decrypt nearby QR metadata")
 #endif
 				}
 			}
@@ -826,8 +1021,14 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 		}
 	}
 	
-	public func startOutgoingTransfer(deviceID:String, delegate:ShareExtensionDelegate, urls:[URL], displayNames:[String]?=nil){
+	public func startOutgoingTransfer(deviceID:String, delegate:ShareExtensionDelegate, urls:[URL], displayNames:[String]?=nil, fileIdentities:[TransferFileIdentity]?=nil){
 		stateQueue.async {
+			guard urls.filter(\.isFileURL).count <= TransferFileSafety.maximumFileCount else {
+				DispatchQueue.main.async {
+					delegate.connectionFailed(with: NearbyError.protocolError("Quick Share supports up to \(TransferFileSafety.maximumFileCount) files per transfer. Select fewer files and try again."))
+				}
+				return
+			}
 			guard let info=self.foundServices[deviceID] else {
 				DispatchQueue.main.async { delegate.connectionFailed(with: NearbyError.protocolError("Device is no longer reachable")) }
 				return
@@ -848,7 +1049,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			params.serviceClass = .responsiveData
 			params.preferNoProxies=true
 			let nwconn=NWConnection(to: info.service.endpoint, using: params)
-			let conn=OutboundNearbyConnection(connection: nwconn, id: deviceID, urlsToSend: urls, displayNames: displayNames)
+			let conn=OutboundNearbyConnection(connection: nwconn, id: deviceID, urlsToSend: urls, displayNames: displayNames, fileIdentities: fileIdentities)
 			conn.delegate=self
 			conn.qrCodePrivateKey=self.qrCodePrivateKey
 			let targetDevice = info.device ?? RemoteDeviceInfo(name: "Android Phone", type: .phone, id: deviceID)
@@ -935,7 +1136,7 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			if let last = self.lastBLEDiscoveryTime, now.timeIntervalSince(last) < 2.0 { return }
 			self.lastBLEDiscoveryTime = now
 			#if DEBUG
-			print("Discovered Quick Share BLE beacon (0xFE2C), RSSI: \(RSSI).")
+			NearbyLogger.log("[NearByDrop] Discovered a Quick Share BLE beacon")
 			#endif
 			if self.mdnsService == nil { self.initMDNS() }
 		}

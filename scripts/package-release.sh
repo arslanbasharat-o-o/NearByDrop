@@ -4,6 +4,41 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 derived="${1:-build}"
 output="${2:-dist}"
+mode="${3:---ci-unsigned}"
+if [ "$#" -gt 3 ]; then
+    echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--release|--release-keychain]" >&2
+    exit 2
+fi
+
+case "$mode" in
+    --ci-unsigned)
+        if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
+            echo "CI unsigned mode refuses SPARKLE_PRIVATE_KEY." >&2
+            exit 2
+        fi
+        artifact_suffix="-ci-unsigned"
+        ;;
+    --release)
+        if [ -z "${SPARKLE_PRIVATE_KEY:-}" ]; then
+            echo "Release mode requires SPARKLE_PRIVATE_KEY; keychain fallback is disabled." >&2
+            exit 2
+        fi
+        artifact_suffix=""
+        ;;
+    --release-keychain)
+        if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
+            echo "Keychain release mode refuses SPARKLE_PRIVATE_KEY; choose --release instead." >&2
+            exit 2
+        fi
+        artifact_suffix=""
+        ;;
+    *)
+        echo "Unknown package mode: $mode" >&2
+        echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--release|--release-keychain]" >&2
+        exit 2
+        ;;
+esac
+
 product="$derived/Build/Products/Release/Nearby Drop.app"
 test -d "$product"
 mkdir -p "$output"
@@ -49,29 +84,38 @@ codesign --verify --deep --strict --verbose=2 "$app"
 version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$app/Contents/Info.plist")
 minimum=$(/usr/libexec/PlistBuddy -c 'Print LSMinimumSystemVersion' "$app/Contents/Info.plist")
 test "$minimum" = 14.0
-archive="$output/Nearby-Drop-$version-universal.zip"
+archive="$output/Nearby-Drop-$version$artifact_suffix-universal.zip"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
 
 # Build installer DMG with Applications shortcut
 dmg_staging="$(mktemp -d "${TMPDIR:-/tmp}/nearby-drop-dmg.XXXXXX")"
 ditto "$app" "$dmg_staging/Nearby Drop.app"
 ln -s /Applications "$dmg_staging/Applications"
-dmg="$output/Nearby-Drop-$version.dmg"
+dmg="$output/Nearby-Drop-$version$artifact_suffix.dmg"
 rm -f "$dmg"
 hdiutil create -volname "Nearby Drop" -srcfolder "$dmg_staging" -ov -format UDZO "$dmg"
 rm -rf "$dmg_staging"
 
 (cd "$output" && shasum -a 256 "$(basename "$dmg")" "$(basename "$archive")" > SHA256SUMS.txt)
-printf 'Packaged %s and %s (macOS %s+, arm64 + x86_64, ad hoc signed)\n' "$dmg" "$archive" "$minimum"
-
-# Sparkle signs the archive using the local Keychain or the CI signing secret.
-sparkle_bin="${SPARKLE_BIN_DIR:-$derived/SourcePackages/artifacts/sparkle/Sparkle/bin}"
-feed_staging="$(mktemp -d "${TMPDIR:-/tmp}/nearby-drop-feed.XXXXXX")"
-cp "$archive" "$feed_staging/"
-if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
-    printf '%s' "$SPARKLE_PRIVATE_KEY" | "$sparkle_bin/generate_appcast" --ed-key-file - --maximum-deltas 0 --download-url-prefix "https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v$version/" "$feed_staging"
+if [ "$mode" = "--ci-unsigned" ]; then
+    cat > "$output/NONPUBLIC-CI-ARTIFACTS.txt" <<EOF
+Engineering validation artifacts only.
+Not for installation or distribution.
+Ad hoc code signatures; no production Sparkle signature or appcast.
+EOF
+    rm -f "$output/appcast.xml"
+    printf 'Created nonpublic CI artifacts: %s and %s (macOS %s+, arm64 + x86_64)\n' "$dmg" "$archive" "$minimum"
 else
-    "$sparkle_bin/generate_appcast" --maximum-deltas 0 --download-url-prefix "https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v$version/" "$feed_staging"
+    sparkle_bin="${SPARKLE_BIN_DIR:-$derived/SourcePackages/artifacts/sparkle/Sparkle/bin}"
+    feed_staging="$(mktemp -d "${TMPDIR:-/tmp}/nearby-drop-feed.XXXXXX")"
+    trap 'rm -rf "$staging" "$feed_staging"' EXIT
+    cp "$archive" "$feed_staging/"
+    if [ "$mode" = "--release" ]; then
+        printf '%s' "$SPARKLE_PRIVATE_KEY" | "$sparkle_bin/generate_appcast" --ed-key-file - --maximum-deltas 0 --download-url-prefix "https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v$version/" "$feed_staging"
+    else
+        "$sparkle_bin/generate_appcast" --maximum-deltas 0 --download-url-prefix "https://github.com/arslanbasharat-o-o/NearByDrop/releases/download/v$version/" "$feed_staging"
+    fi
+    cp "$feed_staging/appcast.xml" "$output/appcast.xml"
+    rm -rf "$feed_staging"
+    printf 'Packaged signed-release inputs: %s and %s (macOS %s+, arm64 + x86_64)\n' "$dmg" "$archive" "$minimum"
 fi
-cp "$feed_staging/appcast.xml" "$output/appcast.xml"
-rm -rf "$feed_staging"
