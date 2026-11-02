@@ -453,7 +453,7 @@ class NearbyConnection{
 				sendKeepAlive(ack: true)
 			}
 		}else{
-			print("Unhandled offline frame encrypted: \(offlineFrame)")
+				print("Unhandled offline frame type: \(offlineFrame.v1.hasType ? String(describing: offlineFrame.v1.type) : "missing")")
 		}
 	}
 	

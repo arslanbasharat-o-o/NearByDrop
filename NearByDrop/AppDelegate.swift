@@ -12,6 +12,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     private var localClickMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NearbyConnectionManager.invalidateLegacyTrustedDevices()
         UsageAnalytics.start()
         AppUpdater.shared.canInstall = { [weak self] in
             guard let model=self?.model else { return false }
@@ -332,7 +333,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         model.tab = .usb
         showPopover()
     }
-    @objc func sendFiles(_ sender: Any?) {
+    @MainActor @objc func sendFiles(_ sender: Any?) {
         model.tab = .send
         model.chooseFiles()
     }
@@ -359,14 +360,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
 
     private func consent(_ id: String, accept: Bool) {
         guard model.incoming[id] != nil, !model.accepted.contains(id) else { return }
-        let device = model.incoming[id]?.device
+        IncomingConsentPresentationState.applyDecision(
+            transferID: id,
+            accepted: accept,
+            incoming: &model.incoming,
+            progress: &model.incomingProgress,
+            acceptedIDs: &model.accepted
+        )
         if accept {
-            if let device { model.commitPendingDeviceTrust(id, device: device) }
-            model.accepted.insert(id)
+            if model.qrTransferID == id, let info = model.incoming[id] {
+                let desc: String
+                if let first = info.transfer.files.first {
+                    desc = info.transfer.files.count > 1 ? "\(first.name) (+\(info.transfer.files.count - 1))" : first.name
+                } else {
+                    desc = info.transfer.textDescription ?? "Files"
+                }
+                model.qrStatus = .downloading(sender: info.device.name, description: desc)
+            }
             FeedbackManager.shared.vibrateClick()
         } else {
-            model.discardPendingDeviceTrust(id)
-            model.incoming.removeValue(forKey: id)
+            if model.qrTransferID == id {
+                model.qrTransferID = nil
+                model.qrStatus = .idle
+            }
             FeedbackManager.shared.vibrateTap()
         }
         NearbyConnectionManager.shared.submitUserConsent(transferID: id, accept: accept)
@@ -383,29 +399,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             if scannedTransfer {
                 self.model.qrTransferID = transfer.id
                 self.model.stopQRReceive()
-            }
-
-            // When receiving via QR code scanner, the user actively initiated by scanning the sender's code
-            if scannedTransfer {
-                let desc: String
-                if let text = transfer.textDescription {
-                    desc = text
-                } else if let first = transfer.files.first {
-                    desc = transfer.files.count > 1 ? "\(first.name) (+\(transfer.files.count - 1))" : first.name
-                } else {
-                    desc = "Files"
-                }
-                self.model.qrStatus = .downloading(sender: device.name, description: desc)
-                self.consent(transfer.id, accept: true)
-                FeedbackManager.shared.playIncoming()
-                FeedbackManager.shared.vibrateTap()
-                return
-            }
-
-            // Auto-accept transfers from trusted devices
-            if self.model.isDeviceTrusted(device) {
-                self.consent(transfer.id, accept: true)
-                return
+                // QR proof authenticates this session, but is not a reusable
+                // trusted identity. Show the same approval card as other peers.
+                self.model.qrStatus = .idle
             }
 
             FeedbackManager.shared.playIncoming()
@@ -432,7 +428,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             }
 
             if error == nil {
-                self.model.commitPendingDeviceTrust(id, device: info.device)
                 let receivedURLs = info.transfer.files.compactMap(\.destinationURL)
                 self.model.recordIncoming(info: info, fileURLs: receivedURLs)
                 FeedbackManager.shared.playSuccess()
@@ -451,8 +446,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
                     self.model.qrStatus = .completed(filename: fileName, count: info.transfer.files.count)
                 }
             } else if let error {
-                self.model.discardPendingDeviceTrust(id)
-                NearbyLogger.log("[Nearby Drop] Inbound transfer \(id) finished with error: \(error)")
+                NearbyLogger.log("[Nearby Drop] Inbound transfer failed")
                 FeedbackManager.shared.playError()
                 FeedbackManager.shared.vibrateTap()
 
@@ -463,9 +457,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
                     self.model.qrStatus = .failed(error: TransferModel.errorMessage(error))
                 }
             }
-            self.model.incoming.removeValue(forKey: id)
-            self.model.incomingProgress.removeValue(forKey: id)
-            self.model.accepted.remove(id)
+            IncomingConsentPresentationState.finish(
+                transferID: id,
+                incoming: &self.model.incoming,
+                progress: &self.model.incomingProgress,
+                acceptedIDs: &self.model.accepted
+            )
             self.model.receiveMessage = error.map(TransferModel.errorMessage) ?? "Saved to \(self.model.downloadDirectoryDisplayPath)"
         }
     }
@@ -601,11 +598,11 @@ struct MenuView: View {
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
-                        .fill(model.advertisement == .failed ? Color.secondary.opacity(0.2) : theme.currentAccent.color)
+                        .fill(model.advertisement == .failed || model.advertisement == .paused ? Color.secondary.opacity(0.2) : theme.currentAccent.color)
                         .frame(width: 32, height: 32)
                     Image(systemName: "antenna.radiowaves.left.and.right")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(model.advertisement == .failed ? Color.secondary : Color.white)
+                        .foregroundStyle(model.advertisement == .failed || model.advertisement == .paused ? Color.secondary : Color.white)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
@@ -819,6 +816,15 @@ struct MenuView: View {
                 .accessibilityLabel("Remove selected files")
             }
 
+            if let notice = model.selectionNotice {
+                Label(notice, systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .combine)
+            }
+
             HStack(spacing: 8) {
                 Button(action: { model.chooseFiles() }) {
                     Label("Change…", systemImage: "arrow.triangle.2.circlepath")
@@ -944,10 +950,21 @@ struct MenuView: View {
                         }
                     }
                     .frame(height: 6)
-                    HStack {
-                        Text(model.sendMessage.isEmpty ? "Connecting…" : model.sendMessage)
-                            .font(.caption)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Transfer progress")
+                    .accessibilityValue("\(Int(model.progress * 100)) percent")
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(model.outgoingStatusMessage.isEmpty ? "Connecting…" : model.outgoingStatusMessage)
+                            .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
+                        if model.outgoingPhase == .waitingForReceiver || model.outgoingPhase == .transferring || model.outgoingPhase == .completed {
+                            Text(model.sendMessage)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    HStack {
                         Spacer()
                         if !model.transferSpeed.isEmpty || !model.timeRemaining.isEmpty {
                             HStack(spacing: 4) {
@@ -1018,10 +1035,35 @@ struct MenuView: View {
             }
 
             if let error = model.error {
-                Text(error)
-                    .foregroundStyle(.red)
-                    .font(.caption)
-                    .lineLimit(2)
+                VStack(alignment: .leading, spacing: 6) {
+                    if model.outgoingPhase == .failed {
+                        Label("Failed", systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.red)
+                    }
+                    Text(error)
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel("Transfer message")
+                    if model.canRetryFailedOutgoing {
+                        HStack {
+                            Spacer()
+                            Button("Retry", action: model.retryFailedOutgoing)
+                                .buttonStyle(.borderedProminent)
+                                .tint(theme.currentAccent.color)
+                                .controlSize(.small)
+                                .disabled(!model.retryPeerIsNearby)
+                                .help(model.retryPeerIsNearby ? "Start a new transfer attempt. The receiver must approve it again." : "Waiting for the receiver to appear nearby again.")
+                        }
+                        if !model.retryPeerIsNearby {
+                            Text("The device is no longer nearby. It must reappear before Retry is available.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
         }
         .padding(.horizontal, 14)
@@ -1033,6 +1075,28 @@ struct MenuView: View {
     // MARK: - Receive View
     private var receiveView: some View {
         VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Label(
+                    model.receivingPaused ? "Receiving Paused" : "Receiving On",
+                    systemImage: model.receivingPaused ? "pause.circle.fill" : "antenna.radiowaves.left.and.right"
+                )
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(model.receivingPaused ? Color.secondary : theme.currentAccent.color)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(model.receivingPaused ? "Receiving Paused" : "Receiving On")
+                Spacer()
+                Button(model.receivingPaused ? "Resume Receiving" : "Pause Receiving") {
+                    model.setReceivingPaused(!model.receivingPaused)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel(model.receivingPaused ? "Resume Receiving" : "Pause Receiving")
+                .accessibilityHint(model.receivingPaused ? "Allows new incoming transfers and QR receive sessions." : "Stops new incoming transfers while keeping outgoing discovery available.")
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 9))
+
             if model.qrStatus != .idle {
                 VStack(spacing: 12) {
                     switch model.qrStatus {
@@ -1138,21 +1202,6 @@ struct MenuView: View {
                                             .foregroundStyle(.secondary)
                                             .lineLimit(2)
 
-                                        Button {
-                                            let current = model.isDeviceTrusted(for: id, device: item.device)
-                                            model.setPendingDeviceTrusted(id, device: item.device, trusted: !current)
-                                        } label: {
-                                            HStack(spacing: 5) {
-                                                Image(systemName: model.isDeviceTrusted(for: id, device: item.device) ? "checkmark.square.fill" : "square")
-                                                    .font(.system(size: 12))
-                                                    .foregroundStyle(model.isDeviceTrusted(for: id, device: item.device) ? theme.currentAccent.color : .secondary)
-                                                Text("Trust this device")
-                                                    .font(.caption)
-                                                    .foregroundStyle(.primary)
-                                            }
-                                        }
-                                        .buttonStyle(.borderless)
-
                                         HStack(spacing: 8) {
                                             Spacer()
                                             Button("Decline", role: .cancel) { model.onConsent?(id, false) }
@@ -1182,9 +1231,11 @@ struct MenuView: View {
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 38))
                             .foregroundStyle(theme.currentAccent.color)
-                        Text("Ready to Receive")
+                        Text(model.receivingPaused ? "Receiving Paused" : "Ready to Receive")
                             .font(.headline)
-                        Text("Select \(model.deviceName) on your device to share files.")
+                        Text(model.receivingPaused
+                             ? "This Mac is not advertising or accepting new incoming transfers. Existing approved transfers can finish."
+                             : "Select \(model.deviceName) on your device to share files.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -1198,6 +1249,8 @@ struct MenuView: View {
                         .buttonStyle(.borderedProminent)
                         .tint(theme.currentAccent.color)
                         .controlSize(.regular)
+                        .disabled(model.receivingPaused)
+                        .help(model.receivingPaused ? "Resume receiving to scan a Quick Share QR code." : "Scan a Quick Share QR code to receive files.")
 
                         QuickShareGuideCard(deviceName: model.deviceName)
                             .padding(.top, 4)
@@ -1298,6 +1351,7 @@ struct MenuView: View {
         case .published: return "Ready to receive"
         case .failed: return "Network unavailable"
         case .starting, .idle: return "Connecting…"
+        case .paused: return "Receiving Paused"
         }
     }
 
@@ -1306,6 +1360,7 @@ struct MenuView: View {
         case .published: return .green
         case .failed: return .red
         case .starting, .idle: return .orange
+        case .paused: return .secondary
         }
     }
 }
