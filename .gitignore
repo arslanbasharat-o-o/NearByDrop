@@ -28,4 +28,6 @@ project.xcworkspace/xcuserdata/
 *-TEST-*.md
 RELEASE-VERIFICATION*.md
 *MASTER_AUDIT*.md
+audit-output/
+*.profraw
 
