@@ -661,6 +661,7 @@ struct InternalFileInfo{
 	let meta:FileMetadata
 	let payloadID:Int64
 	let destinationURL:URL
+	let temporaryURL:URL
 	var bytesTransferred:Int64=0
 	var fd:Int32 = -1
 	var created:Bool=false

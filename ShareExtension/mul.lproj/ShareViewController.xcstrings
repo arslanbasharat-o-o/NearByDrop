@@ -201,31 +201,31 @@
       }
     },
     "d3J-ot-h5d.title" : {
-      "comment" : "Class = \"NSTextFieldCell\"; title = \"Scan this QR code with an Android device. The transfer will begin automatically.\"; ObjectID = \"d3J-ot-h5d\";",
+      "comment" : "Class = \"NSTextFieldCell\"; title = \"Scan this QR code on Android, then accept the transfer.\"; ObjectID = \"d3J-ot-h5d\";",
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Scan this QR code with an Android device. The transfer will begin automatically."
+            "value" : "Scan this QR code on Android, then accept the transfer."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Отсканируйте этот QR-код на Android-устройстве. Передача начнётся автоматически."
+            "value" : "Отсканируйте QR-код на Android и подтвердите получение файлов."
           }
         }
       }
     },
     "Ll5-lP-3bU.title" : {
-      "comment" : "Class = \"NSButtonCell\"; title = \"Use QR code...\"; ObjectID = \"Ll5-lP-3bU\";",
+      "comment" : "Class = \"NSButtonCell\"; title = \"Use QR code…\"; ObjectID = \"Ll5-lP-3bU\";",
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Use QR code..."
+            "value" : "Use QR code…"
           }
         },
         "ru" : {
@@ -237,7 +237,7 @@
       }
     },
     "NaJ-Wx-Pim.title" : {
-      "comment" : "Class = \"NSTextFieldCell\"; title = \"Looking for devices...\"; ObjectID = \"NaJ-Wx-Pim\";",
+      "comment" : "Class = \"NSTextFieldCell\"; title = \"Looking for devices…\"; ObjectID = \"NaJ-Wx-Pim\";",
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "ar" : {
@@ -249,7 +249,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Looking for devices..."
+            "value" : "Looking for devices…"
           }
         },
         "ja" : {
@@ -321,67 +321,67 @@
       }
     },
     "vla-gF-eJo.title" : {
-      "comment" : "Class = \"NSTextFieldCell\"; title = \"If you don't see your device, open \\\"Google Files\\\" app and tap \\\"Receive\\\" on the Nearby Share tab.\"; ObjectID = \"vla-gF-eJo\";",
+      "comment" : "Class = \"NSTextFieldCell\"; title = \"Open Quick Share on Android to receive files.\"; ObjectID = \"vla-gF-eJo\";",
       "extractionState" : "extracted_with_value",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "إذا لم تر جهازك، افتح تطبيق \"Google Files\" واضغط على \"استلام\" في علامة التبويب مشاركة قريبة."
+            "value" : "افتح Quick Share على Android لاستقبال الملفات."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "If you don't see your device, open \"Google Files\" app and tap \"Receive\" on the Nearby Share tab."
+            "value" : "Open Quick Share on Android to receive files."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "デバイスが表示されない場合は、「Files」アプリを開き、右下タブから「ニアバイシェア」を選択し、「受信」ボタンをタップしてください。"
+            "value" : "Android で Quick Share を開いてファイルを受信してください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "만약 기기가 보이지 않는다면, \"Files by Google\" 앱을 열고 우측 하단에 있는 \"Nearby Share\" 에서 \"받기\"를 누르세요."
+            "value" : "Android에서 Quick Share를 열어 파일을 받으세요."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Als je je apparaat niet ziet, open dan de app \"Google Files\" en tik op \"Ontvang\" op het tabblad Delen in de buurt."
+            "value" : "Open Quick Share op Android om bestanden te ontvangen."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se não vês o teu dispositivo, abre a aplicação \"Google Files\" e carrega em \"Recever\" na tab Nearby Share."
+            "value" : "Abra o Quick Share no Android para receber ficheiros."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dacă nu vezi dispozitivul tău, deschide aplicația \"Google Files\" și apasă pe butonul \"Primește\"."
+            "value" : "Deschide Quick Share pe Android pentru a primi fișiere."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Если Вы не видите своё устройство, откройте приложение \"Google Files\" и нажмите \"Получить\" на вкладке Обмен."
+            "value" : "Откройте Quick Share на Android, чтобы получать файлы."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Якщо Ви не бачите свій пристрій, відкрийте додаток \"Google Files\" та натисніть \"Отримати\" на вкладці Обмін."
+            "value" : "Відкрийте Quick Share на Android, щоб отримати файли."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "如果您没有看到您的设备，请打开 “文件极客” App，然后点击 “附近共享” 选项卡上的 “接收”。"
+            "value" : "在 Android 上打开 Quick Share 以接收文件。"
           }
         }
       }

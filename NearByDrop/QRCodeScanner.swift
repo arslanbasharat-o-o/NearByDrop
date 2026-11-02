@@ -5,7 +5,7 @@ import Vision
 final class QRScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "NearByDrop.camera")
-    @Published var message = "Hold your phone’s Quick Share code in the frame."
+    @Published var message = ""
     @Published var denied = false
     private var active = false
     private var wantsRunning = false
@@ -79,7 +79,7 @@ final class QRScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSampl
                 guard let self, self.wantsRunning else { return }
                 self.handleCode(value)
             }
-        } catch { DispatchQueue.main.async { self.message = "Could not read the code. Hold it steady and try again." } }
+        } catch { DispatchQueue.main.async { self.message = "Could not read the QR code." } }
     }
     func handleCode(_ value: String) {
         guard let onCode else { return }
@@ -117,37 +117,102 @@ private struct CameraPreview: NSViewRepresentable {
         }
     }
 }
+enum QRScannerPreviewState: Equatable {
+    case scanning
+    case permissionDenied
+}
+
 struct QRScannerView: View {
     @StateObject private var scanner = QRScanner()
+    @ObservedObject private var theme = ThemeManager.shared
     let onCode: (String) -> String?
     let onCancel: () -> Void
+    var previewState: QRScannerPreviewState? = nil
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Scan QR Code").font(.headline)
-                Spacer()
-                Button("Cancel", role: .cancel) {
-                    scanner.stop()
-                    onCancel()
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Scan a pairing QR")
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+            if previewState == .permissionDenied || (previewState == nil && scanner.denied) {
+                cameraDeniedView
+            } else {
+                Group {
+                    if previewState == .scanning {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.black.opacity(0.86))
+                            .overlay {
+                                Image(systemName: "viewfinder")
+                                    .font(.system(size: 58, weight: .ultraLight))
+                                    .foregroundStyle(.white.opacity(0.8))
+                            }
+                    } else {
+                        CameraPreview(session: scanner.session)
+                            .background(.black)
+                            .overlay {
+                                Image(systemName: "viewfinder")
+                                    .font(.system(size: 58, weight: .ultraLight))
+                                    .foregroundStyle(.white.opacity(0.8))
+                            }
+                    }
                 }
-                .keyboardShortcut(.cancelAction)
-            }
-            CameraPreview(session: scanner.session)
-                .frame(height: 180).background(.black).clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay { Image(systemName: "viewfinder").font(.system(size: 96, weight: .ultraLight)).foregroundStyle(.white.opacity(0.8)).accessibilityHidden(true) }
-            Text(scanner.message).font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).frame(minHeight: 34)
-            if scanner.denied {
-                Button("Open Camera Settings…") {
-                    guard let settingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") else { return }
-                    NSWorkspace.shared.open(settingsURL)
+                .frame(height: 176)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                if previewState == .scanning {
+                    Text("Looking for a QR code…")
+                        .font(NearbyTypography.supporting)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                } else if !scanner.message.isEmpty {
+                    Text(scanner.message)
+                        .font(NearbyTypography.supporting)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
                 }
             }
-        }.padding(14).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .onAppear { scanner.onCode = onCode; scanner.start() }
+            Button("Cancel", role: .cancel) {
+                scanner.stop()
+                onCancel()
+            }
+            .buttonStyle(.nearbySecondary)
+            .frame(maxWidth: .infinity)
+            .keyboardShortcut(.cancelAction)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onAppear {
+            scanner.onCode = onCode
+            if previewState == nil { scanner.start() }
+        }
             .onDisappear {
                 scanner.onCode = nil
                 scanner.stop()
             }
+    }
+
+    private var cameraDeniedView: some View {
+        VStack(spacing: 9) {
+            Spacer(minLength: 0)
+            Image(systemName: "camera.metering.unknown")
+                .font(.system(size: 25, weight: .regular))
+                .foregroundStyle(.primary)
+                .frame(width: 58, height: 58)
+                .nearbyControlSurface(cornerRadius: 16)
+            Text("Camera access is off")
+                .font(NearbyTypography.prominentBody)
+            Text("Enable camera access in System Settings to scan pairing QR codes.")
+                .font(NearbyTypography.supporting)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Open Camera Settings") {
+                guard let settingsURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") else { return }
+                NSWorkspace.shared.open(settingsURL)
+            }
+            .buttonStyle(.nearbyPrimary)
+            .frame(maxWidth: .infinity)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

@@ -4,6 +4,7 @@ import NearbyShare
 
 enum UsageAnalytics {
     private static let enabledKey = "usageAnalyticsEnabled"
+    private static let defaultEnabled = true
     private static let installationIDKey = "diagnosticsInstallationID"
     private static let firstLaunchDateKey = "diagnosticsFirstLaunchDate"
     private static let firstLaunchEventIDKey = "diagnosticsFirstLaunchEventID"
@@ -16,8 +17,19 @@ enum UsageAnalytics {
     private static var retryScheduled = false
     private static var generation = 0
 
+    // Keep this client independent from the UI target so the diagnostics
+    // regression test can compile it with only its protocol stubs.
+    private static var isSwiftUIPreviews: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+#else
+        false
+#endif
+    }
+
     static var isEnabled: Bool {
-        UserDefaults.standard.register(defaults: [enabledKey: true])
+        guard !isSwiftUIPreviews else { return false }
+        UserDefaults.standard.register(defaults: [enabledKey: defaultEnabled])
         return UserDefaults.standard.bool(forKey: enabledKey)
     }
 
@@ -26,8 +38,9 @@ enum UsageAnalytics {
     }
 
     static func start() {
+        guard !isSwiftUIPreviews else { return }
         let defaults = UserDefaults.standard
-        defaults.register(defaults: [enabledKey: true])
+        defaults.register(defaults: [enabledKey: defaultEnabled])
         guard isEnabled, defaultsReady else { return }
 
         let storedFirstLaunch = defaults.object(forKey: firstLaunchDateKey) as? Date
@@ -47,8 +60,9 @@ enum UsageAnalytics {
     }
 
     static func setEnabled(_ enabled: Bool) {
+        guard !isSwiftUIPreviews else { return }
         let defaults = UserDefaults.standard
-        defaults.register(defaults: [enabledKey: true])
+        defaults.register(defaults: [enabledKey: defaultEnabled])
         guard defaults.bool(forKey: enabledKey) != enabled else { return }
         defaults.set(enabled, forKey: enabledKey)
 
@@ -117,6 +131,7 @@ enum UsageAnalytics {
         occurredAt: Date = Date(),
         properties: [String: String] = [:]
     ) {
+        guard !isSwiftUIPreviews else { return }
         guard isEnabled, defaultsReady, endpoint != nil else {
             return
         }

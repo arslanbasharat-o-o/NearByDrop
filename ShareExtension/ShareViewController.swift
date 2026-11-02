@@ -335,7 +335,7 @@ class ShareViewController: NSViewController, ShareExtensionDelegate{
 	
 	func transferFinished() {
 		lastError=nil
-		progressState?.stringValue=NSLocalizedString("TransferFinished", value: "Transfer finished", comment: "")
+		progressState?.stringValue=NSLocalizedString("TransferFinished", value: "Transfer complete", comment: "")
 		dismissDelayed()
 	}
 	

@@ -1,5 +1,7 @@
 # Unreleased
 
+# 2.4.0 (20)
+
 - Require approval for every incoming transfer, including valid QR pairings.
 - Exclude symbolic links and reject files changed during outbound reads.
 - Enforce the 128-file limit and open source files only while sending.
@@ -7,6 +9,11 @@
 - Retry failed outgoing transfers as new attempts after rechecking selected sources.
 - Pause incoming visibility while preserving outgoing discovery and approved transfers.
 - Preview and export allowlisted diagnostics locally without uploading the report.
+- Preflight incoming disk space and report capacity failures to the sender.
+- Recover stale USB sessions after transfer errors and preserve readable local uploads.
+- Improve VoiceOver labels for transfer status, USB actions, and completion states.
+- Commit received files atomically and clean abandoned partial files on launch.
+- Add actionable completion and failure notifications for background transfers.
 
 # 2.3.5 (19)
 

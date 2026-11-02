@@ -17,7 +17,7 @@ public struct RemoteDeviceInfo: Sendable {
 	public let qrCodeData:Data?
 	public var id:String?
 	
-	init(name: String, type: DeviceType, id: String? = nil) {
+	public init(name: String, type: DeviceType, id: String? = nil) {
 		self.name = name
 		self.type = type
 		self.id = id
@@ -105,7 +105,7 @@ public struct TransferMetadata: Sendable {
 	public let pinCode:String?
 	public let textDescription:String?
 	
-	init(files: [FileMetadata], id: String, pinCode: String?, textDescription: String?=nil){
+	public init(files: [FileMetadata], id: String, pinCode: String?, textDescription: String?=nil){
 		self.files = files
 		self.id = id
 		self.pinCode = pinCode
@@ -119,7 +119,7 @@ public struct FileMetadata: Sendable {
 	public let mimeType:String
 	public let destinationURL:URL?
 
-	init(name:String, size:Int64, mimeType:String, destinationURL:URL?=nil){
+	public init(name:String, size:Int64, mimeType:String, destinationURL:URL?=nil){
 		self.name=name
 		self.size=size
 		self.mimeType=mimeType
@@ -245,6 +245,33 @@ enum ReceivingPausePolicy {
 	}
 }
 
+enum TransferDiskSpace {
+    static func requiredBytes(for sizes: [Int64]) -> Int64? {
+        var total: Int64 = 0
+        for size in sizes {
+            guard size >= 0 else { return nil }
+            let (sum, overflow) = total.addingReportingOverflow(size)
+            guard !overflow else { return nil }
+            total = sum
+        }
+        return total
+    }
+
+    static func availableBytes(at directory: URL) -> Int64? {
+        guard let attributes = try? FileManager.default.attributesOfFileSystem(forPath: directory.path),
+              let value = attributes[.systemFreeSize] as? NSNumber else {
+            return nil
+        }
+        return value.int64Value
+    }
+
+    static func hasCapacity(requiredBytes: Int64, availableBytes: Int64?) -> Bool {
+        guard requiredBytes >= 0 else { return false }
+        guard let availableBytes else { return true }
+        return availableBytes >= requiredBytes
+    }
+}
+
 public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNearbyConnectionDelegate, OutboundNearbyConnectionDelegate, CBCentralManagerDelegate{
 	public enum AdvertisementState:Equatable, Sendable{
 		case idle
@@ -295,6 +322,8 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 	public static let shared=NearbyConnectionManager()
 	private static let downloadDirKey = "downloadDirectoryURL"
 	private static let downloadBookmarkKey = "downloadDirectoryBookmark"
+	static let partialTransferPrefix = ".nearby-drop-"
+	static let partialTransferExtension = "part"
 	private static let downloadScopeLock=NSLock()
 	private static var scopedDownloadDirectory:URL?
 	private static var scopedDownloadDirectoryAccessed=false
@@ -356,6 +385,26 @@ public class NearbyConnectionManager : NSObject, NetServiceDelegate, InboundNear
 			try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 		}
 		return folder
+	}
+
+	static func temporaryTransferURL(for destination: URL) -> URL {
+		destination.deletingLastPathComponent()
+			.appendingPathComponent("\(partialTransferPrefix)\(UUID().uuidString).\(partialTransferExtension)", isDirectory: false)
+	}
+
+	public static func cleanupAbandonedPartialFiles(in directory: URL? = nil) {
+		let root = (directory ?? downloadDirectory).resolvingSymlinksInPath().standardizedFileURL
+		guard let files = FileManager.default.enumerator(
+			at: root,
+			includingPropertiesForKeys: [.isRegularFileKey],
+			options: []
+		) else { return }
+		for case let file as URL in files {
+			guard file.lastPathComponent.hasPrefix(partialTransferPrefix),
+				  file.pathExtension == partialTransferExtension,
+				  (try? file.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true else { continue }
+			try? FileManager.default.removeItem(at: file)
+		}
 	}
 
 	public static var customDeviceName: String? {

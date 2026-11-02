@@ -52,7 +52,7 @@ if [[ "$command" == "attach" ]]; then
     cat > "$mount/Nearby Drop.app/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict><key>CFBundleShortVersionString</key><string>2.3.5</string></dict></plist>
+<plist version="1.0"><dict><key>CFBundleShortVersionString</key><string>2.4.0</string></dict></plist>
 PLIST
     printf 'verified mock release\n' > "$mount/Nearby Drop.app/release-marker"
     exit 0
@@ -86,7 +86,7 @@ make_checksum_file() {
     local digest="$1"
     local include_asset="${2:-yes}"
     if [[ "$include_asset" == yes ]]; then
-        printf '%s  Nearby-Drop-2.3.5.dmg\n' "$digest" > "$CASE_ROOT/SHA256SUMS.txt"
+        printf '%s  Nearby-Drop-2.4.0.dmg\n' "$digest" > "$CASE_ROOT/SHA256SUMS.txt"
     else
         printf '%s  Nearby-Drop-other.dmg\n' "$digest" > "$CASE_ROOT/SHA256SUMS.txt"
     fi
@@ -106,7 +106,7 @@ prepare_case() {
 
 run_installer() {
     INSTALL_DESTINATION="$DEST" \
-    INSTALL_TEST_RELEASE_TAG="${INSTALL_TEST_RELEASE_TAG:-v2.3.5}" \
+    INSTALL_TEST_RELEASE_TAG="${INSTALL_TEST_RELEASE_TAG:-v2.4.0}" \
     INSTALL_TEST_CHECKSUMS="$CASE_ROOT/SHA256SUMS.txt" \
     INSTALL_TEST_DMG="$CASE_ROOT/release.dmg" \
     INSTALL_TEST_CODESIGN_COUNT="$CODESIGN_COUNT" \

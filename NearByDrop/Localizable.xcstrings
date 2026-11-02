@@ -1,7 +1,106 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "·" : {
+
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · macOS" : {
+
+    },
+    "%@ appearance" : {
+
+    },
+    "%@ menu bar icon" : {
+
+    },
+    "%@ of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "%@ settings" : {
+
+    },
+    "%@ tab" : {
+
+    },
+    "%@ wants to share" : {
+
+    },
+    "%@/s" : {
+
+    },
+    "%lld devices nearby" : {
+
+    },
+    "%lld files · %@ ready to send" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld files · %2$@ ready to send"
+          }
+        }
+      }
+    },
+    "%lld files · %@ total" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld files · %2$@ total"
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld percent" : {
+
+    },
+    "%lld%%" : {
+
+    },
+    "•••" : {
+
+    },
+    "10:42" : {
+
+    },
+    "About %lld sec remaining" : {
+
+    },
+    "About Nearby Drop" : {
+
+    },
+    "Accent color" : {
+
+    },
     "Accept" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -106,6 +205,129 @@
           }
         }
       }
+    },
+    "Accept file" : {
+
+    },
+    "Accept files" : {
+
+    },
+    "Add files" : {
+
+    },
+    "Alex’s MacBook Pro" : {
+
+    },
+    "Allow Camera…" : {
+
+    },
+    "and %lld more files" : {
+
+    },
+    "Android" : {
+
+    },
+    "Back" : {
+
+    },
+    "Back to devices" : {
+
+    },
+    "Back to phone" : {
+
+    },
+    "Camera access" : {
+
+    },
+    "Camera access allowed" : {
+
+    },
+    "Camera access is off" : {
+
+    },
+    "Camera is enabled" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cancel pairing" : {
+
+    },
+    "Cancel search" : {
+
+    },
+    "Cancel transfer" : {
+
+    },
+    "Change Download Location…" : {
+
+    },
+    "Change files…" : {
+
+    },
+    "Change…" : {
+
+    },
+    "Check for Updates" : {
+
+    },
+    "Check for Updates…" : {
+
+    },
+    "Check for updates automatically" : {
+
+    },
+    "Check in the background. You approve updates before installation." : {
+
+    },
+    "Choose a receiver" : {
+
+    },
+    "Choose another device" : {
+
+    },
+    "Choose files…" : {
+
+    },
+    "Choose receiver" : {
+
+    },
+    "Choose your phone" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Connect over USB" : {
+
+    },
+    "Connected · %@" : {
+
+    },
+    "Connecting to %@" : {
+
+    },
+    "Connecting to your phone…" : {
+
+    },
+    "Connection lost" : {
+
+    },
+    "Could Not Save Report" : {
+
+    },
+    "Could not confirm update status." : {
+
+    },
+    "Couldn’t check for updates." : {
+
+    },
+    "Couldn’t save the file" : {
+
+    },
+    "Create pairing QR" : {
+
     },
     "Decline" : {
       "localizations" : {
@@ -213,8 +435,14 @@
         }
       }
     },
+    "Deselect %@" : {
+
+    },
+    "Device name" : {
+
+    },
     "DeviceName" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -327,7 +555,7 @@
       }
     },
     "DeviceSendingFiles" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -439,8 +667,45 @@
         }
       }
     },
+    "Disconnect" : {
+
+    },
+    "Done" : {
+
+    },
+    "Download %lld to Mac" : {
+
+    },
+    "Download Folder to Mac" : {
+
+    },
+    "Download location" : {
+
+    },
+    "Download to Mac" : {
+
+    },
+    "Downloading %lld item%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Downloading %1$lld item%2$@"
+          }
+        }
+      }
+    },
+    "Downloads" : {
+
+    },
+    "Enable camera access in System Settings to scan pairing QR codes." : {
+
+    },
+    "Enable camera…" : {
+
+    },
     "Error.Crypto" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -553,7 +818,7 @@
       }
     },
     "Error.Protocol" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -665,7 +930,50 @@
         }
       }
     },
+    "Export…" : {
+
+    },
+    "Finder   File   Edit   View" : {
+
+    },
+    "In progress" : {
+
+    },
+    "Installed version is newer than the latest release." : {
+
+    },
+    "Launch at login" : {
+
+    },
+    "Last checked %@" : {
+
+    },
+    "Looking for a phone…" : {
+
+    },
+    "Looking for a QR code…" : {
+
+    },
+    "Looking for devices" : {
+
+    },
+    "Looking nearby…" : {
+
+    },
+    "Menu bar icon" : {
+
+    },
+    "More" : {
+
+    },
+    "More Nearby Drop options" : {
+
+    },
+    "Nearby Drop" : {
+
+    },
     "NFiles" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "variations" : {
@@ -1017,8 +1325,20 @@
         }
       }
     },
+    "No Android phone detected" : {
+
+    },
+    "No compatible update was found." : {
+
+    },
+    "No transfers yet" : {
+
+    },
+    "Not selected" : {
+
+    },
     "NotificationsDenied.Message" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1131,7 +1451,7 @@
       }
     },
     "NotificationsDenied.OpenSettings" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1244,7 +1564,7 @@
       }
     },
     "NotificationsDenied.Title" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1356,8 +1676,44 @@
         }
       }
     },
+    "OK" : {
+
+    },
+    "Onboarding progress" : {
+
+    },
+    "Open %@" : {
+
+    },
+    "Open Camera Settings" : {
+
+    },
+    "Open Downloads" : {
+
+    },
+    "Open Downloads: %@" : {
+
+    },
+    "Open folder" : {
+
+    },
+    "Open Folder" : {
+
+    },
+    "Optional PIN" : {
+
+    },
+    "Optional. Nearby discovery and USB work without camera access. Change access in System Settings." : {
+
+    },
+    "Pair with a QR code" : {
+
+    },
+    "Pause receiving" : {
+
+    },
     "PinCode" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1469,8 +1825,23 @@
         }
       }
     },
+    "Play transfer sounds" : {
+
+    },
+    "Press Return to save. Clear to use the Mac’s name." : {
+
+    },
+    "Preview Diagnostics Report" : {
+
+    },
+    "Privacy & Security Policy…" : {
+
+    },
+    "Quick Start Guide…" : {
+
+    },
     "Quit" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1582,8 +1953,135 @@
         }
       }
     },
+    "Quit Nearby Drop" : {
+
+    },
+    "Ready to receive" : {
+
+    },
+    "Ready to send" : {
+
+    },
+    "Received %@" : {
+
+    },
+    "Received %@." : {
+
+    },
+    "Received %lld files" : {
+
+    },
+    "Received %lld files." : {
+
+    },
+    "Receiving files from %@" : {
+
+    },
+    "Receiving from %@" : {
+
+    },
+    "Receiving is on" : {
+
+    },
+    "Receiving is paused" : {
+
+    },
+    "Recent transfers" : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Refresh USB devices" : {
+
+    },
+    "Remove %@" : {
+
+    },
+    "Resume receiving" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Save As…" : {
+
+    },
+    "Save Report…" : {
+
+    },
+    "Save to %@" : {
+
+    },
+    "Saving" : {
+
+    },
+    "Scan a pairing QR" : {
+
+    },
+    "Search" : {
+
+    },
+    "Select %@" : {
+
+    },
+    "Select all" : {
+
+    },
+    "Selected" : {
+
+    },
+    "Send Error Reports to help improve Nearby Drop." : {
+
+    },
+    "Send files" : {
+
+    },
+    "Sending files to phone" : {
+
+    },
+    "Sending to %@" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Share diagnostics" : {
+
+    },
+    "Show in Finder" : {
+
+    },
+    "Some files may already be saved. Check the download folder." : {
+
+    },
+    "Step %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Step %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Storage" : {
+
+    },
+    "This folder is empty" : {
+
+    },
+    "Trackpad vibration" : {
+
+    },
+    "Transfer complete" : {
+
+    },
+    "Transfer failed" : {
+
+    },
     "TransferError" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1695,8 +2193,32 @@
         }
       }
     },
+    "Try again" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Update & Restart" : {
+
+    },
+    "Updates" : {
+
+    },
+    "Updating…" : {
+
+    },
+    "Upload files to phone" : {
+
+    },
+    "Upload Files to this Folder…" : {
+
+    },
+    "Used only to scan pairing QR codes. Images are not saved or sent." : {
+
+    },
     "VisibleToEveryone" : {
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1807,6 +2329,9 @@
           }
         }
       }
+    },
+    "Windows" : {
+
     }
   },
   "version" : "1.0"

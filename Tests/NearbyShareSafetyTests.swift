@@ -235,6 +235,9 @@ final class TransferLoopbackTests: XCTestCase, InboundNearbyConnectionDelegate, 
         XCTAssertEqual(destinations.count, 2)
         XCTAssertEqual(try Data(contentsOf: downloads.appendingPathComponent("payload.bin")), payload)
         XCTAssertEqual(try Data(contentsOf: downloads.appendingPathComponent("empty.txt")), Data())
+        let partialFiles = try FileManager.default.contentsOfDirectory(at: downloads, includingPropertiesForKeys: nil)
+            .filter { $0.lastPathComponent.hasPrefix(NearbyConnectionManager.partialTransferPrefix) }
+        XCTAssertTrue(partialFiles.isEmpty, "Completed transfers must not leave partial files")
         print("Encrypted loopback: \(payload.count) bytes plus empty file in \(Date().timeIntervalSince(start)) seconds")
         if let started = dataTransferStarted, let finished = dataTransferFinished {
             print("Encrypted data throughput: \(Double(payload.count) / finished.timeIntervalSince(started) / 1_000_000) MB/s")
@@ -960,6 +963,21 @@ final class ReceivingPausePolicyTests: XCTestCase {
     }
 }
 
+final class TransferDiskSpaceTests: XCTestCase {
+    func testRequiredBytesRejectsNegativeValuesAndOverflow() {
+        XCTAssertEqual(TransferDiskSpace.requiredBytes(for: [0, 12, 30]), 42)
+        XCTAssertNil(TransferDiskSpace.requiredBytes(for: [-1]))
+        XCTAssertNil(TransferDiskSpace.requiredBytes(for: [Int64.max, 1]))
+    }
+
+    func testCapacityAllowsUnknownVolumeAndExactFitOnly() {
+        XCTAssertTrue(TransferDiskSpace.hasCapacity(requiredBytes: 10, availableBytes: nil))
+        XCTAssertTrue(TransferDiskSpace.hasCapacity(requiredBytes: 10, availableBytes: 10))
+        XCTAssertFalse(TransferDiskSpace.hasCapacity(requiredBytes: 11, availableBytes: 10))
+        XCTAssertFalse(TransferDiskSpace.hasCapacity(requiredBytes: -1, availableBytes: nil))
+    }
+}
+
 final class OutgoingTransferPreflightTests: XCTestCase {
     func test129FilesFailManagerPreflightBeforeDeviceLookup() {
         let delegate = PreflightShareExtensionDelegate()
@@ -1027,6 +1045,24 @@ final class AppSupportTests: XCTestCase {
         let link = root.appendingPathComponent("Link")
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: first)
         XCTAssertNotEqual(try ReceivedFolder.create(in: root, name: "Link"), link)
+    }
+
+    func testAbandonedPartialFilesAreCleanedWithoutTouchingOtherFiles() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let nested = root.appendingPathComponent("Received folder", isDirectory: true)
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        let abandoned = nested.appendingPathComponent("\(NearbyConnectionManager.partialTransferPrefix)stale.\(NearbyConnectionManager.partialTransferExtension)")
+        let unrelated = root.appendingPathComponent("keep.txt")
+        try Data("partial".utf8).write(to: abandoned)
+        try Data("keep".utf8).write(to: unrelated)
+
+        NearbyConnectionManager.cleanupAbandonedPartialFiles(in: root)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: abandoned.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: unrelated.path))
     }
 }
 

@@ -48,6 +48,7 @@ final class USBModel: ObservableObject {
     @Published var message = ""
     @Published var error: String?
     @Published var lastDownloadedURL: URL? = nil
+    @Published var lastTransferredItems: [USBItem] = []
     @Published var selectedItemIds: Set<UInt32> = []
     @Published var isChoosingFiles = false
 
@@ -55,6 +56,10 @@ final class USBModel: ObservableObject {
     private let queue = DispatchQueue(label: "NearByDrop.USB", qos: .userInitiated)
     private var scopedUploadURLs: [URL] = []
     private var visitedFolders: Set<UInt32> = []
+#if DEBUG
+    var isPreviewFixture = false
+#endif
+    private var discoveryGeneration = UUID()
     var parent: UInt32 { path.last?.id ?? UInt32.max }
 
     deinit {
@@ -78,9 +83,14 @@ final class USBModel: ObservableObject {
     }
 
     func refresh() {
+#if DEBUG
+        guard !isPreviewFixture else { return }
+#endif
         guard !busy else { return }
         if !deviceName.isEmpty { load(); return }
         busy = true; error = nil; message = "Looking for USB devices…"
+        let generation = UUID()
+        discoveryGeneration = generation
         selectedItemIds.removeAll()
         lastDownloadedURL = nil
         queue.async {
@@ -90,9 +100,24 @@ final class USBModel: ObservableObject {
                 let devices = values.compactMap { value -> (id: String, name: String)? in
                     guard let id = value["id"] as? String, let name = value["name"] as? String else { return nil }; return (id, name)
                 }
-                DispatchQueue.main.async { self.devices = devices; self.deviceName = ""; self.items = []; self.storages = []; self.storage = 0; self.path = []; self.busy = false; self.message = "" }
-            } catch { self.fail(error) }
+                DispatchQueue.main.async {
+                    guard self.discoveryGeneration == generation else { return }
+                    self.devices = devices; self.deviceName = ""; self.items = []; self.storages = []; self.storage = 0; self.path = []; self.busy = false; self.message = ""
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    guard self.discoveryGeneration == generation else { return }
+                    self.fail(error)
+                }
+            }
         }
+    }
+
+    func cancelDiscovery() {
+        guard deviceName.isEmpty, busy, !transferring else { return }
+        discoveryGeneration = UUID()
+        busy = false
+        message = ""
     }
 
     func connect(_ id: String, name: String) {
@@ -162,8 +187,9 @@ final class USBModel: ObservableObject {
         load()
     }
 
-    private func prepareTransfer(_ message: String) {
+    private func prepareTransfer(_ message: String, items: [USBItem] = []) {
         busy = true; transferring = true; error = nil; progress = 0; self.message = message
+        lastTransferredItems = items
         visitedFolders.removeAll()
         bridge.cancelRequested = false
         var lastUpdate = DispatchTime.now()
@@ -180,7 +206,20 @@ final class USBModel: ObservableObject {
         let storage = storage
         let parent = targetParent ?? self.parent
         scopedUploadURLs.forEach { $0.stopAccessingSecurityScopedResource() }
-        scopedUploadURLs = urls.filter { $0.startAccessingSecurityScopedResource() }
+        var accessibleURLs: [URL] = []
+        var acquiredScopes: [URL] = []
+        for url in urls {
+            if url.startAccessingSecurityScopedResource() {
+                acquiredScopes.append(url)
+            }
+            guard url.isFileURL, FileManager.default.isReadableFile(atPath: url.path) else {
+                acquiredScopes.forEach { $0.stopAccessingSecurityScopedResource() }
+                error = "Could not access one or more selected files. Choose them again and retry."
+                return
+            }
+            accessibleURLs.append(url)
+        }
+        scopedUploadURLs = acquiredScopes
         prepareTransfer("Sending \(urls.count) file\(urls.count == 1 ? "" : "s")…")
         queue.async {
             defer {
@@ -191,7 +230,7 @@ final class USBModel: ObservableObject {
             }
             var sent = 0
             do {
-                for url in urls {
+                for url in accessibleURLs {
                     if self.bridge.cancelRequested { throw NSError(domain: "USB", code: 1, userInfo: [NSLocalizedDescriptionKey: "Canceled"]) }
                     try self.bridge.upload(url, storage: storage, parent: parent)
                     sent += 1
@@ -223,7 +262,7 @@ final class USBModel: ObservableObject {
     func download(_ item: USBItem) {
         guard !busy, !item.folder else { return }
         let downloads = NearbyConnectionManager.downloadDirectory
-        prepareTransfer("Receiving \(item.name)…")
+        prepareTransfer("Receiving \(item.name)…", items: [item])
         queue.async {
             do {
                 let savedURL = try self.bridge.download(item.id, name: item.name, directory: downloads)
@@ -240,7 +279,7 @@ final class USBModel: ObservableObject {
     func downloadFolder(_ item: USBItem) {
         guard !busy, item.folder else { return }
         let downloads = NearbyConnectionManager.downloadDirectory
-        prepareTransfer("Receiving folder \(item.name)…")
+        prepareTransfer("Receiving folder \(item.name)…", items: [item])
         queue.async {
             do {
                 let folderTarget = try ReceivedFolder.create(in: downloads, name: item.name)
@@ -262,7 +301,7 @@ final class USBModel: ObservableObject {
         let downloads = NearbyConnectionManager.downloadDirectory
         let currentName = path.last?.name ?? "Folder"
         let currentItems = items
-        prepareTransfer("Receiving \(currentName)…")
+        prepareTransfer("Receiving \(currentName)…", items: currentItems)
         queue.async {
             var fileCount = 0
             do {
@@ -293,7 +332,7 @@ final class USBModel: ObservableObject {
         let selected = items.filter { selectedItemIds.contains($0.id) }
         guard !busy, !selected.isEmpty else { return }
         let downloads = NearbyConnectionManager.downloadDirectory
-        prepareTransfer("Receiving \(selected.count) item\(selected.count == 1 ? "" : "s")…")
+        prepareTransfer("Receiving \(selected.count) item\(selected.count == 1 ? "" : "s")…", items: selected)
         queue.async {
             var fileCount = 0
             do {
@@ -357,7 +396,7 @@ final class USBModel: ObservableObject {
             }
             guard response == .OK, let targetURL = panel.url, let self = self else { return }
             let dir = targetURL.deletingLastPathComponent()
-            self.prepareTransfer("Receiving \(item.name)…")
+            self.prepareTransfer("Receiving \(item.name)…", items: [item])
             self.queue.async {
                 do {
                     let savedURL = try self.bridge.download(item.id, name: targetURL.lastPathComponent, directory: dir)
@@ -380,7 +419,16 @@ final class USBModel: ObservableObject {
         queue.async { self.bridge.close() }
         deviceName = ""; storage = 0; storages = []; items = []; path = []; message = ""; error = nil; selectedItemIds.removeAll()
     }
-    private func fail(_ error: Error, prefix: String = "") { DispatchQueue.main.async { self.busy = false; self.transferring = false; self.message = ""; self.error = prefix + error.localizedDescription } }
+    private func fail(_ error: Error, prefix: String = "") {
+        bridge.progress = nil
+        bridge.close()
+        DispatchQueue.main.async {
+            self.busy = false
+            self.transferring = false
+            self.message = ""
+            self.error = prefix + error.localizedDescription
+        }
+    }
 }
 
 struct USBView: View {
@@ -391,469 +439,413 @@ struct USBView: View {
     var bottomPadding: CGFloat = 10
 
     @ObservedObject private var theme = ThemeManager.shared
-    @State private var hoveredItemId: UInt32? = nil
     @State private var isDropTargeted = false
 
+    private var isDiscovery: Bool {
+        usb.deviceName.isEmpty && usb.busy && usb.message.localizedCaseInsensitiveContains("looking")
+    }
+
+    private var selectedItems: [USBItem] {
+        usb.items.filter { usb.selectedItemIds.contains($0.id) }
+    }
+
+    private var transferItems: [USBItem] {
+        usb.lastTransferredItems.isEmpty ? selectedItems : usb.lastTransferredItems
+    }
+
+    private var transferSize: UInt64 {
+        transferItems.reduce(UInt64(0)) { partial, item in
+            let (sum, overflow) = partial.addingReportingOverflow(item.size)
+            return overflow ? UInt64.max : sum
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Header Bar
-            HStack(spacing: 8) {
-                Image(systemName: "cable.connector")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(theme.currentAccent.color)
+        Group {
+            if usb.transferring {
+                transferProgressView
+            } else if let error = usb.error {
+                transferFailureView(error: error)
+            } else if usb.lastDownloadedURL != nil {
+                transferCompleteView
+            } else if usb.deviceName.isEmpty && usb.busy {
+                discoveryView
+            } else if usb.deviceName.isEmpty {
+                noDeviceView
+            } else {
+                browserView
+            }
+        }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.top, 10)
+        .padding(.bottom, bottomPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            if usb.deviceName.isEmpty && !usb.busy && usb.devices.isEmpty { usb.refresh() }
+        }
+    }
 
-                Text(usb.deviceName.isEmpty ? "USB Connection" : usb.deviceName)
+    private var discoveryView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Connect over USB")
+                .font(.system(size: 16, weight: .semibold))
+            Spacer(minLength: 2)
+            VStack(spacing: 9) {
+                ProgressView().controlSize(.regular)
+                    .frame(width: 48, height: 48)
+                    .background(theme.presentationAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                Text(isDiscovery ? "Looking for a phone…" : "Connecting to your phone…")
                     .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            Spacer(minLength: 2)
+            if isDiscovery {
+                Button("Cancel search", role: .cancel, action: usb.cancelDiscovery)
+                    .buttonStyle(.nearbyFullWidthSecondary)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.horizontal, 2)
+    }
 
-                if !usb.deviceName.isEmpty {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 7, height: 7)
+    private var noDeviceView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Connect over USB")
+                        .font(.system(size: 16, weight: .semibold))
                 }
-
-                Spacer()
-
-                if !usb.deviceName.isEmpty {
-                    Button(action: usb.disconnect) {
-                        Label("Disconnect", systemImage: "eject")
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(usb.busy)
-                }
-
+                Spacer(minLength: 4)
                 Button(action: usb.refresh) {
                     Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 11, weight: .medium))
+                        .frame(width: 28, height: 28)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .buttonStyle(.nearbyCompactSecondary)
                 .help("Refresh USB devices")
                 .accessibilityLabel("Refresh USB devices")
                 .disabled(usb.busy)
             }
 
-            if usb.deviceName.isEmpty {
-                if usb.devices.isEmpty {
-                    Spacer(minLength: 12)
-                    VStack(spacing: 10) {
-                        Image(systemName: "cable.connector")
-                            .font(.system(size: 34))
-                            .foregroundStyle(.secondary)
-                        Text("No USB Device Detected")
-                            .font(.headline)
-                        Text("Connect your Android phone via USB, unlock it, and select File Transfer.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(3)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 8)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Spacer(minLength: 12)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 6) {
-                            ForEach(usb.devices, id: \.id) { device in
-                                Button {
-                                    usb.connect(device.id, name: device.name)
-                                } label: {
-                                    HStack(spacing: 10) {
-                                        Image(systemName: "iphone")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(theme.currentAccent.color)
-                                            .frame(width: 22)
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(device.name)
-                                                .font(.subheadline.weight(.medium))
-                                                .foregroundStyle(.primary)
-                                            Text("Select to browse files")
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                        Spacer()
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption.weight(.bold))
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(10)
-                                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
-                                }
-                                .buttonStyle(.borderless)
-                                .disabled(usb.busy)
-                            }
-                        }
-                    }
-                    Spacer(minLength: 6)
-                }
-            } else {
-                // Breadcrumb & Selection Toolbar
-                HStack(spacing: 6) {
-                    Button(action: usb.back) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 11, weight: .semibold))
-                            .frame(width: 28, height: 28)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(usb.path.isEmpty || usb.busy)
-                    .help("Back to parent folder")
-                    .accessibilityLabel("Back to parent folder")
+            Spacer(minLength: 2)
+            VStack(spacing: 6) {
+                Image(systemName: "cable.connector")
+                    .font(.system(size: 28, weight: .regular))
+                    .foregroundStyle(theme.presentationAccent)
+                    .frame(width: 54, height: 54)
+                    .background(theme.presentationAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .accessibilityHidden(true)
+                Text(usb.devices.isEmpty ? "No Android phone detected" : "Choose your phone")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .frame(maxWidth: .infinity)
 
-                    if usb.path.isEmpty {
-                        Picker("Storage", selection: $usb.storage) {
-                            ForEach(usb.storages, id: \.id) { Text($0.name).tag($0.id) }
-                        }
-                        .labelsHidden()
-                        .controlSize(.small)
-                        .disabled(usb.busy)
-                        .onChange(of: usb.storage) { _, _ in usb.load() }
-                    } else {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 4) {
-                                Button(action: usb.jumpToRoot) {
-                                    HStack(spacing: 3) {
-                                        Image(systemName: "internaldrive")
-                                            .font(.system(size: 11))
-                                        Text(usb.storages.first(where: { $0.id == usb.storage })?.name ?? "Storage")
-                                    }
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                }
-                                .buttonStyle(.borderless)
-
-                                ForEach(Array(usb.path.enumerated()), id: \.offset) { index, segment in
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 8, weight: .bold))
-                                        .foregroundStyle(.tertiary)
-                                    Button {
-                                        usb.jumpTo(index: index)
-                                    } label: {
-                                        Text(segment.name)
-                                            .font(.caption.weight(index == usb.path.count - 1 ? .semibold : .regular))
-                                            .foregroundStyle(index == usb.path.count - 1 ? .primary : .secondary)
-                                    }
-                                    .buttonStyle(.borderless)
-                                }
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    }
-
-                    Spacer()
-
-                    if !usb.items.isEmpty {
-                        Button {
-                            if usb.selectedItemIds.count == usb.items.count {
-                                usb.deselectAll()
-                            } else {
-                                usb.selectAll()
-                            }
-                        } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: usb.selectedItemIds.count == usb.items.count && !usb.items.isEmpty ? "checkmark.circle.fill" : "checkmark.circle")
-                                Text(usb.selectedItemIds.isEmpty ? "Select All" : "\(usb.selectedItemIds.count)")
-                            }
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .disabled(usb.busy)
-                        .help(usb.selectedItemIds.count == usb.items.count ? "Deselect all items" : "Select all items in this folder")
-                    }
-                }
-
-                // File & Folder Explorer (Native macOS rows)
-                ScrollView {
-                    LazyVStack(spacing: 3) {
-                        ForEach(usb.items) { item in
+            if !usb.devices.isEmpty {
+                VStack(spacing: 5) {
+                    ForEach(usb.devices, id: \.id) { device in
+                        Button { usb.connect(device.id, name: device.name) } label: {
                             HStack(spacing: 8) {
-                                // Multi-select checkbox
-                                Button {
-                                    usb.toggleSelection(item.id)
-                                } label: {
-                                    Image(systemName: usb.selectedItemIds.contains(item.id) ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(usb.selectedItemIds.contains(item.id) ? theme.currentAccent.color : Color.secondary.opacity(0.4))
-                                        .frame(width: 28, height: 28)
-                                }
-                                .buttonStyle(.borderless)
-                                .help(usb.selectedItemIds.contains(item.id) ? "Deselect item" : "Select item")
-                                .accessibilityLabel(usb.selectedItemIds.contains(item.id) ? "Deselect \(item.name)" : "Select \(item.name)")
-                                .accessibilityValue(usb.selectedItemIds.contains(item.id) ? "Selected" : "Not selected")
-
-                                // Icon
-                                let iconInfo = fileIconInfo(for: item.name, isFolder: item.folder)
-                                Image(systemName: iconInfo.icon)
-                                    .foregroundStyle(iconInfo.color)
-                                    .font(.system(size: 15))
-                                    .frame(width: 20)
-
-                                // Item Name
-                                Text(item.name)
-                                    .font(.system(size: 12, weight: item.folder ? .medium : .regular))
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                    .foregroundStyle(.primary)
-
+                                Image(systemName: "iphone")
+                                    .foregroundStyle(theme.presentationAccent)
+                                Text(device.name).font(.system(size: 10, weight: .medium)).foregroundStyle(.primary)
                                 Spacer()
-
-                                if item.folder {
-                                    // Folder Download Button
-                                    Button {
-                                        usb.downloadFolder(item)
-                                    } label: {
-                                        Image(systemName: "arrow.down.circle")
-                                            .font(.system(size: 12))
-                                            .frame(width: 28, height: 28)
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                                    .help("Download this folder to Mac")
-                                    .accessibilityLabel("Download folder \(item.name) to Mac")
-
-                                    // Chevron to enter folder
-                                    Button {
-                                        usb.enter(item)
-                                    } label: {
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption2.weight(.semibold))
-                                            .foregroundStyle(.secondary)
-                                            .frame(width: 28, height: 28)
-                                    }
-                                    .buttonStyle(.borderless)
-                                    .help("Open folder")
-                                    .accessibilityLabel("Open folder \(item.name)")
-                                } else {
-                                    Text(ByteCountFormatter.string(fromByteCount: Int64(clamping: item.size), countStyle: .file))
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-
-                                    Button {
-                                        usb.download(item)
-                                    } label: {
-                                        Image(systemName: "arrow.down.circle")
-                                            .font(.system(size: 12))
-                                            .frame(width: 28, height: 28)
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                                    .help("Download to Mac")
-                                    .accessibilityLabel("Download \(item.name) to Mac")
-                                }
+                                Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
                             }
-                            .padding(.vertical, 5)
-                            .padding(.horizontal, 8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(usb.selectedItemIds.contains(item.id) ? theme.currentAccent.color.opacity(0.1) : (hoveredItemId == item.id ? Color.primary.opacity(0.05) : Color.clear))
-                            )
-                            .contentShape(Rectangle())
-                            .onHover { isHovered in
-                                if isHovered { hoveredItemId = item.id }
-                                else if hoveredItemId == item.id { hoveredItemId = nil }
-                            }
-                            .onTapGesture(count: 2) {
-                                if item.folder { usb.enter(item) }
-                                else { usb.download(item) }
-                            }
-                            .onTapGesture(count: 1) {
-                                if item.folder { usb.enter(item) }
-                                else { usb.toggleSelection(item.id) }
-                            }
-                            .contextMenu {
-                                if item.folder {
-                                    Button("Open Folder") { usb.enter(item) }
-                                    Button("Download Folder to Mac") { usb.downloadFolder(item) }
-                                     Button("Upload Files to this Folder…") { usb.chooseAndUploadFiles(to: item) }
-                                } else {
-                                    Button("Download to Nearby Drop") { usb.download(item) }
-                                    Button("Save As…") { usb.saveItemAs(item) }
-                                    if let url = usb.lastDownloadedURL,
-                                       url.lastPathComponent == item.name,
-                                       FileManager.default.fileExists(atPath: url.path) {
-                                        Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-                                    }
-                                }
-                            }
-                            .disabled(usb.busy)
-                        }
-
-                        if usb.items.isEmpty && !usb.busy {
-                            VStack(spacing: 8) {
-                                Image(systemName: "folder")
-                                    .font(.system(size: 28))
-                                    .foregroundStyle(.tertiary)
-                                Text("This folder is empty")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(24)
-                        }
-                    }
-                }
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isDropTargeted ? theme.currentAccent.color : Color.clear, lineWidth: 1.5)
-                )
-                .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
-                    let group = DispatchGroup()
-                    var loadedURLs: [URL] = []
-                    let lock = NSLock()
-                    for provider in providers {
-                        group.enter()
-                        _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                            if let url = url {
-                                lock.lock()
-                                loadedURLs.append(url)
-                                lock.unlock()
-                            }
-                            group.leave()
-                        }
-                    }
-                    group.notify(queue: .main) {
-                        if !loadedURLs.isEmpty {
-                            usb.upload(loadedURLs)
-                        }
-                    }
-                    return true
-                }
-
-                // Two-Way Action Bar (Bottom)
-                HStack(spacing: 8) {
-                    if !usb.selectedItemIds.isEmpty {
-                        Button {
-                            usb.downloadSelected()
-                        } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: "arrow.down.circle.fill")
-                                Text("Download \(usb.selectedItemIds.count) Items")
-                            }
-                            .font(.system(size: 12, weight: .semibold))
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(theme.currentAccent.color)
-                        .controlSize(.regular)
-                        .disabled(usb.busy)
-
-                        Button("Clear") {
-                            usb.deselectAll()
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .disabled(usb.busy)
-
-                        Spacer()
-                    } else {
-                        if !usb.path.isEmpty && !usb.items.isEmpty {
-                            Button {
-                                usb.downloadCurrentFolder()
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "folder.badge.gearshape")
-                                    Text("Download Folder")
-                                }
-                                .font(.system(size: 11, weight: .medium))
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                            .disabled(usb.busy)
-                            .help("Download all files and subfolders in this folder")
-                        }
-
-                        Spacer()
-
-                        if !files.isEmpty {
-                            Button("Send \(files.count == 1 ? "1 File" : "\(files.count) Files")") {
-                                usb.upload(files)
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(theme.currentAccent.color)
-                            .controlSize(.regular)
-                            .disabled(usb.busy)
-                        } else {
-                            Button {
-                                usb.chooseAndUploadFiles()
-                            } label: {
-                                HStack(spacing: 5) {
-                                    Image(systemName: "plus.circle.fill")
-                                    Text("Send Files…")
-                                }
-                                .font(.system(size: 12, weight: .semibold))
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(theme.currentAccent.color)
-                            .controlSize(.regular)
-                            .disabled(usb.busy)
-                            .help("Choose files on your Mac to upload to phone")
-                        }
+                            .padding(8)
+                            .nearbyControlSurface(cornerRadius: 10)
+                         }
+                         .buttonStyle(.plain)
+                        .accessibilityLabel("Connect to \(device.name)")
+                        .accessibilityHint("Browse files on this phone")
+                         .disabled(usb.busy)
                     }
                 }
             }
 
-            // Transfer Status & Progress Card
-            if usb.transferring {
-                VStack(alignment: .leading, spacing: 4) {
-                    ProgressView(value: usb.progress)
-                    HStack {
-                        Text(usb.message)
-                            .font(.caption)
-                            .lineLimit(1)
-                        Spacer()
-                        Button("Cancel", role: .cancel, action: usb.cancel)
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                    }
-                }
-            } else if usb.busy {
-                HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
-                    Text(usb.message.isEmpty ? "Working…" : usb.message)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } else if !usb.message.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color.green)
-                        .font(.system(size: 13))
-                    Text(usb.message)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer()
-                    if let url = usb.lastDownloadedURL, FileManager.default.fileExists(atPath: url.path) {
-                        Button("Show in Finder") {
-                            NSWorkspace.shared.activateFileViewerSelecting([url])
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
-            }
-
-            if let error = usb.error {
-                HStack(alignment: .top, spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                        .font(.caption)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+            Spacer(minLength: 2)
+            HStack(spacing: 8) {
+                Button("Refresh") { usb.refresh() }
+                    .buttonStyle(.nearbyFullWidthSecondary)
+                    .frame(maxWidth: .infinity)
+                    .disabled(usb.busy)
+                Button("Search") { usb.refresh() }
+                    .buttonStyle(.nearbyFullWidthPrimary)
+                    .frame(maxWidth: .infinity)
+                    .disabled(usb.busy || !usb.devices.isEmpty)
             }
         }
-        .padding(.horizontal, horizontalPadding)
-        .padding(.bottom, bottomPadding)
-        .onAppear { if usb.deviceName.isEmpty { usb.refresh() } }
+    }
+
+    private var browserView: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 8) {
+                 Image(systemName: "cable.connector").foregroundStyle(theme.presentationAccent)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 1) {
+                Text(usb.deviceName).font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                    Text("Connected · \(usb.storages.first(where: { $0.id == usb.storage })?.name ?? "Phone storage")")
+                    .font(NearbyTypography.metadata).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 3)
+                Button("Disconnect", action: usb.disconnect)
+                    .buttonStyle(.nearbyCompactQuiet)
+                    .disabled(usb.busy)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .nearbyCardSurface(cornerRadius: 9)
+
+            HStack(spacing: 4) {
+                Button(action: usb.back) {
+                    Image(systemName: "chevron.left").font(.system(size: 9, weight: .semibold)).frame(width: 22, height: 22)
+                }
+                .buttonStyle(.nearbyCompactSecondary).disabled(usb.path.isEmpty || usb.busy)
+                if usb.path.isEmpty {
+                    Picker("Storage", selection: $usb.storage) {
+                        ForEach(usb.storages, id: \.id) { Text($0.name).tag($0.id) }
+                    }
+                    .labelsHidden().controlSize(.small).disabled(usb.busy)
+                    .onChange(of: usb.storage) { _, _ in usb.load() }
+                } else {
+                    Button(usb.storages.first(where: { $0.id == usb.storage })?.name ?? "Phone storage", action: usb.jumpToRoot)
+                        .buttonStyle(.nearbyCompactQuiet)
+                    ForEach(Array(usb.path.enumerated()), id: \.offset) { index, segment in
+                        Image(systemName: "chevron.right").font(.system(size: 7)).foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                        if index == usb.path.count - 1 {
+                            Text(segment.name).font(.system(size: 10, weight: .semibold)).lineLimit(1)
+                        } else {
+                            Button(segment.name) { usb.jumpTo(index: index) }
+                                .buttonStyle(.nearbyCompactQuiet)
+                        }
+                    }
+                }
+                Spacer(minLength: 0)
+                if !usb.items.isEmpty {
+                    Button(usb.selectedItemIds.count == usb.items.count ? "Clear" : "Select all") {
+                        usb.selectedItemIds.count == usb.items.count ? usb.deselectAll() : usb.selectAll()
+                    }
+                    .buttonStyle(.nearbyCompactQuiet)
+                }
+            }
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 2) {
+                    ForEach(usb.items) { item in
+                        usbItemRow(item)
+                    }
+                    if usb.items.isEmpty && !usb.busy {
+                        VStack(spacing: 6) {
+                            Image(systemName: "folder").font(.system(size: 22)).foregroundStyle(.tertiary)
+                            Text("This folder is empty").font(NearbyTypography.supporting).foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity).padding(18)
+                    }
+                    if usb.busy {
+                        HStack(spacing: 6) {
+                            ProgressView().controlSize(.small)
+                            Text(usb.message.isEmpty ? "Loading files…" : usb.message)
+                                .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity).padding(8)
+                    }
+                }
+                .padding(5)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .nearbyControlSurface(cornerRadius: 9)
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(isDropTargeted ? theme.presentationAccent : Color.primary.opacity(0.10), lineWidth: 1))
+            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted, perform: handleDrop)
+
+            HStack(spacing: 8) {
+                Button {
+                    usb.downloadSelected()
+                } label: {
+                    Label(usb.selectedItemIds.isEmpty ? "Download to Mac" : "Download \(usb.selectedItemIds.count) to Mac", systemImage: "arrow.down.to.line")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.nearbyCompactFullWidthPrimary)
+                .disabled(usb.busy || usb.selectedItemIds.isEmpty)
+
+                Button {
+                    if files.isEmpty { usb.chooseAndUploadFiles() } else { usb.upload(files) }
+                } label: {
+                    Label("Upload files to phone", systemImage: "arrow.up.to.line")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.nearbyCompactFullWidthSecondary)
+                .disabled(usb.busy)
+            }
+        }
+    }
+
+    private func usbItemRow(_ item: USBItem) -> some View {
+        let icon = fileIconInfo(for: item.name, isFolder: item.folder)
+        let selected = usb.selectedItemIds.contains(item.id)
+        return HStack(spacing: 6) {
+            Button { usb.toggleSelection(item.id) } label: {
+                Image(systemName: selected ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 11)).foregroundStyle(selected ? theme.presentationAccent : Color.secondary.opacity(0.55))
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(selected ? "Deselect \(item.name)" : "Select \(item.name)")
+
+            Image(systemName: icon.icon).font(.system(size: 11)).foregroundStyle(icon.color).frame(width: 14)
+                .accessibilityHidden(true)
+            Button {
+                if item.folder { usb.enter(item) } else { usb.toggleSelection(item.id) }
+            } label: {
+                Text(item.name).font(.system(size: 10, weight: item.folder ? .medium : .regular)).lineLimit(1).truncationMode(.middle)
+                    .foregroundStyle(.primary).frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 2)
+            if !item.folder {
+                Text(ByteCountFormatter.string(fromByteCount: Int64(clamping: item.size), countStyle: .file))
+                    .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+            }
+            if item.folder {
+                Button { usb.enter(item) } label: { Image(systemName: "chevron.right").font(.system(size: 8, weight: .semibold)) }
+                    .buttonStyle(.nearbyCompactQuiet)
+                    .help("Open folder")
+                    .accessibilityLabel("Open \(item.name)")
+            }
+        }
+        .padding(.horizontal, 6).padding(.vertical, 5)
+        .background(selected ? theme.presentationAccent.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .contextMenu {
+            if item.folder {
+                Button("Open Folder") { usb.enter(item) }
+                Button("Download Folder to Mac") { usb.downloadFolder(item) }
+                Button("Upload Files to this Folder…") { usb.chooseAndUploadFiles(to: item) }
+            } else {
+                Button("Download to Mac") { usb.download(item) }
+                Button("Save As…") { usb.saveItemAs(item) }
+            }
+        }
+        .disabled(usb.busy)
+    }
+
+    private var transferProgressView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(usb.message.hasPrefix("Receiving") ? "Downloading \(transferItems.count) item\(transferItems.count == 1 ? "" : "s")" : "Sending files to phone")
+                .font(.system(size: 15, weight: .semibold))
+            Text(usb.deviceName).font(.system(size: 10)).foregroundStyle(.secondary)
+            transferFileCard(transferItems)
+            HStack {
+                Text("\(Int(usb.progress * 100))%")
+                    .font(.system(size: 10, weight: .semibold)).monospacedDigit()
+                Spacer()
+                Text("\(TransferModel.formatBytes(Int64(Double(transferSize) * usb.progress))) of \(TransferModel.formatBytes(Int64(clamping: transferSize)))")
+                    .font(NearbyTypography.metadata).foregroundStyle(.secondary).monospacedDigit()
+            }
+            ProgressView(value: usb.progress)
+                .tint(theme.presentationAccent)
+                .accessibilityLabel("USB transfer progress")
+                .accessibilityValue("\(Int(usb.progress * 100)) percent")
+            Spacer(minLength: 0)
+            Button("Cancel transfer", role: .cancel, action: usb.cancel)
+                .buttonStyle(.nearbyFullWidthSecondary).frame(maxWidth: .infinity)
+        }
+    }
+
+    private var transferCompleteView: some View {
+        VStack(spacing: 8) {
+            Spacer(minLength: 1)
+            Image(systemName: "checkmark.circle.fill").font(.system(size: 31)).foregroundStyle(.green)
+                .accessibilityHidden(true)
+            Text("Transfer complete").font(.system(size: 15, weight: .semibold))
+            Text("\(usb.message) · \(usb.deviceName)")
+                .font(NearbyTypography.metadata).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            transferFileCard(transferItems)
+            Button("Show in Finder") {
+                if let url = usb.lastDownloadedURL, FileManager.default.fileExists(atPath: url.path) {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                } else { TransferModel.openDownloads() }
+            }
+            .buttonStyle(.nearbyFullWidthPrimary).frame(maxWidth: .infinity)
+            Button("Back to phone") {
+                usb.lastDownloadedURL = nil
+                usb.lastTransferredItems = []
+            }
+            .buttonStyle(.nearbyFullWidthSecondary).frame(maxWidth: .infinity)
+            Spacer(minLength: 1)
+        }
+    }
+
+    private func transferFailureView(error: String) -> some View {
+        VStack(spacing: 8) {
+            Spacer(minLength: 1)
+            Image(systemName: "cable.connector.slash").font(.system(size: 28)).foregroundStyle(.orange)
+                .accessibilityHidden(true)
+            Text("Transfer failed").font(.system(size: 15, weight: .semibold))
+            Text(error).font(NearbyTypography.metadata).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            if !transferItems.isEmpty { transferFileCard(transferItems) }
+            Spacer(minLength: 0)
+            HStack(spacing: 8) {
+                Button("Back to devices") {
+                    usb.disconnect()
+                    usb.error = nil
+                    usb.lastDownloadedURL = nil
+                    usb.refresh()
+                }
+                .buttonStyle(.nearbyFullWidthSecondary).frame(maxWidth: .infinity)
+                Button("Try again") { retryTransfer() }
+                    .buttonStyle(.nearbyFullWidthPrimary).frame(maxWidth: .infinity)
+                    .disabled(transferItems.isEmpty || usb.deviceName.isEmpty)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private func transferFileCard(_ items: [USBItem]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(items.prefix(3).enumerated()), id: \.offset) { index, item in
+                HStack(spacing: 7) {
+                    Image(systemName: fileIconInfo(for: item.name, isFolder: item.folder).icon)
+                        .font(.system(size: 11)).foregroundStyle(theme.presentationAccent).frame(width: 25, height: 27)
+                        .background(theme.presentationAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(item.name).font(.system(size: 10, weight: .medium)).lineLimit(1)
+                        Text(ByteCountFormatter.string(fromByteCount: Int64(clamping: item.size), countStyle: .file))
+                            .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 2)
+                }
+                .padding(.horizontal, 7).padding(.vertical, 5)
+                if index < min(items.count, 3) - 1 { Divider().padding(.leading, 39) }
+            }
+        }
+        .nearbyControlSurface(cornerRadius: 9)
+        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(Color.primary.opacity(0.10), lineWidth: 1))
+    }
+
+    private func retryTransfer() {
+        usb.error = nil
+        let retryItems = transferItems
+        guard !retryItems.isEmpty else { return }
+        usb.selectedItemIds = Set(retryItems.map(\.id))
+        usb.downloadSelected()
+    }
+
+    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
+        let group = DispatchGroup()
+        let lock = NSLock()
+        var urls: [URL] = []
+        for provider in providers {
+            group.enter()
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                if let url {
+                    lock.lock(); urls.append(url); lock.unlock()
+                }
+                group.leave()
+            }
+        }
+        group.notify(queue: .main) {
+            if !urls.isEmpty { usb.upload(urls) }
+        }
+        return true
     }
 }

@@ -17,7 +17,6 @@ struct TransferHistoryItem: Codable, Identifiable, Hashable {
     let timestamp: Date
     let fileURL: URL?
 }
-
 struct CompletedTransferInfo: Identifiable, Equatable {
     let id: String
     let fileName: String
@@ -28,9 +27,11 @@ struct CompletedTransferInfo: Identifiable, Equatable {
 
 final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     enum Tab: String, CaseIterable { case send = "Send", receive = "Receive", history = "Transfers", usb = "USB" }
+    private var isPreviewFixture = false
     @Published var tab: Tab = .receive {
         didSet {
             scanning = false
+            guard !isPreviewFixture else { return }
             if tab == .send || showingQR {
                 startSendingDiscovery()
             } else {
@@ -43,6 +44,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var advertisement = NearbyConnectionManager.AdvertisementState.idle
     @Published var qrImage: NSImage?
     @Published var showingQR = false
+    @Published var choosingRecipient = false
     @Published var scanning = false
     @Published var waitingForQR = false
     @Published var qrTransferStatus: String = "Waiting for phone to scan…"
@@ -59,6 +61,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var selectionNotice: String?
     @Published var lastCompletedTransfer: CompletedTransferInfo?
     @Published var lastTransferError: String?
+    @Published var lastFailedIncoming: TransferInfo?
 
     @Published var incomingProgress: [String: ReceiveProgress] = [:]
     var qrTransferID: String?
@@ -85,6 +88,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         withAnimation {
             lastCompletedTransfer = nil
             lastTransferError = nil
+            lastFailedIncoming = nil
             if incoming.isEmpty { incomingProgress.removeAll() }
         }
     }
@@ -93,6 +97,15 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var displayNames: [String] = []
     private(set) var totalBytes: Int64 = 0
     private var selectionIdentities: [TransferFileIdentity] = []
+#if DEBUG
+    private var previewFileSizes: [Int64] = []
+#endif
+    var selectedFileSizes: [Int64] {
+#if DEBUG
+        if isPreviewFixture { return previewFileSizes }
+#endif
+        return selectionIdentities.map(\.size)
+    }
 
     // Transfer speed and ETA
     @Published var transferSpeed: String = ""
@@ -100,7 +113,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     private var speedSamples: [(time: Date, bytes: Int64)] = []
 
     // Preferences & persistence
-    @Published var downloadDirectory: URL = NearbyConnectionManager.downloadDirectory
+    @Published var downloadDirectory: URL
     var downloadDirectoryDisplayPath: String {
         let home = NSHomeDirectory()
         let path = downloadDirectory.path
@@ -115,12 +128,15 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var isChoosingDirectory: Bool = false
     @Published var isChoosingFiles: Bool = false
     @Published var launchAtLogin: Bool = false
+    @Published var launchAtLoginMessage: String?
     @Published var history: [TransferHistoryItem] = []
     private static let historyKey = "transferHistory"
-    @Published private(set) var receivingPaused = UserDefaults.standard.bool(forKey: "receivingPaused")
+    private static let launchAtLoginDisabledByUserKey = "launchAtLoginDisabledByUser"
+    @Published private(set) var receivingPaused: Bool
 
     let usb = USBModel()
-    var deviceName: String { NearbyConnectionManager.currentDeviceName }
+    var deviceName: String { isPreviewFixture ? "Alex’s MacBook Pro" : NearbyConnectionManager.currentDeviceName }
+    var canManageLaunchAtLogin: Bool { isInstalledInApplicationsFolder }
     var onConsent: ((String, Bool) -> Void)?
     private var chosenID: String?
     private var chosenPeer: RemoteDeviceInfo?
@@ -150,7 +166,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 
     private var isDiscoveringDevices = false
     func startSendingDiscovery() {
-        guard !isDiscoveringDevices else { return }
+        guard !isPreviewFixture, !isDiscoveringDevices else { return }
         isDiscoveringDevices = true
         NearbyConnectionManager.shared.startDeviceDiscovery()
     }
@@ -163,7 +179,9 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     deinit {
         stopSendingDiscovery()
         scopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
-        NearbyConnectionManager.shared.removeShareExtensionDelegate(self)
+        if !isPreviewFixture {
+            NearbyConnectionManager.shared.removeShareExtensionDelegate(self)
+        }
     }
 
     func setAdvertisementState(_ state: NearbyConnectionManager.AdvertisementState) {
@@ -192,11 +210,181 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @Published var qrStatus: QRTransferStatus = .idle
 
     override init() {
+        let isPreview = PreviewRuntime.isSwiftUIPreviews
+        isPreviewFixture = isPreview
+        downloadDirectory = isPreview
+            ? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Downloads", isDirectory: true)
+            : NearbyConnectionManager.downloadDirectory
+        receivingPaused = isPreview ? false : UserDefaults.standard.bool(forKey: "receivingPaused")
         super.init()
+        guard !isPreview else { return }
         loadHistory()
         updateLaunchAtLoginStatus()
         NearbyConnectionManager.shared.addShareExtensionDelegate(self)
     }
+
+#if DEBUG
+    enum PreviewState: Equatable {
+        case empty, sendReady, sendSearching, sendRecipients, sendQR, sendProgress, sendFailure
+        case receiveReady, receivePaused, receiveConsent, receiveProgress, receiveComplete, receiveFailure
+        case camera, cameraDenied, historyRecent, historyEmpty
+        case usbSearching, usbEmpty, usbBrowse, usbProgress, usbComplete, usbFailure
+    }
+    private(set) var previewState: PreviewState?
+    var previewScannerState: QRScannerPreviewState? {
+        switch previewState {
+        case .camera: return .scanning
+        case .cameraDenied: return .permissionDenied
+        default: return nil
+        }
+    }
+
+    static func makePreviewFixture(tab: Tab, state: PreviewState? = nil) -> TransferModel {
+        let model = TransferModel()
+        model.isPreviewFixture = true
+        model.usb.isPreviewFixture = true
+        model.history = []
+        model.devices = []
+        model.advertisement = .published
+        model.receivingPaused = false
+        model.tab = tab
+        model.previewState = state
+
+        let previewFiles = [
+            FileMetadata(name: "Coast weekend.zip", size: 134_217_728, mimeType: "application/zip"),
+            FileMetadata(name: "Route.pdf", size: 2_516_582, mimeType: "application/pdf")
+        ]
+        let previewURLs = [
+            URL(fileURLWithPath: "/tmp/NearbyDrop Preview/Coast weekend.zip"),
+            URL(fileURLWithPath: "/tmp/NearbyDrop Preview/Route.pdf")
+        ]
+        let peer = RemoteDeviceInfo(name: "Alex’s Pixel 8", type: .phone, id: "preview-pixel-8")
+        let windowsPeer = RemoteDeviceInfo(name: "Jamie’s Surface", type: .computer, id: "preview-surface")
+        let transferID = "preview-incoming-transfer"
+
+        func setPreviewFiles() {
+            model.urls = previewURLs
+            model.displayNames = previewFiles.map(\.name)
+            model.totalBytes = previewFiles.reduce(0) { $0 + $1.size }
+            model.previewFileSizes = previewFiles.map(\.size)
+        }
+
+        switch state ?? (tab == .send ? .empty : tab == .receive ? .receiveReady : tab == .history ? .historyEmpty : .usbEmpty) {
+        case .empty:
+            break
+        case .sendReady, .sendSearching, .sendRecipients, .sendQR, .sendProgress, .sendFailure:
+            setPreviewFiles()
+            model.devices = state == .sendSearching ? [] : [peer, windowsPeer]
+            model.recipient = peer.name
+            if state == .sendSearching || state == .sendRecipients {
+                model.choosingRecipient = true
+            }
+            if state == .sendQR {
+                model.showingQR = true
+                model.qrTransferStatus = "Waiting for phone to scan…"
+                model.qrImage = Self.previewQRCode()
+            } else if state == .sendProgress {
+                model.sending = true
+                model.progress = 0.62
+                model.transferSpeed = "4.2 MB/s"
+                model.timeRemaining = "About 12 seconds remaining"
+                model.sendMessage = "Sending to Alex’s Pixel 8…"
+                model.outgoingStatusMessage = "Sending files"
+                model.outgoingPhase = .transferring
+            } else if state == .sendFailure {
+                model.error = "Alex’s Pixel 8 went out of range. Your files haven’t finished sending."
+                model.outgoingPhase = .failed
+                model.retryPeer = peer
+                model.chosenPeer = peer
+                if let attemptID = model.outgoingLifecycle.begin(retry: false) {
+                    _ = model.outgoingLifecycle.fail(for: attemptID, retryAllowed: true)
+                }
+            }
+        case .receiveReady:
+            break
+        case .receivePaused:
+            model.receivingPaused = true
+            model.advertisement = .paused
+        case .receiveConsent, .receiveProgress:
+            let metadata = TransferMetadata(files: [
+                FileMetadata(name: "Trail photos.zip", size: 88_080_384, mimeType: "application/zip")
+            ], id: transferID, pinCode: "482 619")
+            model.incoming = [transferID: TransferInfo(device: peer, transfer: metadata)]
+            model.qrTransferID = transferID
+            if state == .receiveProgress {
+                model.accepted = [transferID]
+                model.incomingProgress[transferID] = ReceiveProgress(bytes: 54_009_600, total: 88_080_384)
+            }
+        case .receiveComplete:
+            model.lastFailedIncoming = nil
+            model.lastCompletedTransfer = CompletedTransferInfo(
+                id: transferID, fileName: "Trail photos.zip", fileCount: 1,
+                fileURL: nil, destinationPath: "Downloads"
+            )
+        case .receiveFailure:
+            model.lastTransferError = "The connection ended before the file finished saving."
+            model.lastFailedIncoming = TransferInfo(
+                device: peer,
+                transfer: TransferMetadata(files: [
+                    FileMetadata(name: "Trail photos.zip", size: 88_080_384, mimeType: "application/zip")
+                ], id: transferID, pinCode: nil)
+            )
+        case .camera:
+            model.scanning = true
+        case .cameraDenied:
+            model.scanning = true
+        case .historyRecent:
+            let now = Date()
+            model.history = [
+                TransferHistoryItem(id: UUID(), fileName: "Trail photos.zip", fileSize: 88_080_384, direction: .incoming, peerName: peer.name, timestamp: now, fileURL: nil),
+                TransferHistoryItem(id: UUID(), fileName: "Coast weekend.zip + 1 file", fileSize: 136_734_310, direction: .outgoing, peerName: peer.name, timestamp: now.addingTimeInterval(-240), fileURL: nil),
+                TransferHistoryItem(id: UUID(), fileName: "IMG_2048.jpg + 1 file", fileSize: 10_066_329, direction: .incoming, peerName: "USB · Alex’s Pixel 8", timestamp: now.addingTimeInterval(-1_080), fileURL: nil),
+                TransferHistoryItem(id: UUID(), fileName: "Coast weekend.zip + 1 file", fileSize: 136_734_310, direction: .outgoing, peerName: peer.name, timestamp: now.addingTimeInterval(-86_400), fileURL: nil)
+            ]
+        case .historyEmpty:
+            model.history = []
+        case .usbSearching:
+            model.usb.busy = true
+            model.usb.message = "Looking for a phone…"
+        case .usbEmpty:
+            break
+        case .usbBrowse, .usbProgress, .usbComplete, .usbFailure:
+            model.usb.deviceName = "Alex’s Pixel 8"
+            model.usb.storages = [(id: 1, name: "Internal shared storage")]
+            model.usb.storage = 1
+            model.usb.path = [(id: 10, name: "DCIM"), (id: 11, name: "Camera")]
+            model.usb.items = [
+                USBItem(id: 101, name: "Screenshots", size: 0, folder: true),
+                USBItem(id: 102, name: "IMG_2048.jpg", size: 5_033_164, folder: false),
+                USBItem(id: 103, name: "IMG_2049.jpg", size: 5_033_165, folder: false),
+                USBItem(id: 104, name: "VID_2050.mp4", size: 38_064_128, folder: false)
+            ]
+            model.usb.selectedItemIds = [102, 103]
+            model.usb.lastTransferredItems = model.usb.items.filter { model.usb.selectedItemIds.contains($0.id) }
+            if state == .usbProgress {
+                model.usb.busy = true
+                model.usb.transferring = true
+                model.usb.progress = 0.72
+                model.usb.message = "Receiving 2 photos…"
+            } else if state == .usbComplete {
+                model.usb.lastDownloadedURL = URL(fileURLWithPath: "/tmp/NearbyDrop Preview/Downloads")
+                model.usb.message = "Saved 2 photos to Downloads"
+            } else if state == .usbFailure {
+                model.usb.error = "The download stopped before both photos were saved."
+            }
+        }
+        return model
+    }
+
+    private static func previewQRCode() -> NSImage? {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = Data("Nearby Drop Preview Pairing Code".utf8)
+        filter.correctionLevel = "M"
+        guard let output = filter.outputImage,
+              let cgImage = CIContext().createCGImage(output.transformed(by: CGAffineTransform(scaleX: 8, y: 8)), from: output.extent.applying(CGAffineTransform(scaleX: 8, y: 8))) else { return nil }
+        return NSImage(cgImage: cgImage, size: NSSize(width: 180, height: 180))
+    }
+#endif
 
     @MainActor
     func setFiles(_ newURLs: [URL], completion: (@MainActor @Sendable () -> Void)? = nil) {
@@ -290,6 +478,24 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             }
         }
         panel.presentForInteraction(completion: handler)
+    }
+
+    @MainActor
+    func addFiles() {
+        guard !sending, !usb.busy else { return }
+        isChoosingFiles = true
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = true
+        panel.prompt = "Add"
+        panel.presentForInteraction { [weak self] response in
+            guard let self else { return }
+            self.isChoosingFiles = false
+            NotificationCenter.default.post(name: .didFinishChoosingFiles, object: nil)
+            guard response == .OK else { return }
+            self.setFiles(self.selectedSourceURLs + panel.urls)
+        }
     }
     func send(to device: RemoteDeviceInfo) {
         guard !sending, !usb.busy, !urls.isEmpty, selectedFileSnapshot != nil, device.id != nil else { return }
@@ -522,6 +728,11 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             retryPeer = nil
             progress = 1
             sendMessage = "Sent to \(peer)"
+            TransferNotificationManager.post(
+                title: "Transfer complete",
+                body: "Sent to \(peer).",
+                action: TransferNotificationManager.openAppAction
+            )
             outgoingPhase = .completed
             outgoingStatusMessage = "Completed"
             let fileName = displayNames.first ?? urls.first?.lastPathComponent ?? "Files"
@@ -697,59 +908,20 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         }
     }
     func connectionFailed(with error: Error) {
-        DispatchQueue.main.async {
-            guard self.sending else { return }
-            self.timeout?.cancel()
-            self.sending = false
-            self.chosenID = nil
-            self.error = Self.errorMessage(error)
-            self.sendMessage = ""
-            self.resetSpeedTracking()
-            FeedbackManager.shared.playError()
-            FeedbackManager.shared.vibrateTap()
-        }
+        guard let attemptID = activeOutgoingAttemptID else { return }
+        receiveOutgoingFailure(error, attemptID: attemptID)
     }
     func transferAccepted() {
-        DispatchQueue.main.async {
-            self.timeout?.cancel()
-            self.sendMessage = "Sending to \(self.recipient)…"
-            FeedbackManager.shared.vibrateTap()
-        }
+        guard let attemptID = activeOutgoingAttemptID else { return }
+        receiveOutgoingAccepted(attemptID: attemptID)
     }
     func transferProgress(progress: Double) {
-        DispatchQueue.main.async {
-            self.progress = min(1, max(0, progress))
-            let currentBytes = Int64(Double(self.totalBytes) * self.progress)
-            self.updateSpeedAndETA(currentBytes: currentBytes, total: self.totalBytes)
-        }
+        guard let attemptID = activeOutgoingAttemptID else { return }
+        receiveOutgoingProgress(progress, attemptID: attemptID)
     }
     func transferFinished() {
-        DispatchQueue.main.async { [self] in
-            self.timeout?.cancel()
-            let peer = self.recipient
-            let peerInfo = self.chosenPeer
-            self.chosenPeer = nil
-            self.chosenID = nil
-            self.progress = 1
-            self.sendMessage = "Sent to \(peer)"
-            let fileName = self.displayNames.first ?? self.urls.first?.lastPathComponent ?? "Files"
-            let display = self.urls.count > 1 ? "\(fileName) (+\(self.urls.count - 1))" : fileName
-            self.recordTransfer(fileName: display, fileSize: self.totalBytes, direction: .outgoing, peerName: peer, fileURL: self.urls.first)
-            if let peerInfo { UsageAnalytics.completedTransfer(direction: "outgoing", peer: peerInfo) }
-            FeedbackManager.shared.playSuccess()
-            FeedbackManager.shared.vibrateSuccess()
-            self.resetSpeedTracking()
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
-                guard let self, self.chosenID == nil else { return }
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    self.sending = false
-                    self.setFiles([])
-                    self.sendMessage = ""
-                    self.progress = 0
-                }
-            }
-        }
+        guard let attemptID = activeOutgoingAttemptID else { return }
+        receiveOutgoingFinished(attemptID: attemptID)
     }
 
     func updateSpeedAndETA(currentBytes: Int64, total: Int64) {
@@ -872,7 +1044,43 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         }
     }
 
+    @MainActor
+    func enableDefaultLaunchAtLoginIfNeeded() {
+        guard #available(macOS 13.0, *) else { return }
+        guard !UserDefaults.standard.bool(forKey: Self.launchAtLoginDisabledByUserKey) else {
+            updateLaunchAtLoginStatus()
+            return
+        }
+        guard isInstalledInApplicationsFolder else {
+            updateLaunchAtLoginStatus()
+            return
+        }
+
+        if SMAppService.mainApp.status != .enabled {
+            do {
+                try SMAppService.mainApp.register()
+                launchAtLoginMessage = nil
+            } catch {
+                launchAtLoginMessage = "Could not enable Launch at Login: \(error.localizedDescription)"
+            }
+        }
+        updateLaunchAtLoginStatus()
+        if SMAppService.mainApp.status == .requiresApproval {
+            launchAtLoginMessage = "Allow Nearby Drop in System Settings → General → Login Items."
+        }
+    }
+
+    @MainActor
     func toggleLaunchAtLogin(enabled: Bool) {
+        guard isInstalledInApplicationsFolder else {
+            launchAtLoginMessage = enabled
+                ? "Move Nearby Drop to Applications before enabling Launch at Login."
+                : "Open the installed copy of Nearby Drop to change this setting."
+            updateLaunchAtLoginStatus()
+            return
+        }
+
+        launchAtLoginMessage = nil
         if #available(macOS 13.0, *) {
             do {
                 if enabled {
@@ -884,10 +1092,27 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
                         try SMAppService.mainApp.unregister()
                     }
                 }
+                UserDefaults.standard.set(!enabled, forKey: Self.launchAtLoginDisabledByUserKey)
             } catch {
-                print("SMAppService error: \(error)")
+                launchAtLoginMessage = "Could not update Launch at Login: \(error.localizedDescription)"
             }
             launchAtLogin = (SMAppService.mainApp.status == .enabled)
+            if SMAppService.mainApp.status == .requiresApproval {
+                launchAtLoginMessage = "Allow Nearby Drop in System Settings → General → Login Items."
+            }
+        }
+    }
+
+    private var isInstalledInApplicationsFolder: Bool {
+        let installedBundlePath = Bundle.main.bundleURL.resolvingSymlinksInPath().standardizedFileURL.path
+        let applicationRoots = [
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true)
+        ]
+
+        return applicationRoots.contains { root in
+            let rootPath = root.resolvingSymlinksInPath().standardizedFileURL.path
+            return installedBundlePath.hasPrefix(rootPath + "/")
         }
     }
 
@@ -965,16 +1190,23 @@ struct TransferCompletionCard: View {
                 }
             }
 
+            .accessibilityHidden(true)
+
             VStack(spacing: 4) {
-                Text("Transfer Complete")
-                    .font(.headline)
-                Text(completed.fileName)
-                    .font(.subheadline)
+                Text("Transfer complete")
+                    .font(.system(size: 16, weight: .semibold))
+                Text(completed.fileCount > 1
+                     ? "Received \(completed.fileCount) files."
+                     : "Received \(completed.fileName).")
+                    .font(NearbyTypography.metadata)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
+                     .multilineTextAlignment(.center)
+                     .padding(.horizontal, 16)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Transfer complete")
+            .accessibilityValue(completed.fileCount > 1 ? "Received \(completed.fileCount) files" : "Received \(completed.fileName)")
 
             HStack(spacing: 6) {
                 Image(systemName: "folder")
@@ -988,33 +1220,29 @@ struct TransferCompletionCard: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
+            .nearbyCardSurface(cornerRadius: 7)
 
-            HStack(spacing: 10) {
-                Button("Show in Finder") {
-                    if let url = completed.fileURL, FileManager.default.fileExists(atPath: url.path) {
-                        NSWorkspace.shared.activateFileViewerSelecting([url])
-                    } else {
-                        TransferModel.openDownloads()
-                    }
+            Button("Show in Finder") {
+                if let url = completed.fileURL, FileManager.default.fileExists(atPath: url.path) {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                } else {
+                    TransferModel.openDownloads()
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-
-                Button("Receive Another") {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        model.clearCompletedTransfer()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.currentAccent.color)
-                .controlSize(.regular)
             }
-            .padding(.top, 4)
+            .buttonStyle(.nearbyFullWidthPrimary)
+            .frame(maxWidth: .infinity)
+
+            Button("Done") {
+                withAnimation(.easeInOut(duration: 0.2)) { model.clearCompletedTransfer() }
+            }
+            .buttonStyle(.nearbyFullWidthSecondary)
+            .frame(maxWidth: .infinity)
 
             Spacer(minLength: 6)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(16)
+        .nearbyCardSurface(cornerRadius: 14)
     }
 }
 
@@ -1027,32 +1255,68 @@ struct TransferErrorCard: View {
         VStack(spacing: 12) {
             Spacer(minLength: 6)
 
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(systemName: "exclamationmark.circle")
                 .font(.system(size: 38))
                 .foregroundStyle(.red)
+                .accessibilityHidden(true)
 
-            Text("Transfer Failed")
-                .font(.headline)
+            Text("Couldn’t save the file")
+                .font(.system(size: 16, weight: .semibold))
 
             Text(error)
-                .font(.caption)
+                .font(.system(size: 10))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
                 .padding(.horizontal, 20)
+                .accessibilityLabel("Transfer error")
 
-            Button("Dismiss", role: .cancel) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    model.clearCompletedTransfer()
+            if let failed = model.lastFailedIncoming {
+                VStack(spacing: 0) {
+                    ForEach(Array(failed.transfer.files.prefix(3).enumerated()), id: \.offset) { index, file in
+                        HStack(spacing: 8) {
+                            Image(systemName: "doc")
+                                .font(.system(size: 13)).foregroundStyle(theme.presentationAccent)
+                                .frame(width: 28, height: 28)
+                                .background(theme.presentationAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(file.name).font(NearbyTypography.emphasizedMetadata).lineLimit(1)
+                                Text(TransferModel.formatBytes(file.size)).font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 3)
+                        }
+                        .padding(7)
+                        if index < min(failed.transfer.files.count, 3) - 1 { Divider().padding(.leading, 42) }
+                    }
                 }
+                .nearbyControlSurface(cornerRadius: 9)
+                .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(Color.primary.opacity(0.10), lineWidth: 1))
+
+                Label("Some files may already be saved. Check the download folder.", systemImage: "exclamationmark.circle")
+                    .font(NearbyTypography.metadata).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.red.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .padding(.top, 4)
+
+            HStack(spacing: 8) {
+                Button("Open Downloads", action: TransferModel.openDownloads)
+                    .buttonStyle(.nearbyFullWidthSecondary)
+                    .frame(maxWidth: .infinity)
+                Button("Done", role: .cancel) {
+                    withAnimation(.easeInOut(duration: 0.2)) { model.clearCompletedTransfer() }
+                }
+                .buttonStyle(.nearbyFullWidthPrimary)
+                .frame(maxWidth: .infinity)
+            }
+            .frame(maxWidth: .infinity)
 
             Spacer(minLength: 6)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(16)
+        .nearbyCardSurface(cornerRadius: 14)
     }
 }
 
@@ -1069,94 +1333,69 @@ struct IncomingTransferReceivingCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: item.device.type == .computer ? "laptopcomputer" : "iphone")
-                    .foregroundStyle(theme.currentAccent.color)
-                Text(item.device.name)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                Spacer()
-                if let progress = model.incomingProgress[id], progress.bytesPerSecond > 0 {
-                    Text("\(TransferModel.formatBytes(Int64(progress.bytesPerSecond)))/s")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            Text("Receiving from \(item.device.name)")
+                .font(.system(size: 14, weight: .semibold)).lineLimit(1)
+
+            if !item.transfer.files.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(item.transfer.files.prefix(3).enumerated()), id: \.offset) { index, file in
+                        HStack(spacing: 7) {
+                            Image(systemName: "doc").font(.system(size: 12)).foregroundStyle(theme.presentationAccent)
+                                .frame(width: 27, height: 28)
+                                .background(theme.presentationAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(file.name).font(NearbyTypography.emphasizedMetadata).lineLimit(1)
+                                Text(TransferModel.formatBytes(file.size)).font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 2)
+                        }
+                        .padding(7)
+                        if index < min(item.transfer.files.count, 3) - 1 { Divider().padding(.leading, 41) }
+                    }
                 }
+                .nearbyControlSurface(cornerRadius: 9)
+                .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(Color.primary.opacity(0.10), lineWidth: 1))
+            } else if let description = item.transfer.textDescription {
+                Text(description).font(.system(size: 10)).foregroundStyle(.secondary)
             }
 
-            Text(item.transfer.textDescription ?? "\(item.transfer.files.count) \(item.transfer.files.count == 1 ? "item" : "items")")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            let progress = model.incomingProgress[id]
+            let fraction = totalBytes > 0 ? Double(progress?.bytes ?? 0) / Double(totalBytes) : 0
+            HStack {
+                Text("\(Int(fraction * 100))%")
+                    .font(.system(size: 10, weight: .semibold)).monospacedDigit()
+                Spacer()
+                Text("\(TransferModel.formatBytes(progress?.bytes ?? 0)) of \(TransferModel.formatBytes(totalBytes))")
+                    .font(NearbyTypography.metadata).foregroundStyle(.secondary).monospacedDigit()
+            }
 
-            ProgressView(value: totalBytes > 0 ? Double(model.incomingProgress[id]?.bytes ?? 0) / Double(totalBytes) : nil)
+            ProgressView(value: totalBytes > 0 ? fraction : nil)
                 .progressViewStyle(.linear)
                 .accessibilityLabel("Receiving files from \(item.device.name)")
-                .accessibilityValue(totalBytes > 0 ? "\(Int(Double(model.incomingProgress[id]?.bytes ?? 0) / Double(totalBytes) * 100)) percent" : "In progress")
+                .accessibilityValue(totalBytes > 0 ? "\(Int(fraction * 100)) percent" : "In progress")
 
             HStack {
-                Text("\(TransferModel.formatBytes((model.incomingProgress[id]?.bytes ?? 0))) of \(TransferModel.formatBytes(totalBytes))")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-                Spacer()
-
-            }
-
-            HStack {
-                Spacer()
-                Button("Cancel", role: .cancel) {
-                    model.cancelIncomingTransfer(id)
+                if let progress, progress.bytesPerSecond > 0 {
+                    Text("\(TransferModel.formatBytes(Int64(progress.bytesPerSecond)))/s")
+                    Text("·")
+                    let remainingBytes = max(Int64(0), totalBytes - progress.bytes)
+                    Text("About \(max(1, Int(Double(remainingBytes) / progress.bytesPerSecond))) sec remaining")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                Text("Saving")
+                Spacer()
             }
+            .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Transfer status")
+            .accessibilityValue(progress.map { "\(TransferModel.formatBytes($0.bytes)) received" } ?? "Preparing")
+
+            Button("Cancel transfer", role: .cancel) {
+                model.cancelIncomingTransfer(id)
+            }
+            .buttonStyle(.nearbyCompactFullWidthSecondary).frame(maxWidth: .infinity)
         }
         .padding(12)
-        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-struct QuickShareGuideCard: View {
-    let deviceName: String
-    @ObservedObject var theme = ThemeManager.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("How to Send to This Mac", systemImage: "questionmark.circle")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "wifi")
-                        .font(.caption)
-                        .foregroundStyle(theme.currentAccent.color)
-                        .frame(width: 16)
-                    Text("Connect both devices to the same Wi-Fi network.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.caption)
-                        .foregroundStyle(theme.currentAccent.color)
-                        .frame(width: 16)
-                    Text("On Android or Windows, tap Share → Quick Share.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "laptopcomputer")
-                        .font(.caption)
-                        .foregroundStyle(theme.currentAccent.color)
-                        .frame(width: 16)
-                    Text("Select '\(deviceName)' to send your files.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+        .nearbyCardSurface(cornerRadius: 12)
     }
 }

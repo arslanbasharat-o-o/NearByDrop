@@ -8,20 +8,31 @@ final class SettingsWindowController: NSWindowController, ObservableObject {
     let model: TransferModel
     @Published var selectedTab: SettingsTab = .general
 
-    init(model: TransferModel) {
+    init(model: TransferModel, createWindow: Bool = true) {
         self.model = model
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 660, height: 500),
-            styleMask: [.titled, .closable, .miniaturizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "Settings"
-        window.isReleasedWhenClosed = false
-        window.setFrameAutosaveName("NearByDropSettings")
-        window.center()
+        let window: NSWindow?
+        if createWindow {
+            let settingsWindow = NSWindow(
+                contentRect: NSRect(origin: .zero, size: NearbyWindowMetrics.settingsContentSize),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            settingsWindow.title = "Nearby Drop Settings"
+            settingsWindow.titleVisibility = .visible
+            settingsWindow.titlebarAppearsTransparent = false
+            settingsWindow.isReleasedWhenClosed = false
+            settingsWindow.setFrameAutosaveName("NearByDropSettingsV2")
+            settingsWindow.setContentSize(NearbyWindowMetrics.settingsContentSize)
+            settingsWindow.contentMinSize = NearbyWindowMetrics.settingsMinimumContentSize
+            settingsWindow.backgroundColor = .windowBackgroundColor
+            settingsWindow.center()
+            window = settingsWindow
+        } else {
+            window = nil
+        }
         super.init(window: window)
-        window.contentView = NSHostingView(rootView: SettingsView(model: model, controller: self))
+        window?.contentView = NSHostingView(rootView: SettingsView(model: model, controller: self))
     }
 
     required init?(coder: NSCoder) { return nil }
@@ -46,7 +57,7 @@ private struct DiagnosticsReportPreview: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Preview Diagnostics Report")
                 .font(.title3.weight(.semibold))
-            Text("This report contains app and macOS versions, architecture, receiving status, transfer counts, and a safe error category. It excludes file names and paths, device names and identifiers, network addresses, pairing data, secrets, and raw logs. Saving does not send it to the developer.")
+             Text("Review a redacted report before saving it locally.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -63,10 +74,11 @@ private struct DiagnosticsReportPreview: View {
 
             HStack {
                 Button("Cancel", role: .cancel) { dismiss() }
+                    .buttonStyle(.nearbySecondary)
                     .keyboardShortcut(.cancelAction)
                 Spacer()
                 Button("Save Report…", action: onSave)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.nearbyPrimary)
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -77,16 +89,22 @@ private struct DiagnosticsReportPreview: View {
 enum SettingsTab: String, CaseIterable, Identifiable, Hashable {
     case general = "General"
     case appearance = "Appearance"
-    case devices = "Devices"
     case about = "About"
 
     var id: String { rawValue }
+
+    var pageTitle: String {
+        switch self {
+        case .general: return "General"
+        case .appearance: return "Appearance"
+        case .about: return "About Nearby Drop"
+        }
+    }
 
     var icon: String {
         switch self {
         case .general: return "gearshape"
         case .appearance: return "paintpalette"
-        case .devices: return "iphone.and.arrow.forward"
         case .about: return "info.circle"
         }
     }
@@ -98,71 +116,50 @@ struct SettingsView: View {
     @ObservedObject var controller: SettingsWindowController
     @ObservedObject private var theme = ThemeManager.shared
     @ObservedObject private var feedback = FeedbackManager.shared
+    @ObservedObject private var updater = AppUpdater.shared
     @State private var customName: String = ""
-    @State private var usageAnalyticsEnabled = UsageAnalytics.isEnabled
+    @State private var usageAnalyticsEnabled = PreviewRuntime.isSwiftUIPreviews || UsageAnalytics.isEnabled
     @State private var showingDiagnosticsPreview = false
     @State private var diagnosticsReport = ""
     @State private var diagnosticsSaveError: String?
 
     var body: some View {
         HStack(spacing: 0) {
-            // Sidebar Navigation
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(SettingsTab.allCases) { tab in
-                    Button {
-                        controller.selectedTab = tab
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 14))
-                                .frame(width: 20)
-                                .foregroundStyle(controller.selectedTab == tab ? theme.currentAccent.color : .secondary)
-                            Text(tab.rawValue)
-                                .font(.system(size: 13, weight: controller.selectedTab == tab ? .semibold : .regular))
-                                .lineLimit(1)
-                                .fixedSize(horizontal: true, vertical: false)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .contentShape(Rectangle())
-                        .background(
-                            controller.selectedTab == tab ? theme.currentAccent.color.opacity(0.14) : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 8)
-                        )
-                    }
-                    .buttonStyle(.borderless)
-                    .controlSize(.regular)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 14)
-            .frame(width: 195)
-            .background(Color(nsColor: .windowBackgroundColor))
-
+            navigationSidebar
             Divider()
-
-            // Tab Content
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    switch controller.selectedTab {
-                    case .general: generalTab
-                    case .appearance: appearanceTab
-                    case .devices: devicesTab
-                    case .about: aboutTab
+            VStack(spacing: 0) {
+                settingsHeader
+                Divider()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        switch controller.selectedTab {
+                        case .general: generalTab
+                        case .appearance: appearanceTab
+                        case .about: aboutTab
+                        }
                     }
+                    .padding(.horizontal, 26)
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(nsColor: .windowBackgroundColor))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.4))
         }
-        .frame(width: 660, height: 500)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .frame(
+            minWidth: NearbyWindowMetrics.settingsMinimumContentSize.width,
+            minHeight: NearbyWindowMetrics.settingsMinimumContentSize.height
+        )
         .sheet(isPresented: $showingDiagnosticsPreview) {
             DiagnosticsReportPreview(report: diagnosticsReport, onSave: saveDiagnosticsReport)
-                .frame(width: 580, height: 440)
+                .frame(
+                    minWidth: NearbyWindowMetrics.diagnosticsPreviewMinimumSize.width,
+                    idealWidth: NearbyWindowMetrics.diagnosticsPreviewIdealSize.width,
+                    minHeight: NearbyWindowMetrics.diagnosticsPreviewMinimumSize.height,
+                    idealHeight: NearbyWindowMetrics.diagnosticsPreviewIdealSize.height
+                )
         }
         .alert("Could Not Save Report", isPresented: Binding(
             get: { diagnosticsSaveError != nil },
@@ -173,125 +170,174 @@ struct SettingsView: View {
             Text(diagnosticsSaveError ?? "Choose another location and try again.")
         }
         .onAppear {
-            customName = UserDefaults.standard.string(forKey: "customDeviceName") ?? model.deviceName
+            customName = model.deviceName
         }
     }
 
-    // MARK: - General Tab
-    private var generalTab: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(title: "Device Name", subtitle: "Name shown to nearby devices.")
-            HStack {
-                TextField("Device Name", text: $customName)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 240)
-                    .onSubmit {
-                        NearbyConnectionManager.customDeviceName = customName.isEmpty ? nil : customName
-                    }
-                Button("Save") {
-                    NearbyConnectionManager.customDeviceName = customName.isEmpty ? nil : customName
+    private var navigationSidebar: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(SettingsTab.allCases) { tab in
+                let isSelected = controller.selectedTab == tab
+                Button {
+                    controller.selectedTab = tab
+                } label: {
+                    Label(tab.rawValue, systemImage: tab.icon)
+                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? theme.presentationAccent : Color.primary.opacity(0.78))
+                        .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+                        .padding(.horizontal, 11)
+                        .background(
+                            isSelected ? theme.presentationAccent.opacity(0.12) : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.currentAccent.color)
-                .controlSize(.small)
-
-                Button("Reset") {
-                    customName = Host.current().localizedName ?? "This Mac"
-                    NearbyConnectionManager.customDeviceName = nil
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .buttonStyle(.plain)
+                .help(tab.rawValue)
+                .accessibilityLabel("\(tab.rawValue) settings")
+                .accessibilityValue(isSelected ? "Selected" : "Not selected")
             }
-            .padding(12)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-
-            sectionHeader(title: "Downloads", subtitle: "Folder for received files.")
-            HStack(spacing: 10) {
-                Image(systemName: "folder.fill")
-                    .foregroundStyle(theme.currentAccent.color)
-                    .font(.title2)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(model.downloadDirectory.lastPathComponent)
-                        .font(.headline)
-                    Text(model.downloadDirectory.path)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-                Spacer()
-                Button("Change…") {
-                    model.chooseDownloadDirectory(relativeTo: controller.window)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.currentAccent.color)
-                .controlSize(.small)
-
-                Button("Open") {
-                    TransferModel.openDownloads()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-            .padding(12)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-
-            sectionHeader(title: "Diagnostics", subtitle: "Help improve compatibility across Macs and phones.")
-            VStack(alignment: .leading, spacing: 8) {
-                Toggle("Send diagnostic reports", isOn: $usageAnalyticsEnabled)
-                    .toggleStyle(.switch)
-                    .onChange(of: usageAnalyticsEnabled) { _, enabled in
-                        UsageAnalytics.setEnabled(enabled)
-                    }
-                Text(UsageAnalytics.endpointIsConfigured
-                     ? "On by default. Sends app and macOS versions, Mac hardware model, this Mac’s name, and nearby device name and type after successful wireless transfers. No file names or contents."
-                     : "On by default. Sends app and macOS versions, Mac hardware model, this Mac’s name, and nearby device name and type after successful wireless transfers once the dashboard is configured. No file names or contents.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button("Preview & Export Diagnostics…", action: prepareDiagnosticsPreview)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .accessibilityHint("Creates a local report for review. It excludes file names, paths, device names, identifiers, addresses, secrets, and logs. Nothing is sent.")
-                DisclosureGroup("Timing and installation details") {
-                    Text("Reports include first launch and app opens, using a random installation ID and hour-rounded timestamps. Turn reports off anytime here.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 4)
-                }
-                .font(.caption.weight(.medium))
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-
-            sectionHeader(title: "Options", subtitle: "System startup preferences.")
-            VStack(alignment: .leading, spacing: 10) {
-                Toggle("Launch at Login", isOn: Binding(
-                    get: { model.launchAtLogin },
-                    set: { model.toggleLaunchAtLogin(enabled: $0) }
-                ))
-                .toggleStyle(.checkbox)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-
-            sectionHeader(title: "Feedback", subtitle: "Transfer status appears in the menu bar dropdown.")
-            VStack(alignment: .leading, spacing: 10) {
-                Toggle("Play Sound Effects", isOn: $feedback.soundEnabled)
-                    .toggleStyle(.checkbox)
-
-                Toggle("Trackpad Vibration (Haptics)", isOn: $feedback.hapticsEnabled)
-                    .toggleStyle(.checkbox)
-
-
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, 10)
+        .padding(.top, 20)
+        .frame(width: 176)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Color(nsColor: .controlBackgroundColor))
+    }
+
+    private var settingsHeader: some View {
+        Text(controller.selectedTab.pageTitle)
+            .font(NearbyTypography.pageTitle)
+            .lineLimit(1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 26)
+        .padding(.top, 20)
+        .padding(.bottom, 14)
+    }
+
+    // MARK: - General
+
+    private var generalTab: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Device name")
+                    .font(.system(size: 12, weight: .medium))
+                TextField("Alex’s MacBook Pro", text: $customName)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit(saveCustomDeviceName)
+                    .help("Press Return to save. Clear to use the Mac’s name.")
+            }
+
+            VStack(spacing: 0) {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Download location")
+                                .font(NearbyTypography.body.weight(.medium))
+                            Text(model.downloadDirectoryDisplayPath)
+                                .font(NearbyTypography.metadata)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        Spacer(minLength: 8)
+                        Button("Change…") {
+                            model.chooseDownloadDirectory(relativeTo: controller.window)
+                        }
+                        .buttonStyle(.nearbyCompactSecondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                    settingsDivider
+
+                    settingsRow(
+                        title: "Launch at login"
+                    ) {
+                        Toggle("Launch at login", isOn: Binding(
+                            get: { model.launchAtLogin },
+                            set: { model.toggleLaunchAtLogin(enabled: $0) }
+                        ))
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .tint(theme.presentationAccent)
+                        .disabled(!model.canManageLaunchAtLogin && !PreviewRuntime.isSwiftUIPreviews)
+                        .accessibilityLabel("Launch at login")
+                    }
+
+                    settingsDivider
+
+                    settingsRow(
+                        title: "Play transfer sounds",
+                        subtitle: "Play a sound when a transfer finishes."
+                    ) {
+                        Toggle("Play transfer sounds", isOn: $feedback.soundEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                            .tint(theme.presentationAccent)
+                            .accessibilityLabel("Play transfer sounds")
+                    }
+
+                    settingsDivider
+
+                    settingsRow(
+                        title: "Trackpad vibration",
+                        subtitle: "Vibrate on supported trackpads."
+                    ) {
+                        Toggle("Trackpad vibration", isOn: $feedback.hapticsEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                            .tint(theme.presentationAccent)
+                            .accessibilityLabel("Trackpad vibration")
+                    }
+                }
+            .nearbyCardSurface(cornerRadius: 12)
+
+            if let message = model.launchAtLoginMessage {
+                Label(message, systemImage: "exclamationmark.triangle")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            settingsSection("Diagnostics & troubleshooting") {
+                VStack(spacing: 0) {
+                    settingsRow(
+                        title: "Share diagnostics",
+                         subtitle: "Share limited device and transfer diagnostics. No file names or contents are sent."
+                    ) {
+                        Toggle("Share diagnostics", isOn: $usageAnalyticsEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                            .tint(theme.presentationAccent)
+                            .accessibilityLabel("Share diagnostics")
+                            .onChange(of: usageAnalyticsEnabled) { _, enabled in
+                                UsageAnalytics.setEnabled(enabled)
+                            }
+                    }
+
+                    settingsDivider
+
+                    settingsRow(
+                        title: "Local diagnostic report",
+                        subtitle: "Create a local report to share with support."
+                    ) {
+                        Button("Export…", action: prepareDiagnosticsPreview)
+                            .buttonStyle(.nearbySecondary)
+                    }
+                }
+            }
+
+        }
+    }
+
+    private func saveCustomDeviceName() {
+        NearbyConnectionManager.customDeviceName = customName.isEmpty ? nil : customName
+    }
+
+    private func resetCustomDeviceName() {
+        customName = Host.current().localizedName ?? "This Mac"
+        NearbyConnectionManager.customDeviceName = nil
     }
 
     private func prepareDiagnosticsPreview() {
@@ -321,206 +367,318 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Appearance Tab
+    // MARK: - Appearance
+
     private var appearanceTab: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(title: "Theme", subtitle: "Choose light, dark, or system appearance.")
-            HStack(spacing: 12) {
-                ForEach(AppTheme.allCases) { t in
-                    Button {
-                        theme.currentTheme = t
-                    } label: {
-                        VStack(spacing: 6) {
-                            Image(systemName: t.icon)
-                                .font(.system(size: 22))
-                                .foregroundStyle(theme.currentTheme == t ? theme.currentAccent.color : .secondary)
-                            Text(t.rawValue)
-                                .font(.caption.weight(theme.currentTheme == t ? .bold : .regular))
-                        }
-                        .frame(width: 86, height: 68)
-                        .background(
-                            theme.currentTheme == t ? theme.currentAccent.color.opacity(0.14) : Color(nsColor: .controlBackgroundColor),
-                            in: RoundedRectangle(cornerRadius: 10)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(theme.currentTheme == t ? theme.currentAccent.color : Color.primary.opacity(0.08), lineWidth: theme.currentTheme == t ? 1.5 : 1)
-                        )
+        VStack(alignment: .leading, spacing: 18) {
+            settingsSection("Appearance") {
+                HStack(spacing: 9) {
+                    ForEach(AppTheme.allCases) { option in
+                        appearanceThemeCard(option)
                     }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(t.rawValue)
-                    .accessibilityValue(theme.currentTheme == t ? "Selected" : "Not selected")
                 }
-            }
+                .padding(12)
 
-            sectionHeader(title: "Accent Color", subtitle: "Highlight color for buttons and controls.")
-            HStack(spacing: 10) {
-                ForEach(AccentOption.allCases) { opt in
-                    Button {
-                        theme.currentAccent = opt
-                    } label: {
-                        Circle()
-                            .fill(opt.color)
-                            .frame(width: 24, height: 24)
-                            .overlay(
+                settingsDivider
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Accent color")
+                        .font(NearbyTypography.body.weight(.medium))
+                    HStack(spacing: 7) {
+                        ForEach([AccentOption.blue, .purple, .green, .orange, .pink, .graphite]) { option in
+                            let isSelected = theme.presentationAccentOption == option
+                            Button {
+                                theme.currentAccent = option
+                            } label: {
                                 Circle()
-                                    .stroke(Color.primary.opacity(theme.currentAccent == opt ? 0.8 : 0.15), lineWidth: theme.currentAccent == opt ? 2.5 : 1)
-                            )
-                            .overlay(
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .opacity(theme.currentAccent == opt ? 1 : 0)
-                            )
-                            .frame(width: 32, height: 32)
-                            .contentShape(Circle())
-                    }
-                    .buttonStyle(.borderless)
-                    .help(opt.rawValue)
-                    .accessibilityLabel(opt.rawValue)
-                    .accessibilityValue(theme.currentAccent == opt ? "Selected" : "Not selected")
-                }
-            }
-
-            sectionHeader(title: "Menu Bar Icon", subtitle: "Icon shown in your macOS menu bar.")
-            HStack(spacing: 12) {
-                ForEach(MenuBarIconStyle.allCases) { style in
-                    Button {
-                        theme.menuBarIconStyle = style
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: style.sfSymbol)
-                                .font(.system(size: 14))
-                            Text(style.rawValue)
-                                .font(.subheadline)
+                                    .fill(option.color)
+                                    .frame(width: 22, height: 22)
+                                    .overlay {
+                                        Circle().stroke(.white.opacity(0.95), lineWidth: isSelected ? 2 : 0)
+                                    }
+                                    .overlay {
+                                        Circle().stroke(option.color.opacity(isSelected ? 0 : 0.28), lineWidth: 1)
+                                    }
+                                    .overlay {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundStyle(.white)
+                                            .opacity(isSelected ? 1 : 0)
+                                    }
+                                    .frame(width: 30, height: 30)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .help(option.rawValue)
+                            .accessibilityLabel(option.rawValue)
+                            .accessibilityValue(isSelected ? "Selected" : "Not selected")
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            theme.menuBarIconStyle == style ? theme.currentAccent.color.opacity(0.14) : Color(nsColor: .controlBackgroundColor),
-                            in: RoundedRectangle(cornerRadius: 8)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(theme.menuBarIconStyle == style ? theme.currentAccent.color : Color.primary.opacity(0.08), lineWidth: theme.menuBarIconStyle == style ? 1.5 : 1)
-                        )
                     }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(style.rawValue)
-                    .accessibilityValue(theme.menuBarIconStyle == style ? "Selected" : "Not selected")
                 }
+                .padding(12)
+
+                settingsDivider
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Menu bar icon")
+                        .font(NearbyTypography.body.weight(.medium))
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                        ForEach(MenuBarIconStyle.allCases) { style in
+                            let isSelected = theme.menuBarIconStyle == style
+                            Button {
+                                theme.menuBarIconStyle = style
+                            } label: {
+                                VStack(spacing: 6) {
+                                    Image(systemName: style.sfSymbol)
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundStyle(isSelected ? theme.presentationAccent : Color.secondary)
+                                    Text(style.displayName)
+                                        .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
+                                        .foregroundStyle(isSelected ? theme.presentationAccent : Color.primary)
+                                }
+                                .frame(maxWidth: .infinity, minHeight: 56)
+                                .background(isSelected ? theme.presentationAccent.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                                .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(isSelected ? theme.presentationAccent.opacity(0.65) : Color.primary.opacity(0.10), lineWidth: 1))
+                                .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(style.displayName) menu bar icon")
+                            .accessibilityValue(isSelected ? "Selected" : "Not selected")
+                        }
+                    }
+                }
+                .padding(12)
             }
         }
     }
 
-    // MARK: - Devices Tab (Trusted Devices)
-    private var devicesTab: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionHeader(
-                title: "Trusted Devices",
-                subtitle: "Automatic acceptance is unavailable because Quick Share does not provide a persistent authenticated device identity."
-            )
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Every incoming transfer requires your approval.", systemImage: "hand.raised.fill")
-                    .font(.subheadline.weight(.medium))
-                Text("Saved trust entries from earlier versions are cleared because display names and connection IDs cannot securely identify a device.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+    private func appearanceThemeCard(_ option: AppTheme) -> some View {
+        let isSelected = theme.currentTheme == option
+        let isDark = option == .dark
+        let surface = isDark ? Color(red: 0.15, green: 0.16, blue: 0.19) : Color.white
+        let secondarySurface = isDark ? Color(red: 0.22, green: 0.23, blue: 0.27) : Color(red: 0.94, green: 0.94, blue: 0.97)
+        return Button {
+            theme.currentTheme = option
+        } label: {
+            VStack(alignment: .leading, spacing: 7) {
+                VStack(spacing: 5) {
+                    HStack(spacing: 3) {
+                        Circle().fill(Color(red: 1, green: 0.38, blue: 0.35)).frame(width: 4, height: 4)
+                        Circle().fill(Color(red: 1, green: 0.76, blue: 0.22)).frame(width: 4, height: 4)
+                        Circle().fill(Color(red: 0.25, green: 0.78, blue: 0.35)).frame(width: 4, height: 4)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.top, 5)
+                    HStack(spacing: 5) {
+                        RoundedRectangle(cornerRadius: 2).fill(theme.presentationAccent.opacity(0.75)).frame(width: 18, height: 29)
+                        VStack(spacing: 4) {
+                            RoundedRectangle(cornerRadius: 2).fill(secondarySurface).frame(height: 6)
+                            RoundedRectangle(cornerRadius: 2).fill(secondarySurface).frame(height: 6)
+                            RoundedRectangle(cornerRadius: 2).fill(secondarySurface).frame(height: 6)
+                        }
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.bottom, 6)
+                }
+                .frame(maxWidth: .infinity)
+                .background(surface, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.primary.opacity(0.08), lineWidth: 1))
+
+                HStack(spacing: 4) {
+                    Text(option.rawValue).font(.system(size: 11, weight: isSelected ? .semibold : .medium))
+                    Spacer(minLength: 0)
+                    if isSelected { Image(systemName: "checkmark.circle.fill").font(.system(size: 10)).foregroundStyle(theme.presentationAccent) }
+                }
+                .foregroundStyle(isSelected ? theme.presentationAccent : Color.primary)
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+            .padding(6)
+            .background(isSelected ? theme.presentationAccent.opacity(0.07) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(isSelected ? theme.presentationAccent : Color.primary.opacity(0.12), lineWidth: isSelected ? 1.5 : 1))
+            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(option.rawValue) appearance")
+        .accessibilityValue(isSelected ? "Selected" : "Not selected")
     }
 
-    // MARK: - About Tab
+    // MARK: - About
+
     private var aboutTab: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(theme.currentAccent.color.opacity(0.12))
-                        .frame(width: 54, height: 54)
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.system(size: 25, weight: .semibold))
-                        .foregroundStyle(theme.currentAccent.color)
-                }
+                Image("BrandLogo")
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+                    .frame(width: 58, height: 58)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Nearby Drop")
-                        .font(.title2.weight(.bold))
-                    Text(AppRelease.versionDescription)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Text("By Arslan Basharat")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text("Nearby Drop").font(.system(size: 18, weight: .semibold, design: .rounded))
+                    Text("\(AppRelease.versionDescription) · macOS")
+                        .font(NearbyTypography.supporting).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
 
-            VStack(alignment: .leading, spacing: 8) {
-                sectionHeader(title: "Updates", subtitle: "Keep Nearby Drop up to date.")
-                HStack(alignment: .top, spacing: 12) {
-                    Button("Check for Updates") { AppUpdater.shared.check() }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+            VStack(spacing: 0) {
+                HStack(alignment: .center, spacing: 12) {
+                    Text("Updates")
+                        .font(NearbyTypography.sectionTitle)
+                    Spacer(minLength: 8)
                     AppUpdateView()
+                        .frame(maxWidth: 310)
+                }
+                .padding(12)
+
+                settingsDivider
+
+                settingsRow(
+                    title: "Check for updates automatically",
+                    subtitle: "Check in the background. You approve updates before installation."
+                ) {
+                    Toggle("Check for updates automatically", isOn: Binding(
+                        get: { updater.automaticallyChecksForUpdates },
+                        set: { updater.setAutomaticallyChecksForUpdates($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .tint(theme.presentationAccent)
+                    .accessibilityLabel("Check for updates automatically")
                 }
             }
+            .nearbyCardSurface(cornerRadius: 11)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("What’s New").font(.subheadline.weight(.semibold))
-                Text("Inline QR scanning, improved Quick Share handshakes, and safer transfer cancellation.")
-                    .font(.callout).foregroundStyle(.secondary)
+            HStack(spacing: 16) {
+                resourceLinkButton("GitHub repository", icon: "arrow.up.right", url: "https://github.com/arslanbasharat-o-o/NearByDrop")
+                resourceLinkButton("Release notes", icon: "arrow.up.right", url: "https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest")
             }
-            .padding(12)
+            .padding(.horizontal, 10)
+
+            settingsSection("Resources & legal") {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 7) {
+                    resourceLinkButton("Privacy policy", icon: "arrow.up.right", url: "https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html")
+                    resourceLinkButton("Security", icon: "arrow.up.right", url: "https://arslanbasharat-o-o.github.io/NearByDrop/legal/security.html")
+                    resourceLinkButton("Terms of use · Draft", icon: "arrow.up.right", url: "https://arslanbasharat-o-o.github.io/NearByDrop/legal/terms.html")
+                    resourceLinkButton("Open-source licenses", icon: "arrow.up.right", url: "https://arslanbasharat-o-o.github.io/NearByDrop/legal/licenses.html")
+                    resourceLinkButton("Quick start guide", icon: "arrow.up.right", action: { OnboardingWindowController.showOnboarding() })
+                    resourceLinkButton("Contact support", icon: "arrow.up.right", url: "https://github.com/arslanbasharat-o-o/NearByDrop/issues")
+                }
+                .padding(10)
+            }
+
+        }
+    }
+
+    private func resourceLinkButton(_ title: String, icon: String, url: String) -> some View {
+        resourceLinkButton(title, icon: icon) {
+            guard let destination = URL(string: url) else { return }
+            NSWorkspace.shared.open(destination)
+        }
+    }
+
+    private func resourceLinkButton(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                Text(title).font(.system(size: 11, weight: .medium)).lineLimit(1)
+                Spacer(minLength: 2)
+                Image(systemName: icon).font(.system(size: 8, weight: .semibold))
+            }
+            .foregroundStyle(theme.presentationAccent)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 9)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.nearbyCompactQuiet)
+        .help(title)
+    }
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Open Source Licenses")
-                    .font(.subheadline.weight(.semibold))
+    private func openLinkButton(_ label: String, url: String) -> some View {
+        Button {
+            guard let destination = URL(string: url) else { return }
+            NSWorkspace.shared.open(destination)
+        } label: {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.nearbyCompactQuiet)
+        .help("Open \(label)")
+        .accessibilityLabel("Open \(label)")
+    }
 
-                Text("libmtp and libusb are distributed under LGPL 2.1 or later. Licenses and matching USB source are included with each release.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+    private func settingsSection<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(NearbyTypography.sectionTitle)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
+            VStack(alignment: .leading, spacing: 0) {
+                content()
             }
-            .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-
-            HStack(spacing: 12) {
-                Button("View on GitHub") {
-                    if let url = URL(string: "https://github.com/arslanbasharat-o-o/NearByDrop") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.currentAccent.color)
-
-
-
-                Button("Welcome Tour…") {
-                    OnboardingWindowController.showOnboarding()
-                }
-                .buttonStyle(.bordered)
-            }
+            .nearbyCardSurface(cornerRadius: 12)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func sectionHeader(title: String, subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+    private func settingsRow<Accessory: View>(
+        title: String,
+        subtitle: String? = nil,
+        @ViewBuilder accessory: () -> Accessory
+    ) -> some View {
+        HStack(alignment: .center, spacing: 14) {
+            VStack(alignment: .leading, spacing: subtitle == nil ? 0 : 4) {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.primary)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(NearbyTypography.supporting)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .layoutPriority(1)
+
+            Spacer(minLength: 12)
+            accessory()
+                .fixedSize(horizontal: true, vertical: false)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var settingsDivider: some View {
+        Divider().padding(.leading, 12)
+    }
 }
+
+#if DEBUG
+#Preview("Settings · General") {
+    let model = TransferModel.makePreviewFixture(tab: .receive)
+    model.launchAtLogin = true
+    FeedbackManager.shared.hapticsEnabled = false
+    let controller = SettingsWindowController(model: model, createWindow: false)
+    return FigmaCanvasPreview { SettingsView(model: model, controller: controller).frame(width: 820, height: 760) }
+}
+#Preview("Settings · Appearance") {
+    let model = TransferModel.makePreviewFixture(tab: .receive)
+    let controller = SettingsWindowController(model: model, createWindow: false)
+    controller.selectedTab = .appearance
+    return FigmaCanvasPreview { SettingsView(model: model, controller: controller).frame(width: 820, height: 760) }
+}
+#Preview("Settings · About") {
+    let model = TransferModel.makePreviewFixture(tab: .receive)
+    let controller = SettingsWindowController(model: model, createWindow: false)
+    controller.selectedTab = .about
+    return FigmaCanvasPreview { SettingsView(model: model, controller: controller).frame(width: 820, height: 760) }
+}
+#endif

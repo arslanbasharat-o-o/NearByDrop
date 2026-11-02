@@ -1,5 +1,6 @@
 import Cocoa
 import NearbyShare
+import UserNotifications
 
 enum OutgoingAttemptPhase: String, Equatable {
     case idle
@@ -197,6 +198,19 @@ enum IncomingConsentPresentationState {
     }
 }
 
+enum NearbyWindowMetrics {
+    static let menuPopoverWidth: CGFloat = 390
+
+    static let settingsContentSize = NSSize(width: 820, height: 680)
+    static let settingsMinimumContentSize = NSSize(width: 720, height: 560)
+
+    static let onboardingContentSize = NSSize(width: 700, height: 660)
+    static let onboardingMinimumContentSize = NSSize(width: 660, height: 600)
+
+    static let diagnosticsPreviewMinimumSize = CGSize(width: 640, height: 480)
+    static let diagnosticsPreviewIdealSize = CGSize(width: 680, height: 520)
+}
+
 extension NSWindow {
     func positionOnInteractionScreen() {
         guard let screen = NSScreen.screens.first(where: { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) }) ?? NSScreen.main else { return }
@@ -223,6 +237,49 @@ extension NSSavePanel {
 
 extension Notification.Name {
     static let didFinishChoosingFiles = Notification.Name("NearbyDropDidFinishChoosingFiles")
+}
+
+enum TransferNotificationManager {
+    static let showDownloadsAction = "NearbyDrop.ShowDownloads"
+    static let openAppAction = "NearbyDrop.OpenApp"
+    private static let downloadsCategory = "NearbyDrop.TransferDownloads"
+    private static let appCategory = "NearbyDrop.TransferApp"
+
+    static func configure() {
+        let center = UNUserNotificationCenter.current()
+        let showDownloads = UNNotificationAction(
+            identifier: showDownloadsAction,
+            title: "Show Downloads",
+            options: [.foreground]
+        )
+        let openApp = UNNotificationAction(
+            identifier: openAppAction,
+            title: "Open Nearby Drop",
+            options: [.foreground]
+        )
+        center.setNotificationCategories([
+            UNNotificationCategory(identifier: downloadsCategory, actions: [showDownloads], intentIdentifiers: []),
+            UNNotificationCategory(identifier: appCategory, actions: [openApp], intentIdentifiers: [])
+        ])
+    }
+
+    static func post(title: String, body: String, action: String) {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            content.categoryIdentifier = action == showDownloadsAction ? downloadsCategory : appCategory
+            let request = UNNotificationRequest(
+                identifier: "NearbyDrop.Transfer.\(UUID().uuidString)",
+                content: content,
+                trigger: nil
+            )
+            center.add(request)
+        }
+    }
 }
 
 enum AppRelease {

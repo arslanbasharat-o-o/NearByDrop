@@ -263,6 +263,7 @@ class InboundNearbyConnection: NearbyConnection{
 				close(transferredFiles[id]!.fd)
 				transferredFiles[id]!.fd = -1
 			}
+			try commitReceivedFile(fileInfo)
 			try acknowledgePayload(frame.payloadHeader)
 			completedFilesBytes += fileInfo.meta.size
 			transferredFiles.removeValue(forKey: id)
@@ -307,6 +308,7 @@ class InboundNearbyConnection: NearbyConnection{
 				close(transferredFiles[id]!.fd)
 				transferredFiles[id]!.fd = -1
 			}
+			try commitReceivedFile(fileInfo)
 			completedFilesBytes += fileInfo.meta.size
 			transferredFiles.removeValue(forKey: id)
 			notifyProgressIfNeeded(force: true)
@@ -540,10 +542,15 @@ class InboundNearbyConnection: NearbyConnection{
 					throw NearbyError.protocolError("Malformed file metadata")
 				}
 				let dest=makeFileDestinationURL(file.name, in: downloadsDirectory)
+				let temporary=NearbyConnectionManager.temporaryTransferURL(for: dest)
 				let info=InternalFileInfo(meta: FileMetadata(name: dest.lastPathComponent, size: file.size, mimeType: file.mimeType, destinationURL: dest),
-										  payloadID: file.payloadID,
-										  destinationURL: dest)
+										payloadID: file.payloadID,
+										destinationURL: dest,
+										temporaryURL: temporary)
 				transferredFiles[file.payloadID]=info
+			}
+			guard TransferDiskSpace.requiredBytes(for: transferredFiles.values.map { $0.meta.size }) != nil else {
+				throw NearbyError.protocolError("The selected files exceed the supported total transfer size")
 			}
 			setState(.waitingForUserConsent)
 			let metadata=TransferMetadata(files: transferredFiles.map({$0.value.meta}), id: id, pinCode: pinCode)
@@ -563,9 +570,11 @@ class InboundNearbyConnection: NearbyConnection{
 				let dateFormatter=DateFormatter()
 				dateFormatter.dateFormat="yyyy-MM-dd HH.mm.ss"
 				let dest=makeFileDestinationURL("\(dateFormatter.string(from: Date())).txt", in: downloadsDirectory)
+				let temporary=NearbyConnectionManager.temporaryTransferURL(for: dest)
 				let info=InternalFileInfo(meta: FileMetadata(name: dest.lastPathComponent, size: meta.size, mimeType: "text/plain", destinationURL: dest),
-										  payloadID: meta.payloadID,
-											  destinationURL: dest)
+										payloadID: meta.payloadID,
+											destinationURL: dest,
+										temporaryURL: temporary)
 				transferredFiles[meta.payloadID]=info
 				setState(.waitingForUserConsent)
 				requestUserConsent(metadata: TransferMetadata(files: [info.meta], id: self.id, pinCode: self.pinCode))
@@ -598,6 +607,13 @@ class InboundNearbyConnection: NearbyConnection{
 	private func acceptTransfer(){
 		do{
 			let downloadsRoot=NearbyConnectionManager.downloadDirectory.resolvingSymlinksInPath().standardizedFileURL
+			guard let requiredBytes = TransferDiskSpace.requiredBytes(for: transferredFiles.values.map { $0.meta.size }),
+				  TransferDiskSpace.hasCapacity(
+					  requiredBytes: requiredBytes,
+					  availableBytes: TransferDiskSpace.availableBytes(at: downloadsRoot)
+				  ) else {
+				throw NearbyError.canceled(reason: .notEnoughSpace)
+			}
 			for (id, file) in transferredFiles{
 				let parent=file.destinationURL.deletingLastPathComponent()
 				let resolvedParent=parent.resolvingSymlinksInPath().standardizedFileURL
@@ -608,12 +624,12 @@ class InboundNearbyConnection: NearbyConnection{
 					try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
 					createdDirectories.insert(parent)
 				}
-				let fd=open(file.destinationURL.path, O_CREAT | O_EXCL | O_WRONLY | O_NOFOLLOW, 0o600)
+				let fd=open(file.temporaryURL.path, O_CREAT | O_EXCL | O_WRONLY | O_NOFOLLOW, 0o600)
 				guard fd >= 0 else { throw NearbyError.inputOutput }
 				transferredFiles[id]!.fd=fd
 				transferredFiles[id]!.created=true
 			}
-			totalFilesBytes=transferredFiles.values.reduce(0) { $0 + $1.meta.size }
+			totalFilesBytes=requiredBytes
 			notifyProgressIfNeeded(force: true)
 			
 			var frame=Sharing_Nearby_Frame()
@@ -624,6 +640,11 @@ class InboundNearbyConnection: NearbyConnection{
 			setState(.receivingFiles)
 		}catch{
 			lastError=error
+			if let nearbyError = error as? NearbyError,
+			   case .canceled(reason: .notEnoughSpace) = nearbyError {
+				rejectTransfer(with: .notEnoughSpace)
+				return
+			}
 			setState(.failed)
 			disconnect()
 		}
@@ -670,7 +691,7 @@ class InboundNearbyConnection: NearbyConnection{
 			if file.fd >= 0 {
 				close(file.fd)
 			}
-			try FileManager.default.removeItem(at: file.destinationURL)
+			try? FileManager.default.removeItem(at: file.temporaryURL)
 		}
 		transferredFiles.removeAll()
 		for directory in createdDirectories.sorted(by: { $0.path.count > $1.path.count }){
@@ -678,6 +699,14 @@ class InboundNearbyConnection: NearbyConnection{
 			try? FileManager.default.removeItem(at: directory)
 		}
 		createdDirectories.removeAll()
+	}
+
+	private func commitReceivedFile(_ file: InternalFileInfo) throws {
+		guard file.created,
+			  FileManager.default.fileExists(atPath: file.temporaryURL.path) else {
+			throw NearbyError.inputOutput
+		}
+		try FileManager.default.moveItem(at: file.temporaryURL, to: file.destinationURL)
 	}
 }
 

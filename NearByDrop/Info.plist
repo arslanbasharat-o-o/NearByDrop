@@ -6,7 +6,7 @@
     <key>SUFeedURL</key><string>https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key><string>1TqpRsU8jS73PWVgvzEQiHjWM7VqV3JX9LGQdJBtGPo=</string>
     <key>SUEnableAutomaticChecks</key><true/>
-    <key>SUScheduledCheckInterval</key><integer>3600</integer>
+    <key>SUScheduledCheckInterval</key><integer>86400</integer>
     <key>SUAutomaticallyUpdate</key><false/>
     <key>SUVerifyUpdateBeforeExtraction</key><true/>
     <key>SURequireSignedFeed</key><true/>
