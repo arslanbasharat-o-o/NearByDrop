@@ -28,7 +28,7 @@ The native app uses no embedded server secret. Its random installation ID is for
 
 ## Upgrading an existing dashboard
 
-Back up its PHP files outside `public_html` and back up MySQL before upgrading. Apply `migrations/002-mac-model.sql` once, then upload `common.php`, `ingest.php`, `index.php`, and `cleanup.php`; preserve the private configuration and existing dashboard login. Configure a daily PHP cron in hPanel targeting `domains/nearbydrop.runs-at.dev/public_html/cleanup.php`. The CLI cleanup must succeed; requesting `/cleanup.php` through HTTPS must return 404.
+Back up its PHP files outside `public_html` and back up MySQL before upgrading. Apply `migrations/002-mac-model.sql` (if not already applied) and `migrations/003-deduplicate.sql` to purge duplicate records, then upload `common.php`, `ingest.php`, `index.php`, and `cleanup.php`; preserve the private configuration and existing dashboard login. Configure a daily PHP cron in hPanel targeting `domains/nearbydrop.runs-at.dev/public_html/cleanup.php`. The CLI cleanup must succeed; requesting `/cleanup.php` through HTTPS must return 404.
 
 Run `bash diagnostics/hostinger/tests/local-smoke.sh` for setup, sign-in, ingestion, deduplication, timestamp validation, retention, and rate limits. On macOS, run `scripts/tests/diagnostics-client.sh` to compile the shipping client with isolated preferences and simulated HTTP responses. Those client checks exercise the disclosure gate, durable retry acknowledgement, Mac model payload, transfer events, and opt-out queue removal. Release builds still require a real launch and phone transfer against production.
 

@@ -135,4 +135,29 @@ function nd_cleanup(PDO $db): void
     $cutoff = gmdate('Y-m-d H:i:s', time() - 90 * 86400);
     $statement = $db->prepare('DELETE FROM diagnostic_events WHERE occurred_at < ?');
     $statement->execute([$cutoff]);
+
+    $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
+    if ($driver === 'sqlite') {
+        $db->exec("DELETE FROM diagnostic_events WHERE rowid NOT IN (
+            SELECT MIN(rowid) FROM diagnostic_events GROUP BY installation_id, event_type, occurred_at
+        )");
+        $db->exec("DELETE FROM diagnostic_events WHERE rowid NOT IN (
+            SELECT MIN(rowid) FROM diagnostic_events GROUP BY mac_name, COALESCE(peer_name, ''), event_type, COALESCE(transfer_direction, ''), occurred_at
+        )");
+    } else {
+        $db->exec("DELETE d1 FROM diagnostic_events d1
+            INNER JOIN diagnostic_events d2
+            ON d1.installation_id = d2.installation_id
+            AND d1.event_type = d2.event_type
+            AND d1.occurred_at = d2.occurred_at
+            AND d1.event_id > d2.event_id");
+        $db->exec("DELETE t1 FROM diagnostic_events t1
+            INNER JOIN diagnostic_events t2
+            ON t1.mac_name = t2.mac_name
+            AND ((t1.peer_name = t2.peer_name) OR (t1.peer_name IS NULL AND t2.peer_name IS NULL))
+            AND t1.event_type = t2.event_type
+            AND ((t1.transfer_direction = t2.transfer_direction) OR (t1.transfer_direction IS NULL AND t2.transfer_direction IS NULL))
+            AND t1.occurred_at = t2.occurred_at
+            AND t1.event_id > t2.event_id");
+    }
 }

@@ -66,15 +66,18 @@ if ($authenticated) {
         $active = (int) $activeQuery->fetchColumn();
         $transferCount = (int) $db->query("SELECT COUNT(*) FROM diagnostic_events WHERE event_type = 'transfer_completed'")->fetchColumn();
         $devices = $db->query(
-            "SELECT e.installation_id, e.mac_name, e.app_version, e.macos_version, e.mac_model, e.occurred_at "
-            . "FROM diagnostic_events e "
-            . "INNER JOIN (SELECT e1.installation_id, MAX(e1.event_id) AS event_id FROM diagnostic_events e1 "
-            . "WHERE e1.event_type = 'app_opened' AND e1.occurred_at = (SELECT MAX(e2.occurred_at) FROM diagnostic_events e2 WHERE e2.installation_id = e1.installation_id AND e2.event_type = 'app_opened') "
-            . "GROUP BY e1.installation_id) latest ON latest.event_id = e.event_id "
-            . "WHERE e.event_type = 'app_opened' ORDER BY e.occurred_at DESC LIMIT 100"
+            "SELECT mac_name, mac_model, app_version, macos_version, occurred_at "
+            . "FROM ( "
+            . "    SELECT mac_name, mac_model, app_version, macos_version, occurred_at, "
+            . "           ROW_NUMBER() OVER (PARTITION BY mac_name, mac_model ORDER BY occurred_at DESC, event_id DESC) AS rn "
+            . "    FROM diagnostic_events "
+            . "    WHERE event_type = 'app_opened' "
+            . ") t "
+            . "WHERE t.rn = 1 "
+            . "ORDER BY occurred_at DESC LIMIT 100"
         )->fetchAll();
         $transfers = $db->query(
-            "SELECT mac_name, peer_name, peer_type, transfer_direction, app_version, macos_version, occurred_at "
+            "SELECT DISTINCT mac_name, peer_name, peer_type, transfer_direction, app_version, macos_version, occurred_at "
             . "FROM diagnostic_events WHERE event_type = 'transfer_completed' ORDER BY occurred_at DESC LIMIT 100"
         )->fetchAll();
     } catch (Throwable) {
