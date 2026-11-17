@@ -1060,7 +1060,7 @@
 			repositoryURL = "https://github.com/dagronf/qrcode.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 28.1.0;
+				minimumVersion = 29.0.0;
 			};
 		};
 		69DA9A2429E189EF00A442DA /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
