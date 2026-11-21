@@ -12,7 +12,7 @@ import SwiftUI
 let suite = "NearbyDrop.ThemeTest." + UUID().uuidString
 let testDefaults = UserDefaults(suiteName: suite)!
 '''
-post = '''
+post = r'''
 let app = NSApplication.shared
 defer { testDefaults.removePersistentDomain(forName: suite) }
 let theme = ThemeManager.shared
@@ -44,11 +44,25 @@ func luminance(_ color: Color) -> Double {
     func linear(_ v: Double) -> Double { v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
     return 0.2126 * linear(rgb.redComponent) + 0.7152 * linear(rgb.greenComponent) + 0.0722 * linear(rgb.blueComponent)
 }
-let pinkContrast = (luminance(ViceNightsPalette.pink) + 0.05) / (luminance(ViceNightsPalette.card) + 0.05)
-let buttonContrast = 1.05 / (luminance(ViceNightsPalette.button) + 0.05)
-precondition(pinkContrast >= 4.5)
-precondition(buttonContrast >= 4.5)
-print(String(format: "Theme persistence/restoration passed; pink text %.2f:1, button text %.2f:1", pinkContrast, buttonContrast))
+for appearance in AppTheme.allCases {
+    theme.currentTheme = appearance
+    precondition(testDefaults.string(forKey: "appTheme") == appearance.rawValue)
+    guard let palette = appearance.palette else { continue }
+    func ratio(_ a: Color, _ b: Color) -> Double {
+        let x = luminance(a), y = luminance(b)
+        return (max(x, y) + 0.05) / (min(x, y) + 0.05)
+    }
+    for surface in [palette.background, palette.surface] {
+        precondition(ratio(palette.text, surface) >= 4.5, "Primary text contrast: \(appearance)")
+        precondition(ratio(palette.secondaryText, surface) >= 4.5, "Secondary text contrast: \(appearance)")
+        precondition(ratio(palette.accent, surface) >= 4.5, "Accent text contrast: \(appearance)")
+        precondition(ratio(palette.error, surface) >= 4.5, "Error contrast: \(appearance)")
+        precondition(ratio(palette.success, surface) >= 4.5, "Success contrast: \(appearance)")
+    }
+    precondition(ratio(.white, palette.button) >= 4.5, "Button contrast: \(appearance)")
+    print("Appearance persistence and contrast passed: \(appearance.rawValue)")
+}
+print("Edition preset respects later user choices; standard appearances retained.")
 '''
 open(sys.argv[2], 'w').write(pre + source + post)
 PY

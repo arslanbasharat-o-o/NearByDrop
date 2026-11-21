@@ -1174,7 +1174,7 @@ struct TransferCompletionCard: View {
                     .frame(width: 58, height: 58)
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 40))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(theme.successColor)
                     .scaleEffect(checkmarkScale)
                     .opacity(checkmarkOpacity)
             }
@@ -1199,7 +1199,7 @@ struct TransferCompletionCard: View {
                      ? "Received \(completed.fileCount) files."
                      : "Received \(completed.fileName).")
                     .font(NearbyTypography.metadata)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                     .lineLimit(2)
                      .multilineTextAlignment(.center)
                      .padding(.horizontal, 16)
@@ -1211,10 +1211,10 @@ struct TransferCompletionCard: View {
             HStack(spacing: 6) {
                 Image(systemName: "folder")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                 Text(completed.destinationPath)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
@@ -1257,7 +1257,7 @@ struct TransferErrorCard: View {
 
             Image(systemName: "exclamationmark.circle")
                 .font(.system(size: 38))
-                .foregroundStyle(.red)
+                .foregroundStyle(theme.errorColor)
                 .accessibilityHidden(true)
 
             Text("Couldn’t save the file")
@@ -1265,7 +1265,7 @@ struct TransferErrorCard: View {
 
             Text(error)
                 .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
                 .padding(.horizontal, 20)
@@ -1282,7 +1282,7 @@ struct TransferErrorCard: View {
                                 .accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(file.name).font(NearbyTypography.emphasizedMetadata).lineLimit(1)
-                                Text(TransferModel.formatBytes(file.size)).font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                                Text(TransferModel.formatBytes(file.size)).font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
                             }
                             Spacer(minLength: 3)
                         }
@@ -1294,7 +1294,7 @@ struct TransferErrorCard: View {
                 .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(Color.primary.opacity(0.10), lineWidth: 1))
 
                 Label("Some files may already be saved. Check the download folder.", systemImage: "exclamationmark.circle")
-                    .font(NearbyTypography.metadata).foregroundStyle(.red)
+                    .font(NearbyTypography.metadata).foregroundStyle(theme.errorColor)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(8).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.red.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -1346,7 +1346,7 @@ struct IncomingTransferReceivingCard: View {
                                 .accessibilityHidden(true)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(file.name).font(NearbyTypography.emphasizedMetadata).lineLimit(1)
-                                Text(TransferModel.formatBytes(file.size)).font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                                Text(TransferModel.formatBytes(file.size)).font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
                             }
                             Spacer(minLength: 2)
                         }
@@ -1357,7 +1357,7 @@ struct IncomingTransferReceivingCard: View {
                 .nearbyControlSurface(cornerRadius: 9)
                 .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(Color.primary.opacity(0.10), lineWidth: 1))
             } else if let description = item.transfer.textDescription {
-                Text(description).font(.system(size: 10)).foregroundStyle(.secondary)
+                Text(description).font(.system(size: 10)).foregroundStyle(theme.secondaryText)
             }
 
             let progress = model.incomingProgress[id]
@@ -1367,7 +1367,7 @@ struct IncomingTransferReceivingCard: View {
                     .font(.system(size: 10, weight: .semibold)).monospacedDigit()
                 Spacer()
                 Text("\(TransferModel.formatBytes(progress?.bytes ?? 0)) of \(TransferModel.formatBytes(totalBytes))")
-                    .font(NearbyTypography.metadata).foregroundStyle(.secondary).monospacedDigit()
+                    .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText).monospacedDigit()
             }
 
             ProgressView(value: totalBytes > 0 ? fraction : nil)
@@ -1385,7 +1385,7 @@ struct IncomingTransferReceivingCard: View {
                 Text("Saving")
                 Spacer()
             }
-            .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+            .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Transfer status")
             .accessibilityValue(progress.map { "\(TransferModel.formatBytes($0.bytes)) received" } ?? "Preparing")

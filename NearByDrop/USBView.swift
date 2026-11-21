@@ -549,7 +549,7 @@ struct USBView: View {
                                     .foregroundStyle(theme.presentationAccent)
                                 Text(device.name).font(.system(size: 10, weight: .medium)).foregroundStyle(.primary)
                                 Spacer()
-                                Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+                                Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(theme.secondaryText)
                             }
                             .padding(8)
                             .nearbyControlSurface(cornerRadius: 10)
@@ -584,7 +584,7 @@ struct USBView: View {
                 VStack(alignment: .leading, spacing: 1) {
                 Text(usb.deviceName).font(.system(size: 12, weight: .semibold)).lineLimit(1)
                     Text("Connected · \(usb.storages.first(where: { $0.id == usb.storage })?.name ?? "Phone storage")")
-                    .font(NearbyTypography.metadata).foregroundStyle(.secondary).lineLimit(1)
+                    .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText).lineLimit(1)
                 }
                 Spacer(minLength: 3)
                 Button("Disconnect", action: usb.disconnect)
@@ -637,7 +637,7 @@ struct USBView: View {
                     if usb.items.isEmpty && !usb.busy {
                         VStack(spacing: 6) {
                             Image(systemName: "folder").font(.system(size: 22)).foregroundStyle(.tertiary)
-                            Text("This folder is empty").font(NearbyTypography.supporting).foregroundStyle(.secondary)
+                            Text("This folder is empty").font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
                         }
                         .frame(maxWidth: .infinity).padding(18)
                     }
@@ -645,7 +645,7 @@ struct USBView: View {
                         HStack(spacing: 6) {
                             ProgressView().controlSize(.small)
                             Text(usb.message.isEmpty ? "Loading files…" : usb.message)
-                                .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                                .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
                         }
                         .frame(maxWidth: .infinity).padding(8)
                     }
@@ -703,7 +703,7 @@ struct USBView: View {
             Spacer(minLength: 2)
             if !item.folder {
                 Text(ByteCountFormatter.string(fromByteCount: Int64(clamping: item.size), countStyle: .file))
-                    .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                    .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
             }
             if item.folder {
                 Button { usb.enter(item) } label: { Image(systemName: "chevron.right").font(.system(size: 8, weight: .semibold)) }
@@ -731,14 +731,14 @@ struct USBView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(usb.message.hasPrefix("Receiving") ? "Downloading \(transferItems.count) item\(transferItems.count == 1 ? "" : "s")" : "Sending files to phone")
                 .font(.system(size: 15, weight: .semibold))
-            Text(usb.deviceName).font(.system(size: 10)).foregroundStyle(.secondary)
+            Text(usb.deviceName).font(.system(size: 10)).foregroundStyle(theme.secondaryText)
             transferFileCard(transferItems)
             HStack {
                 Text("\(Int(usb.progress * 100))%")
                     .font(.system(size: 10, weight: .semibold)).monospacedDigit()
                 Spacer()
                 Text("\(TransferModel.formatBytes(Int64(Double(transferSize) * usb.progress))) of \(TransferModel.formatBytes(Int64(clamping: transferSize)))")
-                    .font(NearbyTypography.metadata).foregroundStyle(.secondary).monospacedDigit()
+                    .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText).monospacedDigit()
             }
             ProgressView(value: usb.progress)
                 .tint(theme.presentationAccent)
@@ -753,11 +753,11 @@ struct USBView: View {
     private var transferCompleteView: some View {
         VStack(spacing: 8) {
             Spacer(minLength: 1)
-            Image(systemName: "checkmark.circle.fill").font(.system(size: 31)).foregroundStyle(.green)
+            Image(systemName: "checkmark.circle.fill").font(.system(size: 31)).foregroundStyle(theme.successColor)
                 .accessibilityHidden(true)
             Text("Transfer complete").font(.system(size: 15, weight: .semibold))
             Text("\(usb.message) · \(usb.deviceName)")
-                .font(NearbyTypography.metadata).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText).multilineTextAlignment(.center)
             transferFileCard(transferItems)
             Button("Show in Finder") {
                 if let url = usb.lastDownloadedURL, FileManager.default.fileExists(atPath: url.path) {
@@ -780,7 +780,7 @@ struct USBView: View {
             Image(systemName: "cable.connector.slash").font(.system(size: 28)).foregroundStyle(.orange)
                 .accessibilityHidden(true)
             Text("Transfer failed").font(.system(size: 15, weight: .semibold))
-            Text(error).font(NearbyTypography.metadata).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Text(error).font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText).multilineTextAlignment(.center)
             if !transferItems.isEmpty { transferFileCard(transferItems) }
             Spacer(minLength: 0)
             HStack(spacing: 8) {
@@ -810,7 +810,7 @@ struct USBView: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(item.name).font(.system(size: 10, weight: .medium)).lineLimit(1)
                         Text(ByteCountFormatter.string(fromByteCount: Int64(clamping: item.size), countStyle: .file))
-                            .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                            .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
                     }
                     Spacer(minLength: 2)
                 }

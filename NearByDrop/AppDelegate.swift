@@ -541,6 +541,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             ThemeManager.shared.screenshotTheme = .viceNights
             NSApp.appearance = NSAppearance(named: .darkAqua)
         }
+        if CommandLine.arguments.contains("--all-themes") {
+            for appearance in AppTheme.allCases {
+                ThemeManager.shared.screenshotTheme = appearance
+                appearance.apply()
+                renderWebsiteScreenshots(to: outputDirectory.appendingPathComponent(appearance.rawValue))
+            }
+        } else {
+            renderWebsiteScreenshots(to: outputDirectory)
+        }
+    }
+
+    private func renderWebsiteScreenshots(to outputDirectory: URL) {
         let tabs: [(TransferModel.Tab, TransferModel.PreviewState, String)] = [
             (.send, .sendReady, "send.jpg"),
             (.receive, .receiveReady, "receive.jpg"),
@@ -562,7 +574,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
                 guide: {},
                 privacy: {}
             )
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(ThemeManager.shared.resolvedTheme == .coastalSunrise || ThemeManager.shared.resolvedTheme == .light ? .light : .dark)
             
             scenes.append((AnyView(view), CGSize(width: NearbyWindowMetrics.menuPopoverWidth,
                                                 height: MenuView.preferredHeight(for: fixture)), filename))
@@ -570,7 +582,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         let settingsModel = TransferModel.makePreviewFixture(tab: .receive, state: .receiveReady)
         let controller = SettingsWindowController(model: settingsModel, createWindow: false)
         controller.selectedTab = .appearance
-        scenes.append((AnyView(SettingsView(model: settingsModel, controller: controller).preferredColorScheme(.dark)),
+        scenes.append((AnyView(SettingsView(model: settingsModel, controller: controller).preferredColorScheme(ThemeManager.shared.resolvedTheme == .coastalSunrise || ThemeManager.shared.resolvedTheme == .light ? .light : .dark)),
                        NearbyWindowMetrics.settingsContentSize, "appearance.jpg"))
 
         for (view, size, filename) in scenes {
@@ -741,7 +753,7 @@ struct MenuView: View {
                         .foregroundStyle(.primary)
                     Text(model.deviceName)
                         .font(NearbyTypography.supporting)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .help(model.deviceName)
@@ -753,7 +765,7 @@ struct MenuView: View {
                     Circle().fill(statusColor).frame(width: 6, height: 6)
                     Text(statusLabel)
                         .font(NearbyTypography.emphasizedMetadata)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -761,7 +773,7 @@ struct MenuView: View {
             .padding(.top, 9)
             .padding(.bottom, 7)
             .background {
-                if theme.isViceNights { ViceNightsHeader() }
+                if theme.isCustom { NearbyThemeArtwork(appearance: theme.resolvedTheme) }
             }
 
             HStack(spacing: 4) {
@@ -775,7 +787,7 @@ struct MenuView: View {
                             .foregroundStyle(isSelected && colorScheme == .dark ? Color(nsColor: .alternateSelectedControlTextColor) : (isSelected ? theme.presentationAccent : Color.secondary))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 6)
-                            .background(isSelected ? (theme.isViceNights ? theme.presentationAccent.opacity(0.22) : (colorScheme == .dark ? Color(nsColor: .selectedContentBackgroundColor) : theme.presentationAccent.opacity(0.16))) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            .background(isSelected ? (theme.isCustom ? theme.presentationAccent.opacity(0.22) : (colorScheme == .dark ? Color(nsColor: .selectedContentBackgroundColor) : theme.presentationAccent.opacity(0.16))) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(isSelected ? Color.primary.opacity(0.10) : Color.clear, lineWidth: 1))
                             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                     }
@@ -873,7 +885,7 @@ struct MenuView: View {
             .padding(.vertical, 10)
         }
         .frame(width: NearbyWindowMetrics.menuPopoverWidth, height: preferredHeight)
-        .background(theme.windowSurface)
+        .nearbyThemedWindow()
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
             let group = DispatchGroup()
@@ -939,7 +951,7 @@ struct MenuView: View {
                             .truncationMode(.middle)
                         Text(fileSubtitle(for: index, url: url))
                             .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(theme.secondaryText)
                     }
                     Spacer(minLength: 4)
                     Button {
@@ -947,7 +959,7 @@ struct MenuView: View {
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(theme.secondaryText)
                     }
                     .buttonStyle(.nearbyCompactDestructive)
                     .help("Remove \(name)")
@@ -960,7 +972,7 @@ struct MenuView: View {
             if model.urls.count > 4 {
                 Text("and \(model.urls.count - 4) more files")
                     .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(9)
             }
@@ -1041,7 +1053,7 @@ struct MenuView: View {
             if let notice = model.selectionNotice {
                 Label(notice, systemImage: "info.circle")
                     .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -1055,7 +1067,7 @@ struct MenuView: View {
                     .font(NearbyTypography.screenTitle)
                 Text("\(model.urls.count) files · \(TransferModel.formatBytes(model.totalBytes)) total")
                     .font(NearbyTypography.supporting)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
             }
             stagedFilesCard
             HStack {
@@ -1082,7 +1094,7 @@ struct MenuView: View {
                     .font(NearbyTypography.screenTitle)
                 Text("\(model.urls.count) files · \(TransferModel.formatBytes(model.totalBytes)) ready to send")
                     .font(NearbyTypography.supporting)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
             }
 
             if model.devices.isEmpty {
@@ -1124,10 +1136,10 @@ struct MenuView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(device.name).font(NearbyTypography.emphasizedMetadata).foregroundStyle(.primary)
                                 Text(device.type == .computer ? "Windows" : "Android")
-                                    .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                                    .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
                             }
                             Spacer()
-                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(theme.secondaryText)
                         }
                         .padding(8)
                         .nearbyCardSurface(cornerRadius: 11)
@@ -1135,7 +1147,7 @@ struct MenuView: View {
                     .buttonStyle(.plain)
                 }
                 HStack {
-                    Text("\(model.devices.count) devices nearby").font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                    Text("\(model.devices.count) devices nearby").font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
                     Spacer()
                     Button("Refresh") {
                         model.stopSendingDiscovery()
@@ -1166,7 +1178,7 @@ struct MenuView: View {
                 Image(systemName: "qrcode").font(.system(size: 100, weight: .light)).frame(maxWidth: .infinity)
             }
             Text(model.qrTransferStatus)
-                .font(.system(size: 10)).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                .font(.system(size: 10)).foregroundStyle(theme.secondaryText).frame(maxWidth: .infinity)
             Spacer(minLength: 0)
             Button("Cancel pairing", role: .cancel, action: model.dismissQR)
                 .buttonStyle(.nearbyFullWidthSecondary).frame(maxWidth: .infinity)
@@ -1182,12 +1194,12 @@ struct MenuView: View {
                     .font(.system(size: 11, weight: .semibold).monospacedDigit())
                 Spacer()
                 Text("\(TransferModel.formatBytes(Int64(Double(model.totalBytes) * model.progress))) of \(TransferModel.formatBytes(model.totalBytes))")
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .font(.system(size: 10)).foregroundStyle(theme.secondaryText)
             }
             ProgressView(value: model.progress).tint(theme.presentationAccent)
             Text([model.transferSpeed, model.timeRemaining].filter { !$0.isEmpty }.joined(separator: " · "))
-                .font(.system(size: 11)).foregroundStyle(.secondary)
-            if !model.sendMessage.isEmpty { Text(model.sendMessage).font(.system(size: 10)).foregroundStyle(.secondary) }
+                .font(.system(size: 11)).foregroundStyle(theme.secondaryText)
+            if !model.sendMessage.isEmpty { Text(model.sendMessage).font(.system(size: 10)).foregroundStyle(theme.secondaryText) }
             Spacer(minLength: 0)
             Button("Cancel transfer", role: .cancel, action: model.cancelSend)
                 .buttonStyle(.nearbyFullWidthSecondary).frame(maxWidth: .infinity)
@@ -1198,13 +1210,13 @@ struct MenuView: View {
         VStack(alignment: .leading, spacing: 9) {
             HStack(spacing: 10) {
                 Image(systemName: "wifi.slash")
-                    .font(.system(size: 18)).foregroundStyle(.red)
+                    .font(.system(size: 18)).foregroundStyle(theme.errorColor)
                     .frame(width: 48, height: 48)
                     .background(Color.red.opacity(0.07), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Connection lost").font(.system(size: 17, weight: .semibold, design: .rounded))
                     Text(model.error ?? "The transfer stopped before all files were sent.")
-                        .font(.system(size: 10)).foregroundStyle(.secondary)
+                        .font(.system(size: 10)).foregroundStyle(theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -1327,7 +1339,7 @@ struct MenuView: View {
                     .lineLimit(1)
                 Text(item.device.type == .computer ? "Windows" : "Android")
                     .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
             }
 
             if !item.transfer.files.isEmpty {
@@ -1341,7 +1353,7 @@ struct MenuView: View {
                                 .background(theme.presentationAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(file.name).font(.system(size: 10, weight: .medium)).lineLimit(1)
-                Text(TransferModel.formatBytes(file.size)).font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                Text(TransferModel.formatBytes(file.size)).font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
                             }
                             Spacer(minLength: 4)
                         }
@@ -1351,7 +1363,7 @@ struct MenuView: View {
                     }
                     if item.transfer.files.count > 3 {
                         Text("and \(item.transfer.files.count - 3) more files")
-                            .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                            .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
                             .frame(maxWidth: .infinity, alignment: .leading).padding(8)
                     }
                 }
@@ -1364,7 +1376,7 @@ struct MenuView: View {
             if let pin = item.transfer.pinCode {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Optional PIN")
-                        .font(NearbyTypography.metadata.weight(.medium)).foregroundStyle(.secondary)
+                        .font(NearbyTypography.metadata.weight(.medium)).foregroundStyle(theme.secondaryText)
                     HStack {
                         Text(pin).font(.system(size: 14, weight: .semibold, design: .monospaced))
                         Spacer()
@@ -1376,7 +1388,7 @@ struct MenuView: View {
             }
 
             Label("Save to \(model.downloadDirectoryDisplayPath)", systemImage: "folder")
-                .font(NearbyTypography.metadata).foregroundStyle(.secondary)
+                .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
             HStack(spacing: 8) {
                 Button("Decline", role: .cancel) { model.onConsent?(id, false) }
                     .buttonStyle(.nearbyFullWidthSecondary)
@@ -1403,27 +1415,27 @@ struct MenuView: View {
                     .buttonStyle(.nearbyFullWidthSecondary).frame(maxWidth: .infinity)
             case .downloading(let sender, let description):
                 Text("Receiving from \(sender)").font(.system(size: 15, weight: .semibold))
-                if let description { Text(description).font(.system(size: 10)).foregroundStyle(.secondary) }
+                if let description { Text(description).font(.system(size: 10)).foregroundStyle(theme.secondaryText) }
                 if let id = model.qrTransferID, let progress = model.incomingProgress[id], progress.total > 0 {
                     ProgressView(value: Double(progress.bytes) / Double(progress.total))
                     Text("\(TransferModel.formatBytes(progress.bytes)) of \(TransferModel.formatBytes(progress.total))")
-                        .font(.system(size: 10)).foregroundStyle(.secondary).monospacedDigit()
+                        .font(.system(size: 10)).foregroundStyle(theme.secondaryText).monospacedDigit()
                 } else { ProgressView().controlSize(.small) }
                 Button("Cancel transfer", role: .cancel, action: model.resetQRTransfer)
                     .buttonStyle(.nearbyFullWidthSecondary).frame(maxWidth: .infinity)
             case .completed(let filename, let count):
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 34)).foregroundStyle(.green)
+                Image(systemName: "checkmark.circle.fill").font(.system(size: 34)).foregroundStyle(theme.successColor)
                 Text("Transfer complete").font(.system(size: 16, weight: .semibold))
                 Text(count == 1 ? "Received \(filename)" : "Received \(count) files")
-                    .font(.system(size: 10)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .font(.system(size: 10)).foregroundStyle(theme.secondaryText).multilineTextAlignment(.center)
                 Button("Show in Finder", action: TransferModel.openDownloads)
                     .buttonStyle(.nearbyFullWidthPrimary).frame(maxWidth: .infinity)
                 Button("Done", action: model.resetQRTransfer)
                     .buttonStyle(.nearbyFullWidthSecondary).frame(maxWidth: .infinity)
             case .failed(let error):
-                Image(systemName: "exclamationmark.circle").font(.system(size: 30)).foregroundStyle(.red)
+                Image(systemName: "exclamationmark.circle").font(.system(size: 30)).foregroundStyle(theme.errorColor)
                 Text("Couldn’t save the file").font(.system(size: 16, weight: .semibold))
-                Text(error).font(.system(size: 10)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                Text(error).font(.system(size: 10)).foregroundStyle(theme.secondaryText).multilineTextAlignment(.center)
                 Button("Open Downloads", action: TransferModel.openDownloads)
                     .buttonStyle(.nearbyFullWidthSecondary).frame(maxWidth: .infinity)
                 Button("Done", action: model.resetQRTransfer)
@@ -1501,11 +1513,11 @@ struct MenuView: View {
                     .truncationMode(.middle)
                 Text("\(item.peerName) · \(item.direction.rawValue)")
                     .font(NearbyTypography.metadata)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
                 Text("\(TransferModel.formatBytes(item.fileSize)) · \(TransferModel.formatDate(item.timestamp))")
                     .font(NearbyTypography.metadata)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
                 if let url = item.fileURL, FileManager.default.fileExists(atPath: url.path) {
                     Button {
@@ -1573,12 +1585,12 @@ struct MenuView: View {
             }
             Text(subtitle)
                 .font(NearbyTypography.metadata)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .padding(.leading, 26)
                 .lineLimit(1)
             Text(detail)
                 .font(NearbyTypography.metadata)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .padding(.leading, 26)
                 .lineLimit(1)
             if showFinder {

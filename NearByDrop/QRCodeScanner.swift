@@ -161,12 +161,12 @@ struct QRScannerView: View {
                 if previewState == .scanning {
                     Text("Looking for a QR code…")
                         .font(NearbyTypography.supporting)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
                         .frame(maxWidth: .infinity)
                 } else if !scanner.message.isEmpty {
                     Text(scanner.message)
                         .font(NearbyTypography.supporting)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -202,7 +202,7 @@ struct QRScannerView: View {
                 .font(NearbyTypography.prominentBody)
             Text("Enable camera access in System Settings to scan pairing QR codes.")
                 .font(NearbyTypography.supporting)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
             Button("Open Camera Settings") {

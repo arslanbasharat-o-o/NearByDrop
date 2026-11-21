@@ -103,12 +103,12 @@ struct OnboardingView: View {
             ZStack {
                 Text("Nearby Drop")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                 HStack {
                     Spacer()
                     Text("\(currentStep + 1) of \(stepCount)")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
                         .fixedSize()
                 }
             }
@@ -174,7 +174,7 @@ struct OnboardingView: View {
             alignment: .topLeading
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(theme.windowSurface)
         .onAppear {
             checkPermissions()
         }
@@ -207,15 +207,15 @@ struct OnboardingView: View {
                 HStack(spacing: 8) {
                     Text("Finder   File   Edit   View")
                         .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
                     Spacer()
                     Image(systemName: "arrow.up.arrow.down")
                         .foregroundStyle(theme.presentationAccent)
                         .padding(3)
                         .background(theme.presentationAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
                     Image(systemName: "wifi")
-                        .foregroundStyle(.secondary)
-                    Text("10:42").font(.system(size: 9)).foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
+                    Text("10:42").font(.system(size: 9)).foregroundStyle(theme.secondaryText)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -264,7 +264,7 @@ struct OnboardingView: View {
             }
             Text(name)
                 .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
         }
     }
 
@@ -312,7 +312,7 @@ struct OnboardingView: View {
                         .font(.system(size: 14, weight: .semibold))
                     Text("Used only to scan pairing QR codes. Images are not saved or sent.")
                         .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
@@ -325,7 +325,7 @@ struct OnboardingView: View {
 
             Text("Optional. Nearby discovery and USB work without camera access. Change access in System Settings.")
                 .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             diagnosticsCard
@@ -342,13 +342,13 @@ struct OnboardingView: View {
 
             Text("On by default. Reports include app and macOS versions, Mac hardware model, this Mac’s name, and nearby device name and type after successful wireless transfers. No file names or contents.")
                 .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             DisclosureGroup("Timing and installation details") {
                 Text("Reports also record first launch and app opens, using a random installation ID and hour-rounded timestamps. Turn reports off anytime in Settings.")
                     .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 3)
             }
@@ -371,7 +371,7 @@ struct OnboardingView: View {
                 .disabled(cameraAllowed)
         } else if cameraAllowed {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
+                .foregroundStyle(theme.successColor)
                 .accessibilityLabel("Camera access allowed")
         } else if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
             Button(action: requestCamera) {

@@ -49,6 +49,7 @@ final class SettingsWindowController: NSWindowController, ObservableObject {
 }
 
 private struct DiagnosticsReportPreview: View {
+    @ObservedObject private var theme = ThemeManager.shared
     let report: String
     let onSave: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -59,7 +60,7 @@ private struct DiagnosticsReportPreview: View {
                 .font(.title3.weight(.semibold))
              Text("Review a redacted report before saving it locally.")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             ScrollView {
@@ -203,7 +204,7 @@ struct SettingsView: View {
         .padding(.top, 20)
         .frame(width: 176)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(theme.isViceNights ? ViceNightsPalette.card : Color(nsColor: .controlBackgroundColor))
+        .background(theme.cardSurface)
     }
 
     private var settingsHeader: some View {
@@ -215,7 +216,7 @@ struct SettingsView: View {
         .padding(.top, 20)
         .padding(.bottom, 14)
         .background {
-            if theme.isViceNights { ViceNightsHeader() }
+            if theme.isCustom { NearbyThemeArtwork(appearance: theme.resolvedTheme) }
         }
     }
 
@@ -239,7 +240,7 @@ struct SettingsView: View {
                                 .font(NearbyTypography.body.weight(.medium))
                             Text(model.downloadDirectoryDisplayPath)
                                 .font(NearbyTypography.metadata)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(theme.secondaryText)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                         }
@@ -375,15 +376,15 @@ struct SettingsView: View {
     private var appearanceTab: some View {
         VStack(alignment: .leading, spacing: 18) {
             settingsSection("Appearance") {
-                HStack(spacing: 9) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 116))], spacing: 9) {
                     ForEach(AppTheme.allCases) { option in
                         appearanceThemeCard(option)
                     }
                 }
                 .padding(12)
 
-                if theme.isViceNights {
-                    Label("Vice Nights · Sunset pink, ocean cyan, after-dark palms", systemImage: "sun.horizon.fill")
+                if theme.isCustom {
+                    Label(theme.resolvedTheme.subtitle, systemImage: theme.resolvedTheme.icon)
                         .font(NearbyTypography.supporting)
                         .foregroundStyle(theme.presentationAccent)
                         .padding(.horizontal, 12)
@@ -393,7 +394,7 @@ struct SettingsView: View {
                 settingsDivider
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(theme.isViceNights ? "Accent color (used by standard appearances)" : "Accent color")
+                    Text(theme.isCustom ? "Accent color (used by standard appearances)" : "Accent color")
                         .font(NearbyTypography.body.weight(.medium))
                     HStack(spacing: 7) {
                         ForEach([AccentOption.blue, .purple, .green, .orange, .pink, .graphite]) { option in
@@ -465,7 +466,7 @@ struct SettingsView: View {
 
     private func appearanceThemeCard(_ option: AppTheme) -> some View {
         let isSelected = theme.currentTheme == option
-        let isDark = option == .dark || option == .viceNights
+        let isDark = option == .dark || option == .viceNights || option == .midnightRoute
         let surface = isDark ? Color(red: 0.15, green: 0.16, blue: 0.19) : Color.white
         let secondarySurface = isDark ? Color(red: 0.22, green: 0.23, blue: 0.27) : Color(red: 0.94, green: 0.94, blue: 0.97)
         return Button {
@@ -494,9 +495,9 @@ struct SettingsView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .overlay {
-                    if option == .viceNights { ViceNightsHeader() }
+                    if option.palette != nil { NearbyThemeArtwork(appearance: option) }
                 }
-                .background(option == .viceNights ? ViceNightsPalette.background : surface, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(option.palette?.background ?? surface, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.primary.opacity(0.08), lineWidth: 1))
 
                 HStack(spacing: 4) {
@@ -531,7 +532,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Nearby Drop").font(.system(size: 18, weight: .semibold, design: .rounded))
                     Text("\(AppRelease.versionDescription) · macOS")
-                        .font(NearbyTypography.supporting).foregroundStyle(.secondary)
+                        .font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
                 }
                 Spacer(minLength: 0)
             }
@@ -615,7 +616,7 @@ struct SettingsView: View {
         } label: {
             Image(systemName: "chevron.right")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .frame(width: 36, height: 36)
                 .contentShape(Rectangle())
         }
@@ -631,7 +632,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(NearbyTypography.sectionTitle)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .padding(.horizontal, 2)
             VStack(alignment: .leading, spacing: 0) {
                 content()
@@ -655,7 +656,7 @@ struct SettingsView: View {
                 if let subtitle {
                     Text(subtitle)
                         .font(NearbyTypography.supporting)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

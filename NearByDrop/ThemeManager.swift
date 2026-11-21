@@ -29,16 +29,21 @@ struct NearbyCardSurface: ViewModifier {
     var cornerRadius: CGFloat = 12
     @ObservedObject private var theme = ThemeManager.shared
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var contrast
 
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         content
             .background {
                 shape
-                    .fill(theme.isViceNights ? ViceNightsPalette.card : (colorScheme == .light ? Color.white : Color(nsColor: .controlBackgroundColor)))
-                    .overlay(shape.fill(Color.primary.opacity(colorScheme == .dark ? 0.055 : 0)))
+                    .fill(theme.cardSurface)
+                    .overlay {
+                        if theme.isCustom {
+                            shape.fill(LinearGradient(colors: [theme.signalColor.opacity(0.07), .clear], startPoint: .topTrailing, endPoint: .bottomLeading))
+                        }
+                    }
             }
-            .overlay(shape.stroke(theme.isViceNights ? ViceNightsPalette.pink.opacity(0.20) : (colorScheme == .light ? Color(red: 0.85, green: 0.85, blue: 0.89) : Color.primary.opacity(0.08)), lineWidth: 1))
+            .overlay(shape.stroke(contrast == .increased ? theme.primaryText.opacity(0.65) : theme.surfaceBorder, lineWidth: 1))
     }
 }
 
@@ -51,7 +56,7 @@ struct NearbyControlSurface: ViewModifier {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         content.background {
             shape
-                .fill(theme.isViceNights ? ViceNightsPalette.card : Color(nsColor: .controlBackgroundColor))
+                .fill(theme.cardSurface)
                 .overlay(shape.fill(Color.primary.opacity(colorScheme == .dark ? 0.055 : 0)))
         }
     }
@@ -92,6 +97,8 @@ struct NearbyButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.isFocused) private var isFocused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hovering = false
 
     init(_ variant: NearbyButtonVariant, size: NearbyButtonSize = .regular, expandsToFill: Bool = false) {
         self.variant = variant
@@ -120,28 +127,30 @@ struct NearbyButtonStyle: ButtonStyle {
             .clipShape(shape)
             .opacity(isEnabled ? 1 : 0.48)
             .scaleEffect(configuration.isPressed ? 0.985 : 1)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .onHover { hovering = $0 }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: hovering)
     }
 
     private var foregroundColor: Color {
         switch variant {
         case .primary: return .white
-        case .secondary: return .primary
-        case .quiet: return .secondary
-        case .destructive: return .red
+        case .secondary: return theme.primaryText
+        case .quiet: return theme.secondaryText
+        case .destructive: return theme.errorColor
         }
     }
 
     private func fillColor(isPressed: Bool) -> Color {
         switch variant {
         case .primary:
-            return (theme.isViceNights ? ViceNightsPalette.button : theme.presentationAccent).opacity(isEnabled ? (isPressed ? 0.86 : 1) : 0.55)
+            return theme.buttonFill.opacity(isEnabled ? (isPressed ? 0.86 : (hovering ? 0.92 : 1)) : 0.55)
         case .secondary:
-            return Color.primary.opacity(colorScheme == .dark ? (isPressed ? 0.15 : 0.075) : (isPressed ? 0.12 : 0.045))
+            return theme.presentationAccent.opacity(isPressed ? 0.20 : (hovering ? 0.14 : 0.08))
         case .quiet:
-            return isPressed ? theme.presentationAccent.opacity(0.12) : .clear
+            return isPressed || hovering ? theme.presentationAccent.opacity(0.12) : .clear
         case .destructive:
-            return Color.red.opacity(colorScheme == .dark ? (isPressed ? 0.26 : 0.18) : (isPressed ? 0.16 : 0.08))
+            return theme.errorColor.opacity(colorScheme == .dark ? (isPressed ? 0.26 : 0.18) : (isPressed ? 0.16 : 0.08))
         }
     }
 
@@ -176,6 +185,8 @@ enum AppTheme: String, CaseIterable, Identifiable {
     case light = "Light"
     case dark = "Dark"
     case viceNights = "Vice Nights"
+    case coastalSunrise = "Coastal Sunrise"
+    case midnightRoute = "Midnight Route"
 
     var id: String { rawValue }
 
@@ -185,6 +196,8 @@ enum AppTheme: String, CaseIterable, Identifiable {
         case .light: return "sun.max.fill"
         case .dark: return "moon.fill"
         case .viceNights: return "sun.horizon.fill"
+        case .coastalSunrise: return "sun.max.fill"
+        case .midnightRoute: return "road.lanes"
         }
     }
 
@@ -192,9 +205,9 @@ enum AppTheme: String, CaseIterable, Identifiable {
         switch self {
         case .system:
             NSApp.appearance = nil
-        case .light:
+        case .light, .coastalSunrise:
             NSApp.appearance = NSAppearance(named: .aqua)
-        case .dark, .viceNights:
+        case .dark, .viceNights, .midnightRoute:
             NSApp.appearance = NSAppearance(named: .darkAqua)
         }
     }
@@ -310,16 +323,26 @@ final class ThemeManager: ObservableObject {
 #endif
     }
 
-    var isViceNights: Bool {
+    var resolvedTheme: AppTheme {
 #if DEBUG
-        (screenshotTheme ?? currentTheme) == .viceNights
+        screenshotTheme ?? currentTheme
 #else
-        currentTheme == .viceNights
+        currentTheme
 #endif
     }
-
-    var presentationAccent: Color { isViceNights ? ViceNightsPalette.pink : presentationAccentOption.color }
-    var windowSurface: Color { isViceNights ? ViceNightsPalette.background : Color(nsColor: .windowBackgroundColor) }
+    var isViceNights: Bool { resolvedTheme == .viceNights }
+    var palette: NearbyThemePalette? { resolvedTheme.palette }
+    var isCustom: Bool { palette != nil }
+    var presentationAccent: Color { palette?.accent ?? presentationAccentOption.color }
+    var windowSurface: Color { palette?.background ?? Color(nsColor: .windowBackgroundColor) }
+    var cardSurface: Color { palette?.surface ?? Color(nsColor: .controlBackgroundColor) }
+    var primaryText: Color { palette?.text ?? .primary }
+    var secondaryText: Color { palette?.secondaryText ?? .secondary }
+    var surfaceBorder: Color { palette?.border ?? Color.primary.opacity(0.12) }
+    var buttonFill: Color { palette?.button ?? presentationAccent }
+    var successColor: Color { palette?.success ?? .green }
+    var errorColor: Color { palette?.error ?? .red }
+    var signalColor: Color { palette?.signal ?? presentationAccent }
 
     func applyViceNightsEditionIfNeeded(_ isEdition: Bool) {
         guard isEdition, !PreviewRuntime.isSwiftUIPreviews,
@@ -495,4 +518,104 @@ struct ViceNightsHeader: View {
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
+}
+
+/// Complete palettes share native controls; only the content treatment changes.
+struct NearbyThemePalette {
+    let background: Color
+    let surface: Color
+    let text: Color
+    let secondaryText: Color
+    let accent: Color
+    let signal: Color
+    let button: Color
+    let border: Color
+    let success: Color
+    let error: Color
+
+    private static func color(_ hex: UInt32) -> Color {
+        Color(red: Double((hex >> 16) & 255) / 255, green: Double((hex >> 8) & 255) / 255, blue: Double(hex & 255) / 255)
+    }
+
+    init(background: UInt32, surface: UInt32, text: UInt32, secondary: UInt32,
+         accent: UInt32, signal: UInt32, button: UInt32, border: UInt32, success: UInt32, error: UInt32) {
+        self.background = Self.color(background); self.surface = Self.color(surface)
+        self.text = Self.color(text); self.secondaryText = Self.color(secondary)
+        self.accent = Self.color(accent); self.signal = Self.color(signal)
+        self.button = Self.color(button); self.border = Self.color(border)
+        self.success = Self.color(success); self.error = Self.color(error)
+    }
+}
+
+extension AppTheme {
+    var palette: NearbyThemePalette? {
+        switch self {
+        case .system, .light, .dark: return nil
+        case .viceNights:
+            return NearbyThemePalette(background: 0x120D21, surface: 0x20162D, text: 0xF9F6FE, secondary: 0xCDBEDB,
+                                      accent: 0xFF93BF, signal: 0x6AE4EC, button: 0xAC1957, border: 0x78506B, success: 0x8CE4BD, error: 0xFFABA9)
+        case .coastalSunrise:
+            return NearbyThemePalette(background: 0xFFF0DF, surface: 0xFFFAF3, text: 0x352835, secondary: 0x68505D,
+                                      accent: 0x9A3455, signal: 0x226778, button: 0x226778, border: 0xBE9197, success: 0x226544, error: 0xA22432)
+        case .midnightRoute:
+            return NearbyThemePalette(background: 0x0B1724, surface: 0x162838, text: 0xF3F7FC, secondary: 0xB6CBDA,
+                                      accent: 0x70DADD, signal: 0xF5A66F, button: 0x17626C, border: 0x456B80, success: 0x85D8AF, error: 0xFFAAA5)
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .viceNights: return "Sunset pink. Ocean cyan. After-dark palms."
+        case .coastalSunrise: return "Warm cream. Tropical teal. A softer morning."
+        case .midnightRoute: return "Midnight navy. Cyan signals. Clear passage."
+        default: return "Familiar macOS appearance."
+        }
+    }
+}
+
+struct NearbyThemeArtwork: View {
+    let appearance: AppTheme
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        Group {
+            if appearance == .viceNights { ViceNightsHeader() }
+            else if let palette = appearance.palette {
+                Canvas { context, size in
+                    if appearance == .coastalSunrise {
+                        let sun = CGRect(x: size.width * 0.77, y: -10, width: 70, height: 70)
+                        context.fill(Path(ellipseIn: sun), with: .color(Color(red: 0.97, green: 0.65, blue: 0.42)))
+                        for row in 0..<3 {
+                            var wave = Path(); let y = size.height * 0.55 + Double(row) * 12
+                            wave.move(to: CGPoint(x: size.width * 0.5, y: y))
+                            wave.addCurve(to: CGPoint(x: size.width, y: y), control1: CGPoint(x: size.width * 0.65, y: y - 22), control2: CGPoint(x: size.width * 0.82, y: y + 22))
+                            context.stroke(wave, with: .color(palette.signal), lineWidth: 2)
+                        }
+                    } else {
+                        for row in 0..<4 {
+                            var route = Path()
+                            route.move(to: CGPoint(x: size.width * (0.55 + Double(row) * 0.12), y: size.height))
+                            route.addLine(to: CGPoint(x: size.width * 0.86, y: 0))
+                            context.stroke(route, with: .color(row == 2 ? palette.signal : palette.accent), style: StrokeStyle(lineWidth: 1.5, dash: row == 2 ? [4, 5] : []))
+                        }
+                    }
+                }
+                .opacity(contrast == .increased ? 0.08 : 0.19)
+            }
+        }
+        .clipped().allowsHitTesting(false).accessibilityHidden(true)
+    }
+}
+
+struct NearbyWindowSurface: ViewModifier {
+    @ObservedObject private var theme = ThemeManager.shared
+    func body(content: Content) -> some View {
+        content.foregroundStyle(theme.primaryText)
+            .tint(theme.presentationAccent)
+            .background(theme.windowSurface)
+    }
+}
+
+extension View {
+    func nearbyThemedWindow() -> some View { modifier(NearbyWindowSurface()) }
 }
