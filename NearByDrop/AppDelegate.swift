@@ -713,6 +713,10 @@ struct MenuView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isDragging = false
+    @State private var showingDoctor = false
+    @State private var showingText = false
+    @State private var showingScreenshot = false
+    @ObservedObject private var favorites = FavoriteRecipients.shared
 
     static func preferredHeight(for model: TransferModel) -> CGFloat {
         switch model.tab {
@@ -851,6 +855,10 @@ struct MenuView: View {
                 Spacer(minLength: 0)
 
                 Menu {
+                    Button("Connection Doctor…") { showingDoctor = true }
+                    Button("Send Text or Link…") { showingText = true }
+                    Button("Screenshot to Device…") { showingScreenshot = true }
+                    Divider()
                     Button("Change Download Location…") { model.chooseDownloadDirectory() }
                     Divider()
                     if let guide = guide {
@@ -887,6 +895,15 @@ struct MenuView: View {
         .frame(width: NearbyWindowMetrics.menuPopoverWidth, height: preferredHeight)
         .nearbyThemedWindow()
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .sheet(isPresented: $showingDoctor) { ConnectionDoctorView(model: model) }
+        .sheet(isPresented: $showingText) {
+            TextSharingView { text, isLink in
+                try model.stageSharedContent(ExplicitShareContent.data(text, isLink: isLink), name: isLink ? "Shared link.txt" : "Shared text.txt")
+            }
+        }
+        .sheet(isPresented: $showingScreenshot) {
+            ScreenshotSharingView { data in try model.stageSharedContent(data, name: "Screenshot.png") }
+        }
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
             let group = DispatchGroup()
             var loadedURLs: [URL] = []
@@ -1029,6 +1046,10 @@ struct MenuView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Send files")
                 .font(NearbyTypography.screenTitle)
+            HStack {
+                Button("Text or Link…") { showingText = true }.buttonStyle(.nearbyCompactSecondary)
+                Button("Screenshot…") { showingScreenshot = true }.buttonStyle(.nearbyCompactSecondary)
+            }
 
             VStack(spacing: 9) {
                 Image(systemName: "doc")
@@ -1097,6 +1118,22 @@ struct MenuView: View {
                     .foregroundStyle(theme.secondaryText)
             }
 
+            ForEach(Array(favorites.items.filter { hint in
+                !model.devices.contains { hint.matches(name: $0.name, category: FavoriteRecipients.category($0)) }
+            }.prefix(3))) { hint in
+                HStack {
+                    Image(systemName: "star").foregroundStyle(theme.presentationAccent)
+                    Text(hint.name).lineLimit(1)
+                    Spacer()
+                    Text("Not nearby").font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
+                    Button { favorites.remove(hint.id) } label: { Image(systemName: "xmark") }
+                        .buttonStyle(.nearbyCompactQuiet).accessibilityLabel("Remove \(hint.name) from favorites")
+                }.font(NearbyTypography.supporting)
+            }
+            if !favorites.items.isEmpty {
+                Text("Favorites match advertised names and types. Confirm the recipient; they do not authenticate devices.")
+                    .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
+            }
             if model.devices.isEmpty {
                 Spacer(minLength: 0)
                 VStack(spacing: 8) {
@@ -1105,6 +1142,7 @@ struct MenuView: View {
                         .frame(width: 52, height: 52)
                         .background(theme.presentationAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     Text("Looking nearby…").font(NearbyTypography.prominentBody)
+                    Button("Fix Connection") { showingDoctor = true }.buttonStyle(.nearbySecondary)
                 }
                 .frame(maxWidth: .infinity)
                 Spacer(minLength: 0)
@@ -1125,26 +1163,29 @@ struct MenuView: View {
                 }
                 .frame(maxWidth: .infinity)
             } else {
-                ForEach(model.devices, id: \.id) { device in
-                    Button { model.send(to: device) } label: {
-                        HStack(spacing: 9) {
-                            Image(systemName: device.type == .computer ? "laptopcomputer" : "iphone")
-                                .font(.system(size: 16))
+                ForEach(model.devices.sorted { a, b in
+                    if favorites.contains(a) != favorites.contains(b) { return favorites.contains(a) }
+                    return a.name.localizedStandardCompare(b.name) == .orderedAscending
+                }, id: \.id) { device in
+                    HStack(spacing: 8) {
+                        Button { model.send(to: device) } label: {
+                            HStack(spacing: 9) {
+                                Image(systemName: device.type == .computer ? "laptopcomputer" : "iphone")
+                                    .font(.system(size: 18)).foregroundStyle(theme.presentationAccent).frame(width: 34)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(device.name).font(NearbyTypography.prominentBody).foregroundStyle(theme.primaryText)
+                                    Text(FavoriteRecipients.category(device)).font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").foregroundStyle(theme.secondaryText)
+                            }.contentShape(Rectangle())
+                        }.buttonStyle(.plain)
+                        Button { favorites.toggle(device) } label: {
+                            Image(systemName: favorites.contains(device) ? "star.fill" : "star")
                                 .foregroundStyle(theme.presentationAccent)
-                                .frame(width: 38, height: 38)
-                                .background(theme.presentationAccent.opacity(0.09), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(device.name).font(NearbyTypography.emphasizedMetadata).foregroundStyle(.primary)
-                                Text(device.type == .computer ? "Windows" : "Android")
-                                    .font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(theme.secondaryText)
-                        }
-                        .padding(8)
-                        .nearbyCardSurface(cornerRadius: 11)
-                    }
-                    .buttonStyle(.plain)
+                        }.buttonStyle(.nearbyCompactQuiet)
+                            .accessibilityLabel(favorites.contains(device) ? "Remove \(device.name) from favorites" : "Favorite \(device.name)")
+                    }.padding(10).nearbyCardSurface(cornerRadius: 11)
                 }
                 HStack {
                     Text("\(model.devices.count) devices nearby").font(NearbyTypography.metadata).foregroundStyle(theme.secondaryText)
@@ -1308,6 +1349,7 @@ struct MenuView: View {
             }
             .buttonStyle(.nearbyPrimary)
             .disabled(model.receivingPaused)
+            Button("Fix Connection") { showingDoctor = true }.buttonStyle(.nearbyQuiet)
             Spacer(minLength: 2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

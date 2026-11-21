@@ -1419,3 +1419,64 @@ final class AppUpdaterTests: XCTestCase {
         XCTAssertTrue(updater.message.hasPrefix("Update failed:"))
     }
 }
+
+final class ProductUpgradePolicyTests: XCTestCase {
+    func testFavoritesPersistAsHintsAndCanBeRemoved() throws {
+        let suite = "NearbyDrop.FavoritesTest." + UUID().uuidString
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = FavoriteRecipients(defaults: defaults)
+        let peer = RemoteDeviceInfo(name: "Test phone", type: .phone, id: "test")
+        store.toggle(peer)
+        XCTAssertTrue(store.contains(peer))
+        let reloaded = FavoriteRecipients(defaults: defaults)
+        XCTAssertTrue(reloaded.contains(peer))
+        reloaded.remove(reloaded.items[0].id)
+        XCTAssertFalse(FavoriteRecipients(defaults: defaults).contains(peer))
+        XCTAssertFalse(defaults.bool(forKey: "trustedDevices"))
+    }
+
+    func testFavoriteHintDoesNotMatchDifferentDeviceCategory() {
+        let hint = FavoriteRecipientHint(name: "A device", category: "Phone")
+        XCTAssertTrue(hint.matches(name: "A device", category: "Phone"))
+        XCTAssertFalse(hint.matches(name: "A device", category: "Computer"))
+    }
+
+    func testExplicitTextRejectsEmptyOversizeAndCredentialLinks() throws {
+        XCTAssertThrowsError(try ExplicitShareContent.data("  ", isLink: false))
+        XCTAssertThrowsError(try ExplicitShareContent.data(String(repeating: "a", count: 65_537), isLink: false))
+        for link in ["file:///etc/passwd", "javascript:alert(1)", "https://user:password@example.com", "https://example.com\nsecret"] {
+            XCTAssertThrowsError(try ExplicitShareContent.data(link, isLink: true))
+        }
+        XCTAssertEqual(try ExplicitShareContent.data("https://example.com", isLink: true), Data("https://example.com".utf8))
+        XCTAssertEqual(try ExplicitShareContent.data("Hello 🌴", isLink: false), Data("Hello 🌴".utf8))
+    }
+
+    func testPreparedShareFileIsPrivateAndDoesNotAllowPathNames() throws {
+        XCTAssertThrowsError(try ExplicitShareContent.temporaryFile(data: Data([1]), name: "../secret"))
+        let url = try ExplicitShareContent.temporaryFile(data: Data("example".utf8), name: "Shared text.txt")
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        XCTAssertEqual(try Data(contentsOf: url), Data("example".utf8))
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        XCTAssertEqual((attributes[.posixPermissions] as? NSNumber)?.intValue, 0o600)
+        let directory = try FileManager.default.attributesOfItem(atPath: url.deletingLastPathComponent().path)
+        XCTAssertEqual((directory[.posixPermissions] as? NSNumber)?.intValue, 0o700)
+    }
+
+    func testUSBFilteringDoesNotSearchOtherFoldersAndKeepsFoldersFirst() {
+        let items = [FolderEntry(id: 1, name: "image10.jpg", size: 5, folder: false),
+                     FolderEntry(id: 2, name: "Photos", size: 0, folder: true),
+                     FolderEntry(id: 3, name: "image2.jpg", size: 10, folder: false)]
+        XCTAssertEqual(FolderSort.name.listing(items, matching: "").map(\.id), [2, 3, 1])
+        XCTAssertEqual(FolderSort.size.listing(items, matching: "IMAGE").map(\.id), [3, 1])
+        XCTAssertTrue(FolderSort.name.listing(items, matching: "unloaded folder").isEmpty)
+    }
+
+    func testBatchPlannerKeepsProtocolCapAndExecutionDisabled() throws {
+        XCTAssertTrue(try ExperimentalBatchPlan(fileCount: 0).ranges.isEmpty)
+        XCTAssertEqual(try ExperimentalBatchPlan(fileCount: 257).ranges, [0..<128, 128..<256, 256..<257])
+        XCTAssertThrowsError(try ExperimentalBatchPlan(fileCount: 4097))
+        XCTAssertThrowsError(try ExperimentalBatchPlan(fileCount: 1, maximumPerBatch: 129))
+        XCTAssertFalse(ExperimentalBatchPlan.executionEnabled)
+    }
+}

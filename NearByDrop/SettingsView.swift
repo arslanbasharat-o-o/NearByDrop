@@ -116,6 +116,7 @@ struct SettingsView: View {
     @ObservedObject var model: TransferModel
     @ObservedObject var controller: SettingsWindowController
     @ObservedObject private var theme = ThemeManager.shared
+    @ObservedObject private var favorites = FavoriteRecipients.shared
     @ObservedObject private var feedback = FeedbackManager.shared
     @ObservedObject private var updater = AppUpdater.shared
     @State private var customName: String = ""
@@ -224,6 +225,20 @@ struct SettingsView: View {
 
     private var generalTab: some View {
         VStack(alignment: .leading, spacing: 15) {
+            Button("Revisit Setup Guide…") { OnboardingWindowController.showOnboarding() }.buttonStyle(.nearbySecondary)
+            if !favorites.items.isEmpty {
+                settingsSection("Favorite Recipients") {
+                    ForEach(favorites.items) { hint in
+                        HStack {
+                            Label(hint.name, systemImage: "star").lineLimit(1)
+                            Spacer()
+                            Button("Remove") { favorites.remove(hint.id) }.buttonStyle(.nearbyCompactSecondary)
+                        }.padding(10)
+                    }
+                    Text("Names and types are selection hints, not proof of device identity.")
+                        .font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText).padding(10)
+                }
+            }
             VStack(alignment: .leading, spacing: 6) {
                 Text("Device name")
                     .font(.system(size: 12, weight: .medium))

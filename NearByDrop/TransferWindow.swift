@@ -149,6 +149,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     private var activeOutgoingDelegate: OutgoingAttemptDelegate?
     private var activeAttemptIsRetry = false
     private var lastDiagnosticsErrorCategory: DiagnosticsErrorCategory?
+    private var preparedShareDirectories: Set<URL> = []
     private var selectionGeneration = UUID()
     private let fileSelectionQueue = DispatchQueue(label: "com.arslanbasharat.NearByDrop.file-selection", qos: .userInitiated)
     private var qrExpiry: DispatchWorkItem?
@@ -389,6 +390,10 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     @MainActor
     func setFiles(_ newURLs: [URL], completion: (@MainActor @Sendable () -> Void)? = nil) {
         guard !sending, !usb.busy else { return }
+        for directory in preparedShareDirectories where !newURLs.contains(where: { $0.deletingLastPathComponent() == directory }) {
+            try? FileManager.default.removeItem(at: directory)
+            preparedShareDirectories.remove(directory)
+        }
         selectionGeneration = UUID()
         let generation = selectionGeneration
         scopedURLs.forEach { $0.stopAccessingSecurityScopedResource() }
@@ -444,6 +449,20 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             DispatchQueue.main.async {
                 applySelection(selection)
             }
+        }
+    }
+
+    @MainActor
+    func stageSharedContent(_ data: Data, name: String) throws {
+        guard !sending, !usb.busy else {
+            throw NSError(domain: "Share", code: 3, userInfo: [NSLocalizedDescriptionKey: "Finish the active transfer before preparing another share."])
+        }
+        let url = try ExplicitShareContent.temporaryFile(data: data, name: name)
+        preparedShareDirectories.insert(url.deletingLastPathComponent())
+        tab = .send
+        setFiles([url]) { [weak self] in
+            self?.choosingRecipient = true
+            self?.startSendingDiscovery()
         }
     }
 

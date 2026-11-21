@@ -75,8 +75,9 @@ struct OnboardingView: View {
     @State private var cameraAllowed: Bool = false
     @State private var isPreview = false
     @State private var shareUsageData = UsageAnalytics.isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private let stepCount = 3
+    private let stepCount = 7
 
     init(onFinish: @escaping () -> Void) {
         self.onFinish = onFinish
@@ -85,17 +86,13 @@ struct OnboardingView: View {
 #if DEBUG
     init(onFinish: @escaping () -> Void, previewStep: Int) {
         self.onFinish = onFinish
-        _currentStep = State(initialValue: min(max(previewStep, 0), 2))
+        _currentStep = State(initialValue: min(max(previewStep, 0), 6))
         _isPreview = State(initialValue: true)
     }
 #endif
 
     private var stepTitle: String {
-        switch currentStep {
-        case 0: return "Send files"
-        case 1: return "Wireless or USB"
-        default: return "Scan a pairing QR"
-        }
+        ["Welcome to Nearby Drop", "Send to Android", "Receive on Your Mac", "Pair with QR", "Connect with USB", "Make It Yours", "Privacy and Diagnostics"][currentStep]
     }
 
     var body: some View {
@@ -122,8 +119,9 @@ struct OnboardingView: View {
                     .font(NearbyTypography.pageTitle)
                     .fixedSize(horizontal: false, vertical: true)
 
-                stepContent
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                ScrollView {
+                    stepContent.frame(maxWidth: .infinity, alignment: .top)
+                }
             }
             .padding(.horizontal, 42)
             .padding(.top, 24)
@@ -134,7 +132,7 @@ struct OnboardingView: View {
             HStack {
                 if currentStep > 0 {
                     Button("Back") {
-                        withAnimation(.easeInOut(duration: 0.18)) { currentStep -= 1 }
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) { currentStep -= 1 }
                     }
                     .buttonStyle(.nearbySecondary)
                     .keyboardShortcut(.cancelAction)
@@ -155,11 +153,14 @@ struct OnboardingView: View {
                 .accessibilityLabel("Onboarding progress")
                 .accessibilityValue("Step \(currentStep + 1) of \(stepCount)")
                 Spacer()
+                if currentStep < stepCount - 1 {
+                    Button("Skip to Privacy") { currentStep = stepCount - 1 }.buttonStyle(.nearbyQuiet)
+                }
                 Button(footerActionTitle) {
                     if currentStep == stepCount - 1 {
                         onFinish()
                     } else {
-                        withAnimation(.easeInOut(duration: 0.18)) { currentStep += 1 }
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) { currentStep += 1 }
                     }
                 }
                 .buttonStyle(.nearbyPrimary)
@@ -174,7 +175,7 @@ struct OnboardingView: View {
             alignment: .topLeading
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(theme.windowSurface)
+        .nearbyThemedWindow()
         .onAppear {
             checkPermissions()
         }
@@ -182,7 +183,7 @@ struct OnboardingView: View {
 
     private var footerActionTitle: String {
         switch currentStep {
-        case 2: return "Get Started"
+        case 6: return "Get Started"
         default: return "Continue"
         }
     }
@@ -192,12 +193,38 @@ struct OnboardingView: View {
         switch currentStep {
         case 0:
             welcomeIllustration
+            Text("Quick Share between your Mac and compatible Android or Windows clients, plus Android USB file management.")
+                .foregroundStyle(theme.secondaryText)
         case 1:
-            wirelessAndUSBContent
+            onboardingMethodCard(icon: "paperplane", title: "Choose files, then a nearby receiver")
+            Text("Open Quick Share on the receiving device and make it discoverable. Choose files in Send, select the device, and confirm the transfer there. Both devices need a reachable local network.")
+                .foregroundStyle(theme.secondaryText)
         case 2:
-            cameraPermissionContent
-        default:
-            EmptyView()
+            onboardingMethodCard(icon: "arrow.down.circle", title: "Stay visible, stay in control")
+            Text("Keep receiving enabled on your Mac. Select this Mac in Quick Share on the other device. Review the incoming request and accept or decline it. Favorites never bypass approval.")
+                .foregroundStyle(theme.secondaryText)
+        case 3: cameraPermissionContent
+        case 4:
+            wirelessAndUSBContent
+            Text("Use a data cable, unlock the phone, and choose File transfer / Android Auto on Android. Open USB in Nearby Drop to browse, upload, or download. USB is a separate workflow; it does not resume an interrupted wireless transfer.")
+                .foregroundStyle(theme.secondaryText)
+        case 5:
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 145))], spacing: 10) {
+                ForEach(AppTheme.allCases) { appearance in
+                    Button { theme.currentTheme = appearance } label: {
+                        VStack(spacing: 8) {
+                            Image(systemName: appearance.icon).font(.title2)
+                            Text(appearance.rawValue)
+                            if theme.currentTheme == appearance { Image(systemName: "checkmark.circle.fill") }
+                        }.frame(maxWidth: .infinity, minHeight: 85).padding(8)
+                            .foregroundStyle(theme.currentTheme == appearance ? theme.presentationAccent : theme.primaryText)
+                            .nearbyCardSurface()
+                            .background { NearbyThemeArtwork(appearance: appearance) }
+                    }.buttonStyle(.plain).accessibilityValue(theme.currentTheme == appearance ? "Selected" : "Not selected")
+                }
+            }
+            Text("You can change appearance anytime in Settings.").foregroundStyle(theme.secondaryText)
+        default: diagnosticsCard
         }
     }
 
@@ -328,8 +355,8 @@ struct OnboardingView: View {
                 .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
-            diagnosticsCard
-
+            Text("To send, create a pairing QR in Send. To receive, scan a supported Android-generated Quick Share QR. QR pairing still needs a compatible network connection.")
+                .font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
         }
     }
 

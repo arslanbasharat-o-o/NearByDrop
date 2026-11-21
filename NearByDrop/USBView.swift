@@ -1,12 +1,7 @@
 import SwiftUI
 import NearbyShare
 
-struct USBItem: Identifiable, Hashable {
-    let id: UInt32
-    let name: String
-    let size: UInt64
-    let folder: Bool
-}
+typealias USBItem = FolderEntry
 
 func fileIconInfo(for name: String, isFolder: Bool) -> (icon: String, color: Color) {
     if isFolder {
@@ -40,6 +35,9 @@ final class USBModel: ObservableObject {
     @Published var storages: [(id: UInt32, name: String)] = []
     @Published var storage: UInt32 = 0
     @Published var items: [USBItem] = []
+    @Published var folderQuery = ""
+    @Published var folderSort: FolderSort = .name
+    var visibleItems: [USBItem] { folderSort.listing(items, matching: folderQuery) }
     @Published var path: [(id: UInt32, name: String)] = []
     @Published var deviceName = ""
     @Published var busy = false
@@ -75,7 +73,7 @@ final class USBModel: ObservableObject {
     }
 
     func selectAll() {
-        selectedItemIds = Set(items.map(\.id))
+        selectedItemIds = Set(visibleItems.map(\.id))
     }
 
     func deselectAll() {
@@ -144,6 +142,7 @@ final class USBModel: ObservableObject {
     func load() {
         guard !busy, storage != 0 else { return }
         busy = true; error = nil
+        folderQuery = ""
         selectedItemIds.removeAll()
         lastDownloadedURL = nil
         let storage = storage, parent = parent
@@ -426,6 +425,8 @@ final class USBModel: ObservableObject {
             self.busy = false
             self.transferring = false
             self.message = ""
+            self.deviceName = ""; self.storage = 0; self.storages = []; self.items = []; self.path = []
+            self.selectedItemIds.removeAll()
             self.error = prefix + error.localizedDescription
         }
     }
@@ -622,22 +623,29 @@ struct USBView: View {
                 }
                 Spacer(minLength: 0)
                 if !usb.items.isEmpty {
-                    Button(usb.selectedItemIds.count == usb.items.count ? "Clear" : "Select all") {
-                        usb.selectedItemIds.count == usb.items.count ? usb.deselectAll() : usb.selectAll()
+                    Button(usb.selectedItemIds.isEmpty ? "Select shown" : "Clear selection") {
+                        usb.selectedItemIds.isEmpty ? usb.selectAll() : usb.deselectAll()
                     }
                     .buttonStyle(.nearbyCompactQuiet)
                 }
             }
 
+            HStack {
+                TextField("Filter this folder", text: $usb.folderQuery).textFieldStyle(.roundedBorder)
+                    .accessibilityLabel("Filter the loaded phone folder")
+                Picker("Sort", selection: $usb.folderSort) {
+                    ForEach(FolderSort.allCases) { Text($0.rawValue).tag($0) }
+                }.labelsHidden().frame(width: 115)
+            }.disabled(usb.busy)
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 2) {
-                    ForEach(usb.items) { item in
+                    ForEach(usb.visibleItems) { item in
                         usbItemRow(item)
                     }
-                    if usb.items.isEmpty && !usb.busy {
+                    if usb.visibleItems.isEmpty && !usb.busy {
                         VStack(spacing: 6) {
                             Image(systemName: "folder").font(.system(size: 22)).foregroundStyle(.tertiary)
-                            Text("This folder is empty").font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
+                            Text(usb.items.isEmpty ? "This folder is empty" : "No matching files in this folder").font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
                         }
                         .frame(maxWidth: .infinity).padding(18)
                     }
