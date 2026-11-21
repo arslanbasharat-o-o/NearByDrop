@@ -76,6 +76,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     }
 
     func cancelIncomingTransfer(_ id: String) {
+        finishIncomingOperation(id, outcome: .cancelled)
         NearbyConnectionManager.shared.cancelIncomingTransfer(id: id)
         incoming.removeValue(forKey: id)
         incomingProgress.removeValue(forKey: id)
@@ -125,6 +126,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         }
         return downloadDirectory.lastPathComponent
     }
+    @Published var isShowingUtilitySheet = false
     @Published var isChoosingDirectory: Bool = false
     @Published var isChoosingFiles: Bool = false
     @Published var launchAtLogin: Bool = false
@@ -145,6 +147,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     private var selectedSourceURLs: [URL] = []
     private var selectedFileSnapshot: TransferFileSelection?
     private var outgoingLifecycle = OutgoingAttemptLifecycle()
+    private var outgoingOperation: OperationContext?
+    private var incomingOperations: [String: OperationContext] = [:]
     private var activeOutgoingAttemptID: UUID?
     private var activeOutgoingDelegate: OutgoingAttemptDelegate?
     private var activeAttemptIsRetry = false
@@ -524,6 +528,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         }
         guard let attemptID = outgoingLifecycle.begin(retry: false) else { return }
         activeOutgoingAttemptID = attemptID
+        outgoingOperation = OperationContext(method: device.id?.hasPrefix("qr:") == true ? .qr : .wifi, direction: .outgoing, fileCount: urls.count, bytes: totalBytes)
+        UsageAnalytics.recordOperational(.transferStarted, context: outgoingOperation)
         outgoingPhase = .connecting
         outgoingStatusMessage = "Checking selected files…"
         prepareOutgoingAttempt(device, attemptID: attemptID, isRetry: false)
@@ -538,6 +544,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         }
         guard let attemptID = outgoingLifecycle.begin(retry: true) else { return }
         activeOutgoingAttemptID = attemptID
+        if outgoingOperation?.retry() == true { UsageAnalytics.recordOperational(.transferStarted, context: outgoingOperation) }
         outgoingPhase = .retrying
         outgoingStatusMessage = "Retrying…"
         prepareOutgoingAttempt(device, attemptID: attemptID, isRetry: true)
@@ -594,6 +601,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
                         self.releaseOutgoingFileAccess()
                         return
                     }
+                    self.outgoingOperation?.advance(to: .connecting)
                     self.outgoingPhase = .connecting
                     self.outgoingStatusMessage = "Connecting…"
                     self.sendMessage = "Connecting…"
@@ -630,6 +638,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
 
     private func failPreparation(_ attemptID: UUID, message: String, category: DiagnosticsErrorCategory) {
         guard outgoingLifecycle.fail(for: attemptID, retryAllowed: false) else { return }
+        finishOutgoingOperation(.failed, error: category == .fileAccess ? .fileAccess : category == .sourceChanged ? .sourceChanged : .other)
         sending = false
         chosenID = nil
         chosenPeer = nil
@@ -651,8 +660,8 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         timeout?.cancel()
         timeout = nil
         if let id = chosenID { NearbyConnectionManager.shared.cancelOutgoingTransfer(id: id) }
-        if let activeOutgoingAttemptID {
-            _ = outgoingLifecycle.cancel(for: activeOutgoingAttemptID)
+        if let activeOutgoingAttemptID, outgoingLifecycle.cancel(for: activeOutgoingAttemptID) {
+            finishOutgoingOperation(.cancelled, error: .cancelled)
         }
         activeOutgoingAttemptID = nil
         activeOutgoingDelegate = nil
@@ -667,8 +676,9 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         resetSpeedTracking()
     }
 
-    private func finishOutgoingFailure(_ error: Error, attemptID: UUID, retryAllowed: Bool) {
+    private func finishOutgoingFailure(_ error: Error, attemptID: UUID, retryAllowed: Bool, outcome: OperationalOutcome = .failed) {
         guard outgoingLifecycle.fail(for: attemptID, retryAllowed: retryAllowed) else { return }
+        finishOutgoingOperation(outcome, error: Self.operationalError(error))
         timeout?.cancel()
         timeout = nil
         sending = false
@@ -691,6 +701,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         DispatchQueue.main.async {
             guard self.activeOutgoingAttemptID == attemptID,
                   self.outgoingLifecycle.transition(to: .waitingForReceiver, for: attemptID) else { return }
+            self.outgoingOperation?.advance(to: .approval)
             self.outgoingPhase = .waitingForReceiver
             self.outgoingStatusMessage = "Waiting for receiver approval"
             self.sendMessage = "Confirm code \(pinCode) on \(self.recipient)"
@@ -702,6 +713,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             guard self.activeOutgoingAttemptID == attemptID,
                   self.outgoingLifecycle.transition(to: .transferring, for: attemptID) else { return }
             self.timeout?.cancel()
+            self.outgoingOperation?.advance(to: .transferring)
             self.outgoingPhase = .transferring
             self.outgoingStatusMessage = "Transferring"
             self.sendMessage = "Sending to \(self.recipient)…"
@@ -729,8 +741,11 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
             } else {
                 isUserCancellation = false
             }
-            let retryAllowed = !isUserCancellation
-            self.finishOutgoingFailure(error, attemptID: attemptID, retryAllowed: retryAllowed)
+            let declined: Bool
+            if let nearby = error as? NearbyError, case .canceled(reason: .userRejected) = nearby { declined = true } else { declined = false }
+            let retryAllowed = !isUserCancellation && !declined
+            self.finishOutgoingFailure(error, attemptID: attemptID, retryAllowed: retryAllowed,
+                                       outcome: declined ? .declined : (isUserCancellation ? .cancelled : .failed))
         }
     }
 
@@ -738,6 +753,7 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         DispatchQueue.main.async { [self] in
             guard activeOutgoingAttemptID == attemptID,
                   outgoingLifecycle.complete(for: attemptID) else { return }
+            finishOutgoingOperation(.completed)
             timeout?.cancel()
             timeout = nil
             let peer = recipient
@@ -941,6 +957,42 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
     func transferFinished() {
         guard let attemptID = activeOutgoingAttemptID else { return }
         receiveOutgoingFinished(attemptID: attemptID)
+    }
+
+    private func finishOutgoingOperation(_ outcome: OperationalOutcome, error: OperationalError = .none) {
+        guard outgoingOperation?.finish(outcome) == true else { return }
+        let kind: OperationalEventKind = outcome == .completed ? .transferCompleted : outcome == .declined ? .transferDeclined : outcome == .cancelled ? .transferCancelled : .transferFailed
+        UsageAnalytics.recordOperational(kind, context: outgoingOperation, error: error)
+    }
+    func beginIncomingOperation(_ info: TransferInfo) {
+        guard incomingOperations[info.transfer.id] == nil else { return }
+        let bytes = info.transfer.files.reduce(Int64(0)) { total, file in
+            let (sum, overflow) = total.addingReportingOverflow(max(0, file.size)); return overflow ? Int64.max : sum
+        }
+        var operation = OperationContext(method: info.device.id?.hasPrefix("qr:") == true ? .qr : .wifi,
+            direction: .incoming, fileCount: info.transfer.files.count, bytes: bytes)
+        operation.advance(to: .approval)
+        incomingOperations[info.transfer.id] = operation
+        UsageAnalytics.recordOperational(.transferStarted, context: operation)
+    }
+    func acceptIncomingOperation(_ id: String) { incomingOperations[id]?.advance(to: .transferring) }
+    func finishIncomingOperation(_ id: String, outcome: OperationalOutcome, error: Error? = nil) {
+        guard var operation = incomingOperations.removeValue(forKey: id), operation.finish(outcome) else { return }
+        let kind: OperationalEventKind = outcome == .completed ? .transferCompleted : outcome == .declined ? .transferDeclined : outcome == .cancelled ? .transferCancelled : .transferFailed
+        UsageAnalytics.recordOperational(kind, context: operation, error: error.map(Self.operationalError) ?? (outcome == .declined ? .declined : .none))
+    }
+    private static func operationalError(_ error: Error) -> OperationalError {
+        if let nearby = error as? NearbyError {
+            switch nearby {
+            case .canceled(reason: .timedOut): return .network
+            case .canceled(reason: .userRejected): return .declined
+            default: break
+            }
+        }
+        switch DiagnosticsReportBuilder.category(for: error) {
+        case .network: return .network; case .fileAccess: return .fileAccess; case .sourceChanged: return .sourceChanged
+        case .connection: return .connection; case .cancelled: return .cancelled; default: return .other
+        }
     }
 
     func updateSpeedAndETA(currentBytes: Int64, total: Int64) {

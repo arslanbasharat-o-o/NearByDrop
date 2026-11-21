@@ -1480,3 +1480,40 @@ final class ProductUpgradePolicyTests: XCTestCase {
         XCTAssertFalse(ExperimentalBatchPlan.executionEnabled)
     }
 }
+
+final class OperationalLifecycleTests: XCTestCase {
+    func testRetryKeepsJobChangesAttemptAndResetsStageClock() {
+        let start = Date(timeIntervalSince1970: 1_000)
+        var operation = OperationContext(method: .wifi, direction: .outgoing, fileCount: 129, bytes: -1, now: start)
+        let job = operation.jobID, attempt = operation.attemptID
+        XCTAssertFalse(operation.retry())
+        operation.advance(to: .connecting, now: start.addingTimeInterval(2))
+        operation.advance(to: .approval, now: start.addingTimeInterval(9))
+        XCTAssertEqual(operation.stageBucket(.connecting, now: start.addingTimeInterval(20)), "5to30s")
+        XCTAssertTrue(operation.finish(.failed))
+        XCTAssertFalse(operation.finish(.completed))
+        XCTAssertTrue(operation.retry(now: start.addingTimeInterval(60)))
+        XCTAssertEqual(operation.jobID, job)
+        XCTAssertNotEqual(operation.attemptID, attempt)
+        XCTAssertEqual(operation.attemptNumber, 2)
+        XCTAssertEqual(operation.stage, .preparing)
+        XCTAssertEqual(operation.sizeBucket, "unknown")
+        XCTAssertEqual(operation.countBucket, "129plus")
+        XCTAssertTrue(operation.finish(.declined))
+        XCTAssertFalse(operation.retry())
+    }
+
+    func testOperationalPayloadHasOnlyCoarseFieldsAndMinuteTime() throws {
+        let event = OperationalEvent(kind: .transferStarted, installationID: UUID(), appVersion: "2.5.0", macOSVersion: "26.0",
+            context: OperationContext(method: .qr, direction: .incoming, fileCount: 3, bytes: 1_000_000),
+            now: Date(timeIntervalSince1970: 1_000))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(event)) as? [String: Any])
+        XCTAssertEqual(object["schema_version"] as? Int, 2)
+        XCTAssertEqual(object["count_bucket"] as? String, "2to10")
+        XCTAssertEqual(object["size_bucket"] as? String, "lt1mb")
+        XCTAssertEqual(object["occurred_at"] as? String, "1970-01-01T00:16:00.000Z")
+        for key in ["mac_name", "peer_name", "file_name", "file_path", "content", "clipboard", "device_id", "mac_model"] {
+            XCTAssertNil(object[key])
+        }
+    }
+}

@@ -41,7 +41,10 @@ final class USBModel: ObservableObject {
     @Published var path: [(id: UInt32, name: String)] = []
     @Published var deviceName = ""
     @Published var busy = false
-    @Published var transferring = false
+    @Published var transferring = false {
+        didSet { if oldValue && !transferring { finishOperational(.completed) } }
+    }
+    private var operationalContext: OperationContext?
     @Published var progress = 0.0
     @Published var message = ""
     @Published var error: String?
@@ -186,7 +189,10 @@ final class USBModel: ObservableObject {
         load()
     }
 
-    private func prepareTransfer(_ message: String, items: [USBItem] = []) {
+    private func prepareTransfer(_ message: String, items: [USBItem] = [], direction: TransferDirection = .incoming) {
+        operationalContext = OperationContext(method: .usb, direction: direction, fileCount: items.isEmpty ? -1 : items.count, bytes: -1)
+        operationalContext?.advance(to: .transferring)
+        UsageAnalytics.recordOperational(.usbStarted, context: operationalContext)
         busy = true; transferring = true; error = nil; progress = 0; self.message = message
         lastTransferredItems = items
         visitedFolders.removeAll()
@@ -219,7 +225,7 @@ final class USBModel: ObservableObject {
             accessibleURLs.append(url)
         }
         scopedUploadURLs = acquiredScopes
-        prepareTransfer("Sending \(urls.count) file\(urls.count == 1 ? "" : "s")…")
+        prepareTransfer("Sending \(urls.count) file\(urls.count == 1 ? "" : "s")…", direction: .outgoing)
         queue.async {
             defer {
                 DispatchQueue.main.async {
@@ -418,10 +424,16 @@ final class USBModel: ObservableObject {
         queue.async { self.bridge.close() }
         deviceName = ""; storage = 0; storages = []; items = []; path = []; message = ""; error = nil; selectedItemIds.removeAll()
     }
+    private func finishOperational(_ outcome: OperationalOutcome) {
+        guard operationalContext?.finish(outcome) == true else { return }
+        UsageAnalytics.recordOperational(.usbFinished, context: operationalContext, error: outcome == .failed ? .other : outcome == .cancelled ? .cancelled : .none)
+    }
     private func fail(_ error: Error, prefix: String = "") {
+        let cancelled = bridge.cancelRequested
         bridge.progress = nil
         bridge.close()
         DispatchQueue.main.async {
+            self.finishOperational(cancelled ? .cancelled : .failed)
             self.busy = false
             self.transferring = false
             self.message = ""
@@ -601,6 +613,8 @@ struct USBView: View {
                     Image(systemName: "chevron.left").font(.system(size: 9, weight: .semibold)).frame(width: 22, height: 22)
                 }
                 .buttonStyle(.nearbyCompactSecondary).disabled(usb.path.isEmpty || usb.busy)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 4) {
                 if usb.path.isEmpty {
                     Picker("Storage", selection: $usb.storage) {
                         ForEach(usb.storages, id: \.id) { Text($0.name).tag($0.id) }
@@ -619,6 +633,8 @@ struct USBView: View {
                             Button(segment.name) { usb.jumpTo(index: index) }
                                 .buttonStyle(.nearbyCompactQuiet)
                         }
+                    }
+                }
                     }
                 }
                 Spacer(minLength: 0)

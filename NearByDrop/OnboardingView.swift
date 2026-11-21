@@ -56,6 +56,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
         if acceptedDiagnostics {
             UserDefaults.standard.set(true, forKey: "diagnosticsDisclosureSeen")
             UsageAnalytics.start()
+            UsageAnalytics.recordOperational(.onboardingCompleted)
         }
         window?.orderOut(nil)
         close()
@@ -215,12 +216,12 @@ struct OnboardingView: View {
                         VStack(spacing: 8) {
                             Image(systemName: appearance.icon).font(.title2)
                             Text(appearance.rawValue)
-                            if theme.currentTheme == appearance { Image(systemName: "checkmark.circle.fill") }
+                            if theme.resolvedTheme == appearance { Image(systemName: "checkmark.circle.fill") }
                         }.frame(maxWidth: .infinity, minHeight: 85).padding(8)
-                            .foregroundStyle(theme.currentTheme == appearance ? theme.presentationAccent : theme.primaryText)
+                            .foregroundStyle(theme.resolvedTheme == appearance ? theme.presentationAccent : theme.primaryText)
                             .nearbyCardSurface()
                             .background { NearbyThemeArtwork(appearance: appearance) }
-                    }.buttonStyle(.plain).accessibilityValue(theme.currentTheme == appearance ? "Selected" : "Not selected")
+                    }.buttonStyle(.plain).accessibilityValue(theme.resolvedTheme == appearance ? "Selected" : "Not selected")
                 }
             }
             Text("You can change appearance anytime in Settings.").foregroundStyle(theme.secondaryText)

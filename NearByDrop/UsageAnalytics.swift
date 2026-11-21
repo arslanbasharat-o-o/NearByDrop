@@ -16,6 +16,7 @@ enum UsageAnalytics {
     private static var task: URLSessionDataTask?
     private static var retryScheduled = false
     private static var generation = 0
+    private static var consecutiveFailures = 0
 
     // Keep this client independent from the UI target so the diagnostics
     // regression test can compile it with only its protocol stubs.
@@ -35,6 +36,53 @@ enum UsageAnalytics {
 
     static var endpointIsConfigured: Bool {
         endpoint != nil
+    }
+
+    static var operationalRolloutEnabled: Bool {
+        Bundle.main.object(forInfoDictionaryKey: "ExpandedDiagnosticsEnabled") as? Bool == true
+    }
+    static var operationalEnabled: Bool {
+        operationalRolloutEnabled && isEnabled && defaultsReady
+            && UserDefaults.standard.integer(forKey: "operationalDiagnosticsConsentVersion") == 2
+    }
+    static func setOperationalEnabled(_ enabled: Bool) {
+        guard !enabled || operationalRolloutEnabled else { return }
+        UserDefaults.standard.set(enabled ? 2 : 0, forKey: "operationalDiagnosticsConsentVersion")
+        if !enabled {
+            queue.async {
+                generation += 1; task?.cancel(); task = nil; retryScheduled = false
+                let retained = (UserDefaults.standard.array(forKey: pendingKey) as? [Data] ?? []).filter { !isOperational($0) }
+                UserDefaults.standard.set(retained, forKey: pendingKey)
+                flush()
+            }
+        }
+    }
+    static func recordOperational(_ kind: OperationalEventKind, context: OperationContext? = nil, error: OperationalError = .none) {
+        guard !isSwiftUIPreviews, operationalEnabled, endpoint != nil else { return }
+        let defaults = UserDefaults.standard
+        let installation = defaults.string(forKey: installationIDKey).flatMap(UUID.init(uuidString:)) ?? UUID()
+        defaults.set(installation.uuidString, forKey: installationIDKey)
+        // Low-value UI/health events are sampled once per day, locally.
+        if [.troubleshootingUsed, .clientHealth].contains(kind) {
+            let key = "operationalSample." + kind.rawValue
+            if let last = defaults.object(forKey: key) as? Date, Date().timeIntervalSince(last) < 86400 { return }
+            defaults.set(Date(), forKey: key)
+        }
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        let event = OperationalEvent(kind: kind, installationID: installation,
+            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
+            macOSVersion: "\(os.majorVersion).\(os.minorVersion)", context: context, error: error,
+            queueCount: defaults.array(forKey: pendingKey)?.count ?? 0)
+        guard let body = try? JSONEncoder().encode(event) else { return }
+        queue.async {
+            guard operationalEnabled else { return }
+            var pending = defaults.array(forKey: pendingKey) as? [Data] ?? []
+            pending.append(body); defaults.set(Array(pending.suffix(200)), forKey: pendingKey)
+            flush()
+        }
+    }
+    private static func isOperational(_ data: Data) -> Bool {
+        (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["schema_version"] as? Int == 2
     }
 
     static func start() {
@@ -57,6 +105,7 @@ enum UsageAnalytics {
         }
 
         send("app_opened")
+        recordOperational(.clientHealth)
     }
 
     static func setEnabled(_ enabled: Bool) {
@@ -197,7 +246,12 @@ enum UsageAnalytics {
         }
         defaults.set(pending, forKey: pendingKey)
         guard let body = pending.first else { return }
-        var request = URLRequest(url: endpoint)
+        if isOperational(body) && !operationalEnabled {
+            defaults.set(pending.filter { !isOperational($0) }, forKey: pendingKey)
+            flush(); return
+        }
+        let destination = isOperational(body) ? endpoint.deletingLastPathComponent().appendingPathComponent("operational.php") : endpoint
+        var request = URLRequest(url: destination)
         request.httpMethod = "POST"
         request.timeoutInterval = 10
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -222,11 +276,14 @@ enum UsageAnalytics {
                        event["event"] as? String == "first_launch" {
                         defaults.set(true, forKey: firstLaunchSentKey)
                     }
+                    consecutiveFailures = 0
                     flush()
                 } else if !retryScheduled {
                     retryScheduled = true
                     let retryAfter = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Retry-After")
-                    let delay = min(3600, max(60, Double(retryAfter ?? "") ?? 60))
+                    consecutiveFailures = min(6, consecutiveFailures + 1)
+                    let backoff = 30 * pow(2, Double(consecutiveFailures))
+                    let delay = min(3600, max(backoff, Double(retryAfter ?? "") ?? 0))
                     queue.asyncAfter(deadline: .now() + delay) {
                         guard generation == sendingGeneration else { return }
                         retryScheduled = false

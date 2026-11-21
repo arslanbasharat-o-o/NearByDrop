@@ -138,7 +138,7 @@ if ($authenticated) {
 <?php else: ?>
   <header>
     <div><h1>Nearby Drop diagnostics</h1><p class="muted">Installation activity and completed transfer compatibility.</p></div>
-    <a href="/?logout=1">Sign out</a>
+    <nav><a href="/operations.php">Operational diagnostics</a> · <a href="/?logout=1">Sign out</a></nav>
   </header>
   <section class="cards" aria-label="Summary">
     <article class="card"><span class="muted">Reported installs</span><p class="metric"><?= $installs ?></p></article>

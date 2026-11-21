@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <!-- Schema 2 remains disabled until an explicitly authorized rollout. -->
+    <key>ExpandedDiagnosticsEnabled</key><false/>
     <key>DiagnosticEventsEndpoint</key><string>$(DIAGNOSTIC_EVENTS_ENDPOINT)</string>
     <key>SUFeedURL</key><string>https://github.com/arslanbasharat-o-o/NearByDrop/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key><string>1TqpRsU8jS73PWVgvzEQiHjWM7VqV3JX9LGQdJBtGPo=</string>

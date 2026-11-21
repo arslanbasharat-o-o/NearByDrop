@@ -12,7 +12,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     private var outsideClickMonitor: Any?
     private var localClickMonitor: Any?
 
+#if DEBUG
+    private var designPreviewWindow: NSWindow?
+    private var designPreviewSettings: SettingsWindowController?
+#endif
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+#if DEBUG
+        if Bundle.main.object(forInfoDictionaryKey: "NearbyDropDesignPreview") as? Bool == true {
+            showDesignPreview(); return
+        }
+#endif
         guard !PreviewRuntime.isSwiftUIPreviews else { return }
 #if DEBUG
         if let idx = CommandLine.arguments.firstIndex(of: "--generate-screenshots"),
@@ -228,7 +238,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     }
 
     private func shouldPreventPopoverDismissal() -> Bool {
-        if model.scanning || model.isChoosingDirectory || model.isChoosingFiles || model.usb.isChoosingFiles {
+        if model.isShowingUtilitySheet || model.scanning || model.isChoosingDirectory || model.isChoosingFiles || model.usb.isChoosingFiles {
             return true
         }
         if NSApp.windows.contains(where: { ($0 is NSOpenPanel || $0 is NSSavePanel) && $0.isVisible }) {
@@ -403,6 +413,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
 
     private func consent(_ id: String, accept: Bool) {
         guard model.incoming[id] != nil, !model.accepted.contains(id) else { return }
+        if accept { model.acceptIncomingOperation(id) }
+        else { model.finishIncomingOperation(id, outcome: .declined) }
         IncomingConsentPresentationState.applyDecision(
             transferID: id,
             accepted: accept,
@@ -437,6 +449,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             if self.model.incoming.isEmpty { self.model.clearCompletedTransfer() }
             if !self.model.waitingForQR { self.model.qrStatus = .idle }
             self.model.incoming[transfer.id] = TransferInfo(device: device, transfer: transfer)
+            self.model.beginIncomingOperation(TransferInfo(device: device, transfer: transfer))
             self.model.tab = .receive
             let scannedTransfer = self.model.waitingForQR && device.id?.hasPrefix("qr:") == true
             if scannedTransfer {
@@ -459,6 +472,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         DispatchQueue.main.async {
             // Discovery probes and canceled requests are not user transfers.
             guard let info = self.model.incoming[id] else { return }
+            self.model.finishIncomingOperation(id, outcome: error == nil ? .completed : .failed, error: error)
             let fileURL = info.transfer.files.first?.destinationURL
                 .flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
             let fileName: String
@@ -536,6 +550,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     }
 
 #if DEBUG
+    private func showDesignPreview() {
+        ThemeManager.shared.currentTheme = .viceNights
+        let fixture = TransferModel.makePreviewFixture(tab: .send, state: .sendRecipients)
+        let settings = SettingsWindowController(model: fixture)
+        designPreviewSettings = settings
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: NearbyWindowMetrics.menuPopoverWidth, height: MenuView.preferredHeight(for: fixture)),
+                              styleMask: [.titled, .closable, .miniaturizable], backing: .buffered, defer: false)
+        window.title = "Nearby Drop Upgrade — Preview Data"
+        window.contentView = NSHostingView(rootView: MenuView(model: fixture, send: {}, scan: {}, settings: { settings.show() }))
+        window.center(); window.makeKeyAndOrderFront(nil)
+        designPreviewWindow = window
+        NSApp.setActivationPolicy(.regular); NSApp.activate(ignoringOtherApps: true)
+    }
+
     func generateWebsiteScreenshots(to outputDirectory: URL) {
         if CommandLine.arguments.contains("--vice-nights") {
             ThemeManager.shared.screenshotTheme = .viceNights
@@ -557,7 +585,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             (.send, .sendReady, "send.jpg"),
             (.receive, .receiveReady, "receive.jpg"),
             (.history, .historyEmpty, "transfers.jpg"),
-            (.usb, .usbEmpty, "usb.jpg")
+            (.usb, .usbEmpty, "usb.jpg"),
+            (.send, .empty, "send-empty.jpg"), (.send, .sendSearching, "send-searching.jpg"),
+            (.send, .sendRecipients, "recipients.jpg"), (.send, .sendQR, "send-qr.jpg"),
+            (.send, .sendProgress, "send-progress.jpg"), (.send, .sendFailure, "send-failure.jpg"),
+            (.receive, .receivePaused, "receive-paused.jpg"), (.receive, .receiveConsent, "approval.jpg"),
+            (.receive, .receiveProgress, "receive-progress.jpg"), (.receive, .receiveComplete, "success.jpg"),
+            (.receive, .receiveFailure, "receive-failure.jpg"), (.receive, .cameraDenied, "camera-denied.jpg"),
+            (.history, .historyRecent, "history.jpg"), (.usb, .usbBrowse, "usb-browser.jpg"),
+            (.usb, .usbProgress, "usb-progress.jpg"), (.usb, .usbComplete, "usb-success.jpg"), (.usb, .usbFailure, "usb-failure.jpg")
         ]
         
         let fileManager = FileManager.default
@@ -585,10 +621,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         scenes.append((AnyView(SettingsView(model: settingsModel, controller: controller).preferredColorScheme(ThemeManager.shared.resolvedTheme == .coastalSunrise || ThemeManager.shared.resolvedTheme == .light ? .light : .dark)),
                        NearbyWindowMetrics.settingsContentSize, "appearance.jpg"))
 
+        for step in 0..<7 {
+            scenes.append((AnyView(OnboardingView(onFinish: {}, previewStep: step)), NearbyWindowMetrics.onboardingContentSize, "onboarding-\(step + 1).jpg"))
+        }
+        scenes.append((AnyView(ConnectionDoctorView(model: settingsModel)), CGSize(width: 540, height: 560), "doctor.jpg"))
+        scenes.append((AnyView(TextSharingView(onShare: { _,_ in })), CGSize(width: 490, height: 430), "text-share.jpg"))
+        scenes.append((AnyView(ScreenshotSharingView(onShare: { _ in })), CGSize(width: 540, height: 300), "screenshot-share.jpg"))
+
         for (view, size, filename) in scenes {
             let width = size.width
             let height = size.height
-            let hostingView = NSHostingView(rootView: view)
+            let hostingView = NSHostingView(rootView: view.frame(width: width, height: height).background(ThemeManager.shared.windowSurface))
             hostingView.frame = NSRect(x: 0, y: 0, width: width, height: height)
             
             let window = NSWindow(
@@ -895,6 +938,7 @@ struct MenuView: View {
         .frame(width: NearbyWindowMetrics.menuPopoverWidth, height: preferredHeight)
         .nearbyThemedWindow()
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .onChange(of: showingDoctor || showingText || showingScreenshot) { _, active in model.isShowingUtilitySheet = active }
         .sheet(isPresented: $showingDoctor) { ConnectionDoctorView(model: model) }
         .sheet(isPresented: $showingText) {
             TextSharingView { text, isLink in
@@ -1664,10 +1708,10 @@ struct MenuView: View {
 
     private var statusColor: Color {
         switch model.advertisement {
-        case .published: return .green
-        case .failed: return .red
-        case .starting, .idle: return .orange
-        case .paused: return .secondary
+        case .published: return theme.successColor
+        case .failed: return theme.errorColor
+        case .starting, .idle: return theme.signalColor
+        case .paused: return theme.secondaryText
         }
     }
 }

@@ -6,7 +6,8 @@ trap 'rm -rf "$workspace"' EXIT
 # Compile the shipping client with protocol/model stubs and an isolated defaults suite.
 python3 - "$root/NearByDrop/UsageAnalytics.swift" "$workspace/main.swift" <<'PY'
 import sys
-s=open(sys.argv[1]).read().replace('import NearbyShare','')
+from pathlib import Path
+s=Path(sys.argv[1]).with_name('OperationalDiagnostics.swift').read_text() + '\n' + open(sys.argv[1]).read().replace('import NearbyShare','')
 s=s.replace('UserDefaults.standard','testDefaults')
 s=s.replace('Bundle.main.object(forInfoDictionaryKey: endpointKey)', '("https://diagnostics.invalid/ingest.php" as Any?)')
 pre=r'''import Foundation

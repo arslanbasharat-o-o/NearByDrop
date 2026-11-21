@@ -8,8 +8,8 @@ Scope: supplied MASTER-PROMPT.md. Branch: `codex/tropical-upgrade`. Production d
 - [x] Phase 3: Connection Doctor, favorite hints, accurate device picker, seven-step revisitable onboarding
 - [x] Phase 4: explicit text/link file fallback, user-triggered screenshot preview, USB listing filter/sort/recovery
 - [x] Phase 4: tested bounded batch planner; document experimental execution limits
-- [ ] Phase 5: versioned operational client, jobs/attempts, disabled rollout + separate consent, opt-out/retry tests
-- [ ] Phase 5: compatible local PHP collector, migration, authenticated dashboard and accounting/health tests
+- [x] Phase 5: versioned operational client, jobs/attempts, disabled rollout + separate consent, opt-out/retry tests
+- [x] Phase 5: compatible local PHP collector, migration, authenticated dashboard and accounting/health tests
 - [ ] Phase 6: Debug tests, universal Release, packaging/signature/DMG validation, RC and credential/hardware limits
 - [ ] Phase 7: truthful README/help/privacy, screenshot set, storyboard, release draft, researched alternatives and growth plan
 - [ ] Final implementation report and acceptance matrix
@@ -24,3 +24,7 @@ Scope: supplied MASTER-PROMPT.md. Branch: `codex/tropical-upgrade`. Production d
 ## Product feature validation
 
 Debug build and 78 XCTest cases passed (including six new policy tests). All three custom palettes pass text/state/button contrast checks; all six choices persist. ScreenCaptureKit compiles against the macOS 14 deployment target. Screen permission prompts/capture and physical phone transfers remain manual checks; full fixture/keyboard QA follows before packaging.
+
+## Diagnostics validation
+
+80 XCTest cases passed. Operational client tests passed for both gates, separate consent, privacy fields, correlated retries, HTTP acknowledgment and opt-out purge. Legacy collector/client regressions passed. Local SQLite migration replay, HTTP ingestion, dashboard authentication/filters, shuffled outcome accounting, conflicting terminals, missing-start coverage and name/content rejection passed. Live collection remains disabled and no production backend was modified. MySQL validation is tracked separately before deployment.

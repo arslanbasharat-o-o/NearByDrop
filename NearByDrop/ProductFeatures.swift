@@ -4,6 +4,7 @@ import NearbyShare
 import Network
 import AVFoundation
 import ScreenCaptureKit
+import ImageIO
 import UniformTypeIdentifiers
 
 final class ConnectionPathEvidence: ObservableObject {
@@ -29,6 +30,7 @@ struct ConnectionDoctorView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: 14) {
             Label("Connection Doctor", systemImage: "stethoscope").font(NearbyTypography.pageTitle)
             Text("Find the next useful step, using what this Mac can actually observe.").foregroundStyle(theme.secondaryText)
@@ -56,8 +58,9 @@ struct ConnectionDoctorView: View {
             }
             Text("QR pairing still needs its supported network connection. USB needs an unlocked phone in File transfer mode.")
                 .font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
-        }.padding(22).frame(width: 540).nearbyThemedWindow()
-        .onAppear { model.startSendingDiscovery() }
+        }.padding(22)
+        }.frame(width: 540, height: 560).nearbyThemedWindow()
+        .onAppear { model.startSendingDiscovery(); UsageAnalytics.recordOperational(.troubleshootingUsed) }
         .onDisappear { if model.tab != .send && !model.showingQR { model.stopSendingDiscovery() } }
     }
 }
@@ -127,6 +130,7 @@ struct ScreenshotSharingView: View {
                 Text("Check for private information. Nothing is sent until you choose a receiver and start the transfer.")
                     .font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
             }
+            Text("Images are scaled to at most 4,096 pixels per side.").font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
             if busy { ProgressView("Preparing screenshot…") }
             if let error { Text(error).foregroundStyle(theme.errorColor).fixedSize(horizontal: false, vertical: true) }
             HStack {
@@ -161,7 +165,10 @@ struct ScreenshotSharingView: View {
                 let excluded = content.applications.filter { $0.bundleIdentifier == Bundle.main.bundleIdentifier }
                 let filter = SCContentFilter(display: display, excludingApplications: excluded, exceptingWindows: [])
                 let configuration = SCStreamConfiguration()
-                configuration.width = display.width; configuration.height = display.height; configuration.showsCursor = false
+                let scale = min(1, 4096.0 / Double(max(display.width, display.height)))
+                configuration.width = max(1, Int(Double(display.width) * scale))
+                configuration.height = max(1, Int(Double(display.height) * scale))
+                configuration.showsCursor = false
                 let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
                 let rep = NSBitmapImageRep(cgImage: cgImage)
                 guard let data = rep.representation(using: .png, properties: [:]) else { throw CocoaError(.fileReadCorruptFile) }
@@ -177,10 +184,15 @@ struct ScreenshotSharingView: View {
             do {
                 let values = try url.resourceValues(forKeys: [.fileSizeKey])
                 guard (values.fileSize ?? Int.max) <= 50 * 1024 * 1024,
-                      let input = NSImage(contentsOf: url), let tiff = input.tiffRepresentation,
-                      let rep = NSBitmapImageRep(data: tiff), let data = rep.representation(using: .png, properties: [:]),
+                      let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                      let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                        kCGImageSourceCreateThumbnailFromImageAlways: true,
+                        kCGImageSourceThumbnailMaxPixelSize: 4096,
+                        kCGImageSourceCreateThumbnailWithTransform: true
+                      ] as CFDictionary),
+                      let data = NSBitmapImageRep(cgImage: thumbnail).representation(using: .png, properties: [:]),
                       data.count <= 50 * 1024 * 1024 else { throw CocoaError(.fileReadTooLarge) }
-                image = input; png = data; error = nil
+                image = NSImage(cgImage: thumbnail, size: .zero); png = data; error = nil
             } catch { self.error = "Choose a readable image smaller than 50 MB." }
         }
     }

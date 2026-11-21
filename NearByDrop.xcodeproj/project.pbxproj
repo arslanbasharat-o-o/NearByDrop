@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        AF0000000000000000000001 = {isa = PBXBuildFile; fileRef = AF0000000000000000000002; };
+        AF0000000000000000000003 = {isa = PBXBuildFile; fileRef = AF0000000000000000000002; };
         AE0000000000000000000001 = {isa = PBXBuildFile; fileRef = AE0000000000000000000002; };
         AC0000000000000000000001 /* TransferFileSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC0000000000000000000002 /* TransferFileSafety.swift */; };
         AD0000000000000000000006 = {isa = PBXBuildFile; fileRef = AD0000000000000000000004; };
@@ -146,6 +148,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        AF0000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OperationalDiagnostics.swift; sourceTree = "<group>"; };
         AE0000000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductFeatures.swift; sourceTree = "<group>"; };
         AC0000000000000000000002 /* TransferFileSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferFileSafety.swift; sourceTree = "<group>"; };
         AD0000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
@@ -308,6 +311,7 @@
 				69B5994C30598C1300449F58 /* Info.plist */,
 				69DA9A1129E0BF5100A442DA /* AppDelegate.swift */,
                 AE0000000000000000000002,
+                AF0000000000000000000002,
 				A10000000000000000000002 /* UsageAnalytics.swift */,
 				69E000012E44000100000001 /* TransferWindow.swift */,
 				69E000012E44000100000002 /* QRCodeScanner.swift */,
@@ -557,6 +561,7 @@
                 AD0000000000000000000006,
                 AB0000000000000000000002 /* QRCodeScanner.swift in Tests */,
                 AB0000000000000000000003 /* ThemeManager.swift in Tests */,
+                AF0000000000000000000003,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -584,6 +589,7 @@
 				69E000022E44000100000012 /* OnboardingView.swift in Sources */,
 				69E000022E44000100000014 /* AppSupport.swift in Sources */,
                 AE0000000000000000000001,
+                AF0000000000000000000001,
                 AD0000000000000000000003,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

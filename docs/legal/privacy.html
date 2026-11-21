@@ -84,7 +84,11 @@
 
     <h2>Contact and changes</h2>
     <p>For privacy questions, contact <a href="mailto:arslanbasharat414@gmail.com">Arslan Basharat</a>. This page may be updated when the site or app behavior changes; the effective date above identifies this policy version.</p>
-  </main>
+  <section aria-labelledby="operational-preview"><h2 id="operational-preview">Prepared operational diagnostics — not enabled</h2>
+<p>The development candidate prepares an additional, optional reporting system. Its rollout is disabled. Before activation it requires an approved rollout build and a separate user choice; existing reporting consent does not enable it.</p>
+<p>If approved and enabled, reports would contain the existing random installation ID, app and macOS versions, broad computer category, temporary job and attempt IDs, minute-rounded times, transfer method and direction, bucketed sizes/counts/durations/stage timings, outcomes, fixed error categories, and queue-depth categories. They would exclude advertised device names, filenames, paths, contents, clipboard data, contacts and persistent hardware identifiers. A random installation ID is a pseudonymous reporting identifier, not a verified person.</p>
+<p>Operational events would retain for 90 days on the server. Pending client reports would retain for up to seven days, with at most 200 queued reports. Turning off operational reporting removes its pending reports; turning off all diagnostics clears the entire reporting queue. UI and queue-health events would be sampled at most daily. Collection is not activated by this policy update.</p></section>
+</main>
   <footer class="site-footer"><div class="site-footer__inner page-width">
     <a class="brand brand--footer" href="../"><img src="../assets/icon-128.png" width="32" height="32" alt=""><span>Nearby Drop</span></a>
     <p>Independent macOS app by Arslan Basharat.</p>

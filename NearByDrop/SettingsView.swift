@@ -121,6 +121,7 @@ struct SettingsView: View {
     @ObservedObject private var updater = AppUpdater.shared
     @State private var customName: String = ""
     @State private var usageAnalyticsEnabled = PreviewRuntime.isSwiftUIPreviews || UsageAnalytics.isEnabled
+    @State private var expandedDiagnostics = UsageAnalytics.operationalEnabled
     @State private var showingDiagnosticsPreview = false
     @State private var diagnosticsReport = ""
     @State private var diagnosticsSaveError: String?
@@ -225,6 +226,14 @@ struct SettingsView: View {
 
     private var generalTab: some View {
         VStack(alignment: .leading, spacing: 15) {
+            if UsageAnalytics.operationalRolloutEnabled {
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle("Share Operational Diagnostics", isOn: $expandedDiagnostics)
+                        .onChange(of: expandedDiagnostics) { _, enabled in UsageAnalytics.setOperationalEnabled(enabled) }
+                    Text("Optional additional reports: random installation ID, app/macOS versions, transfer method/direction, job and attempt IDs, bucketed sizes/counts/timings, outcomes, error categories, and queue depth. No device names, file names, paths, contents, or clipboard data. Retained for 90 days. Requires Share diagnostics to remain enabled.")
+                        .font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
+                }.padding(12).nearbyCardSurface()
+            }
             Button("Revisit Setup Guide…") { OnboardingWindowController.showOnboarding() }.buttonStyle(.nearbySecondary)
             if !favorites.items.isEmpty {
                 settingsSection("Favorite Recipients") {
@@ -480,7 +489,7 @@ struct SettingsView: View {
     }
 
     private func appearanceThemeCard(_ option: AppTheme) -> some View {
-        let isSelected = theme.currentTheme == option
+        let isSelected = theme.resolvedTheme == option
         let isDark = option == .dark || option == .viceNights || option == .midnightRoute
         let surface = isDark ? Color(red: 0.15, green: 0.16, blue: 0.19) : Color.white
         let secondarySurface = isDark ? Color(red: 0.22, green: 0.23, blue: 0.27) : Color(red: 0.94, green: 0.94, blue: 0.97)

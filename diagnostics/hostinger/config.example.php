@@ -7,6 +7,8 @@ return [
     'dsn' => 'mysql:host=127.0.0.1;dbname=REPLACE_DATABASE;charset=utf8mb4',
     'db_user' => 'REPLACE_DATABASE_USER',
     'db_password' => '',
+    // Enable only after an authorized staging-tested schema 2 rollout.
+    'operational_enabled' => false,
     'admin_username' => '',
     'admin_password_hash' => '',
 ];
