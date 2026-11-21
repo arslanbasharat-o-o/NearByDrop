@@ -21,6 +21,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             exit(0)
         }
 #endif
+        ThemeManager.shared.applyViceNightsEditionIfNeeded(
+            Bundle.main.object(forInfoDictionaryKey: "ViceNightsEdition") as? Bool == true
+        )
         NearbyConnectionManager.invalidateLegacyTrustedDevices()
         NearbyConnectionManager.cleanupAbandonedPartialFiles()
         TransferNotificationManager.configure()
@@ -534,6 +537,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
 
 #if DEBUG
     func generateWebsiteScreenshots(to outputDirectory: URL) {
+        if CommandLine.arguments.contains("--vice-nights") {
+            ThemeManager.shared.screenshotTheme = .viceNights
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
         let tabs: [(TransferModel.Tab, TransferModel.PreviewState, String)] = [
             (.send, .sendReady, "send.jpg"),
             (.receive, .receiveReady, "receive.jpg"),
@@ -544,6 +551,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         let fileManager = FileManager.default
         try? fileManager.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
         
+        var scenes: [(AnyView, CGSize, String)] = []
         for (tab, state, filename) in tabs {
             let fixture = TransferModel.makePreviewFixture(tab: tab, state: state)
             let view = MenuView(
@@ -556,8 +564,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
             )
             .preferredColorScheme(.dark)
             
-            let width: CGFloat = 386
-            let height: CGFloat = 506
+            scenes.append((AnyView(view), CGSize(width: NearbyWindowMetrics.menuPopoverWidth,
+                                                height: MenuView.preferredHeight(for: fixture)), filename))
+        }
+        let settingsModel = TransferModel.makePreviewFixture(tab: .receive, state: .receiveReady)
+        let controller = SettingsWindowController(model: settingsModel, createWindow: false)
+        controller.selectedTab = .appearance
+        scenes.append((AnyView(SettingsView(model: settingsModel, controller: controller).preferredColorScheme(.dark)),
+                       NearbyWindowMetrics.settingsContentSize, "appearance.jpg"))
+
+        for (view, size, filename) in scenes {
+            let width = size.width
+            let height = size.height
             let hostingView = NSHostingView(rootView: view)
             hostingView.frame = NSRect(x: 0, y: 0, width: width, height: height)
             
@@ -742,6 +760,9 @@ struct MenuView: View {
             .padding(.horizontal, 13)
             .padding(.top, 9)
             .padding(.bottom, 7)
+            .background {
+                if theme.isViceNights { ViceNightsHeader() }
+            }
 
             HStack(spacing: 4) {
                 ForEach(TransferModel.Tab.allCases, id: \.self) { tab in
@@ -754,7 +775,7 @@ struct MenuView: View {
                             .foregroundStyle(isSelected && colorScheme == .dark ? Color(nsColor: .alternateSelectedControlTextColor) : (isSelected ? theme.presentationAccent : Color.secondary))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 6)
-                            .background(isSelected ? (colorScheme == .dark ? Color(nsColor: .selectedContentBackgroundColor) : theme.presentationAccent.opacity(0.16)) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            .background(isSelected ? (theme.isViceNights ? theme.presentationAccent.opacity(0.22) : (colorScheme == .dark ? Color(nsColor: .selectedContentBackgroundColor) : theme.presentationAccent.opacity(0.16))) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                             .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(isSelected ? Color.primary.opacity(0.10) : Color.clear, lineWidth: 1))
                             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                     }
@@ -852,7 +873,7 @@ struct MenuView: View {
             .padding(.vertical, 10)
         }
         .frame(width: NearbyWindowMetrics.menuPopoverWidth, height: preferredHeight)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(theme.windowSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .onDrop(of: [.fileURL], isTargeted: $isDragging) { providers in
             let group = DispatchGroup()

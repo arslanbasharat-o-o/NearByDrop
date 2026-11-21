@@ -27,6 +27,7 @@ enum PreviewRuntime {
 
 struct NearbyCardSurface: ViewModifier {
     var cornerRadius: CGFloat = 12
+    @ObservedObject private var theme = ThemeManager.shared
     @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
@@ -34,22 +35,23 @@ struct NearbyCardSurface: ViewModifier {
         content
             .background {
                 shape
-                    .fill(colorScheme == .light ? Color.white : Color(nsColor: .controlBackgroundColor))
+                    .fill(theme.isViceNights ? ViceNightsPalette.card : (colorScheme == .light ? Color.white : Color(nsColor: .controlBackgroundColor)))
                     .overlay(shape.fill(Color.primary.opacity(colorScheme == .dark ? 0.055 : 0)))
             }
-            .overlay(shape.stroke(colorScheme == .light ? Color(red: 0.85, green: 0.85, blue: 0.89) : Color.primary.opacity(0.08), lineWidth: 1))
+            .overlay(shape.stroke(theme.isViceNights ? ViceNightsPalette.pink.opacity(0.20) : (colorScheme == .light ? Color(red: 0.85, green: 0.85, blue: 0.89) : Color.primary.opacity(0.08)), lineWidth: 1))
     }
 }
 
 struct NearbyControlSurface: ViewModifier {
     var cornerRadius: CGFloat = 10
+    @ObservedObject private var theme = ThemeManager.shared
     @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         content.background {
             shape
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(theme.isViceNights ? ViceNightsPalette.card : Color(nsColor: .controlBackgroundColor))
                 .overlay(shape.fill(Color.primary.opacity(colorScheme == .dark ? 0.055 : 0)))
         }
     }
@@ -133,7 +135,7 @@ struct NearbyButtonStyle: ButtonStyle {
     private func fillColor(isPressed: Bool) -> Color {
         switch variant {
         case .primary:
-            return theme.presentationAccent.opacity(isEnabled ? (isPressed ? 0.86 : 1) : 0.55)
+            return (theme.isViceNights ? ViceNightsPalette.button : theme.presentationAccent).opacity(isEnabled ? (isPressed ? 0.86 : 1) : 0.55)
         case .secondary:
             return Color.primary.opacity(colorScheme == .dark ? (isPressed ? 0.15 : 0.075) : (isPressed ? 0.12 : 0.045))
         case .quiet:
@@ -173,6 +175,7 @@ enum AppTheme: String, CaseIterable, Identifiable {
     case system = "System"
     case light = "Light"
     case dark = "Dark"
+    case viceNights = "Vice Nights"
 
     var id: String { rawValue }
 
@@ -181,6 +184,7 @@ enum AppTheme: String, CaseIterable, Identifiable {
         case .system: return "circle.lefthalf.filled"
         case .light: return "sun.max.fill"
         case .dark: return "moon.fill"
+        case .viceNights: return "sun.horizon.fill"
         }
     }
 
@@ -190,7 +194,7 @@ enum AppTheme: String, CaseIterable, Identifiable {
             NSApp.appearance = nil
         case .light:
             NSApp.appearance = NSAppearance(named: .aqua)
-        case .dark:
+        case .dark, .viceNights:
             NSApp.appearance = NSAppearance(named: .darkAqua)
         }
     }
@@ -293,6 +297,7 @@ final class ThemeManager: ObservableObject {
 
 #if DEBUG
     @Published private(set) var figmaPreviewAccent: AccentOption?
+    @Published var screenshotTheme: AppTheme?
 #endif
 
     var onMenuBarIconChanged: (() -> Void)?
@@ -305,7 +310,23 @@ final class ThemeManager: ObservableObject {
 #endif
     }
 
-    var presentationAccent: Color { presentationAccentOption.color }
+    var isViceNights: Bool {
+#if DEBUG
+        (screenshotTheme ?? currentTheme) == .viceNights
+#else
+        currentTheme == .viceNights
+#endif
+    }
+
+    var presentationAccent: Color { isViceNights ? ViceNightsPalette.pink : presentationAccentOption.color }
+    var windowSurface: Color { isViceNights ? ViceNightsPalette.background : Color(nsColor: .windowBackgroundColor) }
+
+    func applyViceNightsEditionIfNeeded(_ isEdition: Bool) {
+        guard isEdition, !PreviewRuntime.isSwiftUIPreviews,
+              !UserDefaults.standard.bool(forKey: "hasOpenedViceNightsEdition") else { return }
+        currentTheme = .viceNights
+        UserDefaults.standard.set(true, forKey: "hasOpenedViceNightsEdition")
+    }
 
 #if DEBUG
     func useFigmaPreviewPalette() {
@@ -427,5 +448,51 @@ final class FeedbackManager: ObservableObject {
     func vibrateTap() {
         guard hapticsEnabled else { return }
         NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+    }
+}
+
+// Original sunset palette and vector artwork; no third-party game assets.
+enum ViceNightsPalette {
+    static let background = Color(red: 0.075, green: 0.045, blue: 0.12)
+    static let card = Color(red: 0.14, green: 0.09, blue: 0.20)
+    static let pink = Color(red: 1.0, green: 0.60, blue: 0.77)
+    static let cyan = Color(red: 0.39, green: 0.89, blue: 0.91)
+    static let button = Color(red: 0.68, green: 0.10, blue: 0.34)
+}
+
+struct ViceNightsHeader: View {
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        Canvas { context, size in
+            // Keep the left side quiet behind the app name and device name.
+            let horizon = CGPoint(x: size.width * 0.78, y: size.height * 0.45)
+            let sun = CGRect(x: horizon.x - 25, y: horizon.y - 25, width: 50, height: 50)
+            context.fill(Path(ellipseIn: sun), with: .linearGradient(
+                Gradient(colors: [ViceNightsPalette.pink, Color(red: 1, green: 0.48, blue: 0.30)]),
+                startPoint: CGPoint(x: sun.midX, y: sun.minY), endPoint: CGPoint(x: sun.midX, y: sun.maxY)))
+            for offset in [0.0, 7.0, 15.0] {
+                let stripe = CGRect(x: sun.minX, y: sun.midY + offset, width: sun.width, height: 3)
+                context.fill(Path(stripe), with: .color(ViceNightsPalette.background))
+            }
+            for (x, scale) in [(0.92, 1.0), (0.63, 0.65)] {
+                let crown = CGPoint(x: size.width * x, y: size.height * (1 - 0.74 * scale))
+                var trunk = Path()
+                trunk.move(to: CGPoint(x: crown.x - 9 * scale, y: size.height))
+                trunk.addQuadCurve(to: crown, control: CGPoint(x: crown.x + 2, y: size.height * 0.6))
+                context.stroke(trunk, with: .color(ViceNightsPalette.cyan.opacity(0.55)), lineWidth: 3 * scale)
+                for angle in [-2.9, -2.3, -1.6, -0.9, -0.25, 0.4] {
+                    var frond = Path()
+                    frond.move(to: crown)
+                    let end = CGPoint(x: crown.x + cos(angle) * 28 * scale, y: crown.y + sin(angle) * 18 * scale + 10 * scale)
+                    frond.addQuadCurve(to: end, control: CGPoint(x: (crown.x + end.x) / 2, y: min(crown.y, end.y) - 13 * scale))
+                    context.stroke(frond, with: .color(ViceNightsPalette.cyan.opacity(0.55)), style: StrokeStyle(lineWidth: 2 * scale, lineCap: .round))
+                }
+            }
+        }
+        .opacity(contrast == .increased ? 0.12 : 0.32)
+        .clipped()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }

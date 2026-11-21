@@ -42,6 +42,10 @@ The app is ad hoc signed, not notarized. If macOS blocks it, open it once and ap
 
 Nearby Drop also supports Finder sharing, transfer history, and signed in-app updates. Windows Quick Share was tested with one PC; see the [device verification record](docs/DEVICE-VERIFICATION.md).
 
+## Appearance
+
+In builds containing the Vice Nights theme, open **Settings → Appearance → Vice Nights** for a sunset-pink, ocean-cyan, and dark-plum palette with original palm artwork. Switch to **System**, **Light**, or **Dark** to return to a standard appearance; your chosen accent color is preserved. The theme is independent artwork and is not affiliated with Rockstar Games.
+
 ## Privacy
 
 Wireless transfers go directly over your local network; Nearby Drop does not relay files through its own cloud service. Incoming transfers need your approval unless you trust that device. Diagnostic reports are on by default in configured builds and can be disabled in Settings. They include first launch and app opens (hour-rounded), a random installation ID, app and macOS versions, Mac hardware model, your Mac's advertised name, and the other device's advertised name and broad type after a successful wireless transfer. They never include file names, file contents, or device IDs. See the [privacy policy](https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html).

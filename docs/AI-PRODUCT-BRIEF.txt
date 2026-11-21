@@ -1,0 +1,216 @@
+NEARBY DROP — PRODUCT, DESIGN, GROWTH, AND DIAGNOSTICS REVIEW PROMPT
+Prepared November 22, 2026 from the app's source and project documentation.
+
+Copy everything below into another AI. If it can inspect attachments, also give it
+screenshots of Send, Receive, Transfers, USB, and Settings > Appearance.
+
+YOUR ROLE AND OBJECTIVE
+Act as a senior macOS product designer, file-transfer engineer, and early-stage
+product strategist. Help me decide how to make Nearby Drop more useful, distinctive,
+reliable, and discoverable. Challenge weak ideas and explain tradeoffs. Give concrete
+recommendations that a solo maintainer can actually ship. Clearly separate existing
+capabilities, verified limitations, hypotheses, and proposed features.
+
+PRODUCT AND AUDIENCE
+Nearby Drop is an independent native macOS menu bar application that enables Quick
+Share file transfers between a Mac and Android, plus compatible Windows Quick Share
+clients. It also provides Android USB MTP browsing and transfers. The likely audience
+is people who own an Android phone and a Mac, and people working across mixed-device
+environments. These audience segments are hypotheses to validate, not researched
+customer personas. The core job is to move files between devices with little friction.
+
+The app requires macOS 14 or newer, supports Apple silicon and Intel, and is free to
+download under a proprietary license. It is not affiliated with Google, Apple, or
+Rockstar Games. It is not an Android app, cloud storage service, GTA companion app,
+or internet-wide file sharing service. The current release metadata in the repository
+is version 2.4.0, build 20; do not assume a future build is already publicly released.
+
+EXISTING USER EXPERIENCE
+The main menu bar popover has four tabs:
+
+1. SEND
+   - Choose files and folders or drag local files into the app.
+   - Discover nearby recipients and select a device.
+   - Send files using a compatible Quick Share client on the other device.
+   - Show connection/transfer state, progress, speed, and estimated remaining time.
+   - Cancel transfers and retry eligible failures, with source-file revalidation.
+   - Generate a Quick Share pairing QR code as another connection route.
+   - Finder's Share extension is another entry point for sending files.
+
+2. RECEIVE
+   - Advertise the Mac to nearby Quick Share devices.
+   - Show incoming transfer information and request approval.
+   - Receive files into a configurable local download directory.
+   - Show progress and completion/error feedback; open or reveal received files.
+   - Scan a supported Android-generated Quick Share QR code using the camera.
+   - Pause and resume receiving.
+
+3. TRANSFERS
+   - Display locally persisted recent sent/received transfer history.
+   - History contains local file/peer information; it is separate from remote analytics.
+   - Do not confuse local history with data uploaded to the diagnostic service.
+
+4. USB
+   - Find/connect to an Android device using MTP over a data cable.
+   - The phone must be unlocked and configured for File transfer.
+   - Browse storage/folders, navigate breadcrumbs, select files, upload and download.
+   - Download folders or selected items, save an item to a chosen location, display
+     progress, cancel operations, and recover from failures where supported.
+   - USB is an alternate workflow, not a promise of seamless automatic mid-transfer
+     failover from Wi-Fi. Do not describe that failover as already implemented.
+
+SETTINGS AND SUPPORT
+General settings include the advertised device name, download location, launch at
+login, sound/haptic feedback, diagnostic reporting, and local diagnostics export.
+Appearance includes System/Light/Dark, accent colors, and menu bar icon choices.
+About/update UI integrates Sparkle, including download/install state; installation
+is deferred while transfers are active. There is onboarding, a quick-start website,
+privacy documentation, GitHub issues, and a local redacted diagnostic-report preview.
+
+IMPORTANT CORRECTION ABOUT TRUST
+Older device-name-based trust records are explicitly invalidated in current code.
+Do not propose or claim that a matching advertised device name safely authenticates
+a device or currently bypasses approval. A favorite recipient could be a useful
+selection shortcut, but approval bypass would require a separate secure identity and
+pairing design. Marketing/docs may lag source; code and tests govern this claim.
+
+PROTOCOL, ARCHITECTURE, AND PRACTICAL LIMITS
+- SwiftUI views hosted in AppKit windows/popovers, with a shared ThemeManager.
+- A NearbyShare framework implements discovery, connection negotiation, encrypted
+  wireless sessions, protocol messages, and file-transfer safety.
+- Protobuf, networking/cryptography dependencies, QR generation/scanning, and a native
+  Objective-C USB bridge are already integrated. Avoid suggesting a rewrite by default.
+- Wireless file payloads travel directly between devices over the reachable local
+  network, not through our own cloud relay. QR pairing is still a connection workflow;
+  it does not magically remove network requirements. Mac-generated links use Google's
+  hosted Quick Share flow, so do not promise that every QR operation is fully offline.
+- Source-file selection/retry checks guard file identities and access changes; current
+  selection code caps wireless transfer selection at 128 files. Folder contents can
+  reach that cap. Do not advertise unlimited file counts.
+- Never weaken approval, path validation, file-access checks, or transfer integrity
+  to make a workflow appear faster.
+- Repository device records report successful Wi-Fi and both QR directions with a
+  Pixel 8 Pro, USB checks with Pixel/Nexus devices, and one Windows PC. These are
+  specific historical tests, not universal compatibility guarantees.
+- LTE-only hotspot discovery and broad device/network coverage remain unverified.
+- The README describes ad hoc signing without notarization. Evaluate a trustworthy
+  installation experience as a possible growth barrier; do not claim it is measured
+  as the current leading cause of drop-off.
+
+CURRENT DIAGNOSTICS: WHAT EXISTS TODAY
+There are two separate systems:
+
+A. AUTOMATIC EVENT REPORTING
+   - Swift client: NearByDrop/UsageAnalytics.swift.
+   - First-party HTTPS PHP/MySQL collector and password-protected dashboard.
+   - Only three accepted event types: first_launch, app_opened, transfer_completed.
+   - Payload: event UUID, random installation UUID, app/version, macOS major/minor,
+     Mac model identifier, advertised Mac name, and an hour-rounded timestamp.
+   - Successful wireless transfers also include direction, advertised peer name,
+     and broad peer type (phone/tablet/computer/unknown).
+   - It does not currently upload transfer attempts, failure events, USB usage,
+     transfer sizes/speeds/durations, feature usage, attribution, or crash reports.
+   - Reporting is on by default in configured builds, gated by acknowledgment of
+     the disclosure; users can disable it. Closing onboarding does not acknowledge it.
+   - Client queue: at most 200 events, retained for up to seven days; transient
+     failures retry. Opt-out clears pending events. The random installation ID is
+     retained across toggles to reduce inflated installation counts.
+   - Server: validation, prepared SQL, event-ID deduplication, rate limiting, and
+     90-day event retention. Rate limits use address-derived buckets, not a stored
+     raw-IP column in the event table; hosting access logs are a separate matter.
+   - No filenames, file contents, full local paths, clipboard contents, account
+     identities, peer IDs, precise location, phone model, or Android OS version.
+   - Advertised names CAN identify people; this is not fully anonymous analytics.
+   - Installation IDs count installations, not verified individuals. The public
+     client has no embedded ingest secret; valid-looking events are not strong
+     evidence of authentic users. Do not treat raw counts as fraud-proof.
+
+B. LOCAL USER-EXPORTED DIAGNOSTIC REPORT
+   - Built in AppSupport.swift and previewed in Settings before saving as JSON.
+   - Contains app version/build, macOS/architecture, receiving/outgoing state,
+     active transfer counts, and a categorized last error.
+   - Does not automatically upload this report. Do not confuse it with server events.
+
+OBSERVED TRACTION, WITH LIMITS
+A production read during this discussion on November 21, 2026 showed 27 distinct
+reporting installation IDs, 27 active IDs over 30 days, 123 app_opened events,
+28 first_launch rows spanning 27 installation IDs, and 56 successful wireless
+transfer events. This is a small historical sample, not a live count, lifetime
+download count, or proof of 27 unique people. Retention and opt-out affect coverage.
+There is no attempt denominator, so the current data cannot give a transfer success
+rate. Missing reports cannot distinguish inactivity from a delivery failure.
+
+DESIGN DIRECTION UNDER DEVELOPMENT
+We are implementing an optional GTA VI / Miami-sunset-inspired appearance called
+Vice Nights. The creative direction is dark plum, sunset pink, ocean cyan, original
+sun/palm vector artwork, and familiar native controls. Keep the app's identity and
+file-transfer purpose clear. Use original artwork, naming, and sound rather than
+requiring copied game logos, characters, music, or claims of affiliation.
+This is an appearance option, not a new game-related capability. Users retain the
+standard themes. Treat its effect on acquisition/retention as an experiment.
+
+IDEAS TO EVALUATE, NOT EXISTING FEATURES
+- Connection troubleshooting that explains discovery/permission/network problems
+  and guides users toward an appropriate QR or USB workflow.
+- Favorite recipients without insecure approval bypass.
+- Screenshot-to-device workflow, if it adds value beyond existing Finder sharing.
+- Explicit text/link sending or clipboard convenience, subject to Quick Share
+  compatibility and clear user action; never assume background clipboard access.
+- Better onboarding and installation trust, clearer compatibility messaging,
+  useful website content, community distribution, and a simple share/download link.
+- Expanded operational metrics and a dashboard that explains activation and failures.
+Do not frame already-present speed/ETA, retries, QR, USB, history, basic drag-and-drop,
+or local report export as entirely new features.
+
+WHAT I WANT YOU TO PRODUCE
+1. Summarize the app accurately in one sentence and one paragraph.
+2. Identify its strongest credible positioning and 2–3 audience hypotheses.
+3. Rank 8–12 improvements in a table: user problem, proposed behavior, evidence or
+   assumption, expected benefit, small/medium/large effort, platform/protocol
+   dependencies, privacy/security implications, and how to measure success.
+4. Recommend the best next THREE changes for a solo maintainer; explain why they
+   beat the alternatives. Do not pretend a suggested feature is unique without
+   researching competitors. Cite current primary sources when making market claims.
+5. Give three genuinely different visual directions, including Vice Nights. Specify
+   colors, typography, layout, the Send/Receive/Transfers/USB states, Settings,
+   keyboard focus, contrast, increased contrast, and reduced motion behavior.
+   Explain how branding stays subordinate to task clarity in a compact menu bar UI.
+6. Critique whether a GTA-inspired theme can help acquisition, whether it could hurt
+   trust/readability, and propose a modest launch experiment without assuming lift.
+7. Design an expanded diagnostics plan: event names, trigger points, minimal fields,
+   correlation IDs, deduplication, sampling/rate limits, timestamp precision,
+   retention, rollout/schema compatibility, and client retry/delivery observability.
+   Include attempts/completions/failures/cancellations, stage timings, transfer
+   method, bucketed sizes, activation/returning use, and privacy-safe error categories.
+   Explain denominators, pending attempts, timeouts, and how to avoid double-counting
+   retries or mistaking an old client's missing event for a failure.
+8. Propose dashboard views for activation, repeat use, success rate, failure stages,
+   method/version breakdowns, and collector health. A quiet event stream should be
+   treated as a signal to investigate, not automatic proof of an outage.
+9. Give a practical 30-day growth plan with concrete tasks, honest messaging, and
+   leading indicators. Separate installs, reporting IDs, active IDs, downloads,
+   and verified successful users. Do not invent conversion rates or testimonials.
+10. Finish with an implementation order and acceptance criteria for the next release,
+    plus the five most useful unanswered questions. Make useful assumptions first.
+
+BOUNDARIES
+Prefer useful technical evidence over indiscriminate data collection. Never propose
+silently harvesting filenames/content, raw clipboard data, stable hardware IDs,
+precise location, credentials, contacts, or identifiers from other apps. For new
+telemetry, describe the disclosure and user controls needed before rollout. Treat
+names as personal information and consider replacing unnecessary name fields with
+coarse technical categories. Do not put hosting credentials or private server
+configuration in your answer. Do not deploy, publish, or change live collection
+merely because this brief asks you to brainstorm.
+
+SOURCE MAP FOR AN AI WITH REPOSITORY ACCESS
+README.md; docs/DEVICE-VERIFICATION.md; NearByDrop/AppDelegate.swift;
+NearByDrop/TransferWindow.swift; NearByDrop/USBView.swift;
+NearByDrop/SettingsView.swift; NearByDrop/ThemeManager.swift;
+NearByDrop/OnboardingView.swift; NearByDrop/UsageAnalytics.swift;
+NearByDrop/AppSupport.swift; NearByDrop/AppUpdater.swift;
+NearbyShare/NearbyConnectionManager.swift; NearbyShare/TransferFileSafety.swift;
+ShareExtension/ShareViewController.swift; diagnostics/hostinger/README.md;
+diagnostics/hostinger/public/ingest.php; diagnostics/hostinger/schema.sql;
+Tests/NearbyShareSafetyTests.swift; scripts/tests/diagnostics-client.sh;
+docs/legal/privacy.html; scripts/release-version.json.

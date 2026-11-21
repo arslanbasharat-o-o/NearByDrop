@@ -6,11 +6,18 @@ derived="${1:-build}"
 output="${2:-dist}"
 mode="${3:---ci-unsigned}"
 if [ "$#" -gt 3 ]; then
-    echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--release|--release-keychain]" >&2
+    echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--vice-nights-preview|--release|--release-keychain]" >&2
     exit 2
 fi
 
 case "$mode" in
+    --vice-nights-preview)
+        if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
+            echo "Personal preview mode refuses SPARKLE_PRIVATE_KEY." >&2
+            exit 2
+        fi
+        artifact_suffix="-vice-nights-preview"
+        ;;
     --ci-unsigned)
         if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
             echo "CI unsigned mode refuses SPARKLE_PRIVATE_KEY." >&2
@@ -34,7 +41,7 @@ case "$mode" in
         ;;
     *)
         echo "Unknown package mode: $mode" >&2
-        echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--release|--release-keychain]" >&2
+        echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--vice-nights-preview|--release|--release-keychain]" >&2
         exit 2
         ;;
 esac
@@ -47,13 +54,17 @@ staging="$(mktemp -d "${TMPDIR:-/tmp}/nearby-drop-package.XXXXXX")"
 trap 'rm -rf "$staging"' EXIT
 app="$staging/Nearby Drop.app"
 ditto "$product" "$app"
+if [ "$mode" = "--vice-nights-preview" ]; then
+    /usr/libexec/PlistBuddy -c 'Add :ViceNightsEdition bool true' "$app/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Nearby Drop — Vice Nights' "$app/Contents/Info.plist"
+fi
 notices="$app/Contents/Resources/ThirdPartyLicenses"
 mkdir -p "$notices"
 cp LICENSE "$notices/Nearby-Drop-LICENSE.txt"
 cp Vendor/USB/licenses/*.txt "$notices/"
 cp Vendor/USB/README.md "$notices/USB.md"
 cp README.md "$notices/Nearby-Drop-README.md"
-for dependency in ASN1 BigInt SwiftECC swift-qrcode-generator QRCode swift-protobuf SwiftImageReadWrite Sparkle; do
+for dependency in ASN1 BigInt Digest SwiftECC swift-qrcode-generator QRCode swift-protobuf SwiftImageReadWrite Sparkle; do
     checkout="$derived/SourcePackages/checkouts/$dependency"
     if [ ! -d "$checkout" ] && [ "$dependency" = QRCode ]; then
         checkout="$derived/SourcePackages/checkouts/qrcode"
@@ -97,7 +108,16 @@ hdiutil create -volname "Nearby Drop" -srcfolder "$dmg_staging" -ov -format UDZO
 rm -rf "$dmg_staging"
 
 (cd "$output" && shasum -a 256 "$(basename "$dmg")" "$(basename "$archive")" > SHA256SUMS.txt)
-if [ "$mode" = "--ci-unsigned" ]; then
+if [ "$mode" = "--vice-nights-preview" ]; then
+    cat > "$output/VICE-NIGHTS-PREVIEW.txt" <<EOF
+Nearby Drop — Vice Nights personal preview.
+Open the DMG and drag Nearby Drop into Applications.
+The first launch selects Vice Nights. Settings > Appearance changes the theme.
+Ad hoc signed, not notarized. No public release or Sparkle appcast is generated.
+EOF
+    rm -f "$output/appcast.xml"
+    printf 'Created personal Vice Nights preview: %s and %s\n' "$dmg" "$archive"
+elif [ "$mode" = "--ci-unsigned" ]; then
     cat > "$output/NONPUBLIC-CI-ARTIFACTS.txt" <<EOF
 Engineering validation artifacts only.
 Not for installation or distribution.

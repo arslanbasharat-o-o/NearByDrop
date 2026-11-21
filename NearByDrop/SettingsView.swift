@@ -143,11 +143,11 @@ struct SettingsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .windowBackgroundColor))
+                .background(theme.windowSurface)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(theme.windowSurface)
         .frame(
             minWidth: NearbyWindowMetrics.settingsMinimumContentSize.width,
             minHeight: NearbyWindowMetrics.settingsMinimumContentSize.height
@@ -203,7 +203,7 @@ struct SettingsView: View {
         .padding(.top, 20)
         .frame(width: 176)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(theme.isViceNights ? ViceNightsPalette.card : Color(nsColor: .controlBackgroundColor))
     }
 
     private var settingsHeader: some View {
@@ -214,6 +214,9 @@ struct SettingsView: View {
         .padding(.horizontal, 26)
         .padding(.top, 20)
         .padding(.bottom, 14)
+        .background {
+            if theme.isViceNights { ViceNightsHeader() }
+        }
     }
 
     // MARK: - General
@@ -379,10 +382,18 @@ struct SettingsView: View {
                 }
                 .padding(12)
 
+                if theme.isViceNights {
+                    Label("Vice Nights · Sunset pink, ocean cyan, after-dark palms", systemImage: "sun.horizon.fill")
+                        .font(NearbyTypography.supporting)
+                        .foregroundStyle(theme.presentationAccent)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 10)
+                }
+
                 settingsDivider
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Accent color")
+                    Text(theme.isViceNights ? "Accent color (used by standard appearances)" : "Accent color")
                         .font(NearbyTypography.body.weight(.medium))
                     HStack(spacing: 7) {
                         ForEach([AccentOption.blue, .purple, .green, .orange, .pink, .graphite]) { option in
@@ -454,7 +465,7 @@ struct SettingsView: View {
 
     private func appearanceThemeCard(_ option: AppTheme) -> some View {
         let isSelected = theme.currentTheme == option
-        let isDark = option == .dark
+        let isDark = option == .dark || option == .viceNights
         let surface = isDark ? Color(red: 0.15, green: 0.16, blue: 0.19) : Color.white
         let secondarySurface = isDark ? Color(red: 0.22, green: 0.23, blue: 0.27) : Color(red: 0.94, green: 0.94, blue: 0.97)
         return Button {
@@ -482,7 +493,10 @@ struct SettingsView: View {
                     .padding(.bottom, 6)
                 }
                 .frame(maxWidth: .infinity)
-                .background(surface, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay {
+                    if option == .viceNights { ViceNightsHeader() }
+                }
+                .background(option == .viceNights ? ViceNightsPalette.background : surface, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(Color.primary.opacity(0.08), lineWidth: 1))
 
                 HStack(spacing: 4) {

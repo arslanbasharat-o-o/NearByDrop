@@ -50,6 +50,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO test | tee tests.log
       - name: Check diagnostics client
         run: bash scripts/tests/diagnostics-client.sh
+      - name: Check appearance persistence and contrast
+        run: bash scripts/tests/theme-appearance.sh
       - name: Test installer safety and rollback
         run: bash scripts/tests/install.sh
       - name: Static analysis

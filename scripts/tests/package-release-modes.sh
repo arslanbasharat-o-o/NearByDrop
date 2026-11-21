@@ -23,4 +23,13 @@ if [ -e "$tmp/ci-out/appcast.xml" ]; then
     exit 1
 fi
 
+if SPARKLE_PRIVATE_KEY=not-a-real-key "$root/scripts/package-release.sh" "$tmp/missing-derived" "$tmp/preview-out" --vice-nights-preview >"$tmp/preview.log" 2>&1; then
+    echo "Personal preview mode accepted a release signing secret." >&2
+    exit 1
+fi
+if ! grep -Fq "Personal preview mode refuses SPARKLE_PRIVATE_KEY." "$tmp/preview.log"; then
+    echo "Personal preview did not enforce its signing boundary." >&2
+    exit 1
+fi
+
 echo "Package mode guards passed."
