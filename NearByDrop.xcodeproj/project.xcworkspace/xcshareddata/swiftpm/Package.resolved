@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dagronf/qrcode.git",
       "state" : {
-        "revision" : "a8b8a5166e072156baf66ec2fff0850aa14b5297",
-        "version" : "28.1.0"
+        "revision" : "d7d31ba3260d09a24882024514e1f653a1255147",
+        "version" : "29.0.0"
       }
     },
     {
