@@ -37,3 +37,7 @@ Version 2.4.0 shows the diagnostics choice to existing installations before send
 ## Operational diagnostics
 
 Schema 2 adds job/attempt correlation, failures/cancellations, USB operations, stage timing and collector health. See [analytics contract](../../docs/upgrade/ANALYTICS.md). Back up files, private configuration and the database first; test migration 004 on isolated MySQL temporary tables, then apply the additive migration explicitly. Preserve dashboard credentials. Server enablement remains a deployment control. Current candidate build 23 reports automatically after the setup disclosure; Settings/onboarding offer no reporting switches. Older candidates/public clients retain their own behavior until updated.
+
+## Unified dashboard
+
+The root page and existing operations.php bookmarks now render one dashboard. Basic activity, detailed transfer outcomes, devices/history and collector health share one interface. Rendering is read-only and never invokes cleanup. Transfer history is paginated without DISTINCT-based display deduplication. See [deployment and record-preservation checks](../../docs/upgrade/DASHBOARD-REDESIGN.md). Collection endpoints and the 90-day ingestion/CLI retention policy are unchanged.

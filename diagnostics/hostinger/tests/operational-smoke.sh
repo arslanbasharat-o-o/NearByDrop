@@ -16,7 +16,7 @@ chmod 600 "$workspace/config.php"
 php "$root/diagnostics/hostinger/migrations/apply-004.php" "$workspace/config.php"
 php "$root/diagnostics/hostinger/migrations/apply-004.php" "$workspace/config.php"
 php "$root/diagnostics/hostinger/tests/operational-accounting.php"
-sqlite3 "$workspace/events.sqlite" 'CREATE TABLE diagnostic_events(event_id TEXT PRIMARY KEY, installation_id TEXT, event_type TEXT, occurred_at TEXT, app_version TEXT);'
+sqlite3 "$workspace/events.sqlite" 'CREATE TABLE diagnostic_events(event_id TEXT PRIMARY KEY, installation_id TEXT, event_type TEXT, occurred_at TEXT, app_version TEXT, mac_name TEXT, mac_model TEXT, macos_version TEXT, peer_name TEXT, peer_type TEXT, transfer_direction TEXT);'
 NEARBYDROP_DIAGNOSTICS_CONFIG="$workspace/config.php" php -S "127.0.0.1:$port" -t "$root/diagnostics/hostinger/public" > "$workspace/server.log" 2>&1 &
 server=$!
 for attempt in {1..40}; do if curl -s "http://127.0.0.1:$port/" >/dev/null; then break; fi; sleep 0.1; done
@@ -47,6 +47,6 @@ grep -q 'Started jobs' "$workspace/dashboard.html"
 grep -q 'Unknown jobs' "$workspace/dashboard.html"
 grep -q 'Collector health' "$workspace/dashboard.html"
 curl -fsS -b "$workspace/cookies" "$base/operations.php?method=usb" > "$workspace/empty.html"
-grep -q 'No events in this cohort.' "$workspace/empty.html"
+grep -q 'No detailed reports for this selection.' "$workspace/empty.html"
 [[ "$(curl -s -b "$workspace/cookies" -o /dev/null -w '%{http_code}' "$base/operations.php?from=2026-02-31")" == 400 ]]
 echo 'Operational HTTP checks passed: auth, migration replay, validation, UUID deduplication, filters and rendered metrics.'

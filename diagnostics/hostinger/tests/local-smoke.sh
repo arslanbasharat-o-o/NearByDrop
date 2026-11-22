@@ -139,7 +139,7 @@ status="$(curl -sS -o /dev/null -w '%{http_code}' "$base_url/setup.php?token=$to
 [[ "$status" == 404 ]]
 
 curl -fsS -H "Cookie: PHPSESSID=$saved_session" "$base_url/" -o "$tmp_dir/initial-dashboard.html"
-grep -q 'Reported installs' "$tmp_dir/initial-dashboard.html"
+grep -q 'Reporting Macs' "$tmp_dir/initial-dashboard.html"
 curl -sS -o /dev/null -H "Cookie: PHPSESSID=$saved_session" "$base_url/?logout=1"
 
 curl -sS -D "$tmp_dir/login.headers" "$base_url/" -o "$tmp_dir/login.html"
@@ -172,7 +172,7 @@ post_event "$tmp_dir/transfer.json"
 curl -fsS -H "Cookie: PHPSESSID=$auth_session" "$base_url/" -o "$tmp_dir/dashboard.html"
 grep -q 'Local Test Mac' "$tmp_dir/dashboard.html"
 grep -q 'Android Test Phone' "$tmp_dir/dashboard.html"
-grep -q 'Reported installs' "$tmp_dir/dashboard.html"
+grep -q 'Reporting Macs' "$tmp_dir/dashboard.html"
 [[ "$(sqlite3 "$database" 'SELECT COUNT(*) FROM diagnostic_events;')" == 3 ]]
 echo 'Local diagnostics smoke test passed: setup, sign-in, ingestion, deduplication, and dashboard.'
 
@@ -198,3 +198,32 @@ done
 grep -qi '^Retry-After:' "$tmp_dir/limit.headers"
 [[ "$(sqlite3 "$database" 'SELECT COUNT(*) FROM diagnostic_events;')" == 3 ]]
 echo 'Safeguards passed: timestamps, CLI-only cleanup, 90-day retention, and rate limiting.'
+# Viewing/filtering must never remove records, even ones outside retention.
+python3 - "$database" <<'PY'
+import sqlite3,sys
+db=sqlite3.connect(sys.argv[1]);db.row_factory=sqlite3.Row
+row=dict(db.execute("SELECT * FROM diagnostic_events WHERE event_type='transfer_completed' LIMIT 1").fetchone())
+columns=list(row)
+for n in range(55):
+    item=row.copy();item['event_id']=f'page-record-{n:03}';item['mac_name']='<script>long device name</script>'
+    db.execute('INSERT INTO diagnostic_events ('+','.join(columns)+') VALUES ('+','.join('?' for _ in columns)+')',[item[k] for k in columns])
+item=row.copy();item['event_id']='dashboard-expired';item['occurred_at']='2000-01-01 00:00:00'
+db.execute('INSERT INTO diagnostic_events ('+','.join(columns)+') VALUES ('+','.join('?' for _ in columns)+')',[item[k] for k in columns])
+db.commit()
+PY
+before="$(sqlite3 "$database" 'SELECT COUNT(*) FROM diagnostic_events;')"
+curl -fsS -H "Cookie: PHPSESSID=$auth_session" "$base_url/" -o "$tmp_dir/paged.html"
+grep -q '&lt;script&gt;' "$tmp_dir/paged.html"
+grep -q '>Next</a>' "$tmp_dir/paged.html"
+curl -fsS -H "Cookie: PHPSESSID=$auth_session" "$base_url/?page=2" -o "$tmp_dir/page-two.html"
+python3 - "$tmp_dir/page-two.html" <<'PY'
+import sys
+html=open(sys.argv[1]).read()
+assert html.count('Android Test Phone')==6, 'History pagination lost transfer records'
+assert html.count('&lt;script&gt;')==5, 'History pagination lost duplicate-looking records'
+assert '<script>' not in html, 'Unescaped device label'
+PY
+curl -fsS -H "Cookie: PHPSESSID=$auth_session" "$base_url/?from=2000-01-01&to=2000-01-02" -o "$tmp_dir/old.html"
+[[ "$(sqlite3 "$database" 'SELECT COUNT(*) FROM diagnostic_events;')" == "$before" ]]
+[[ "$(curl -s -H "Cookie: PHPSESSID=$auth_session" -o /dev/null -w '%{http_code}' "$base_url/?page=-1")" == 400 ]]
+echo 'Unified dashboard passed: read-only requests, historical access, safe labels and complete paginated transfer history.'
