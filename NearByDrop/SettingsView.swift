@@ -224,14 +224,6 @@ struct SettingsView: View {
 
     private var generalTab: some View {
         VStack(alignment: .leading, spacing: 15) {
-            if UsageAnalytics.operationalRolloutEnabled {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Automatic operational diagnostics").font(NearbyTypography.prominentBody)
-                    Text("This build automatically sends random installation ID, app/macOS versions, transfer method/direction, job and attempt IDs, bucketed sizes/counts/timings, outcomes, error categories, and queue depth. Operational reports contain no device names, file names, paths, contents, or clipboard data. Retained for 90 days. There is no in-app reporting switch.")
-                        .font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
-                }.padding(12).nearbyCardSurface()
-            }
-            Button("Revisit Setup Guide…") { OnboardingWindowController.showOnboarding() }.buttonStyle(.nearbySecondary)
             if !favorites.items.isEmpty {
                 settingsSection("Favorite Recipients") {
                     ForEach(favorites.items) { hint in

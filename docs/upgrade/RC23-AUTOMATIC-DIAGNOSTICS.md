@@ -23,3 +23,7 @@ Installed app: `/Applications/Nearby Drop.app`. Build 22 rollback: `dist/rollbac
 Candidate: `dist/automatic-diagnostics-rc/Nearby-Drop-2.5.0-diagnostics-rc.dmg` and universal ZIP.
 
 Physical device transfers were not repeated for this policy change. The candidate remains ad hoc signed, not notarized. Updated public-site policy copy is prepared locally for a future authorized publication.
+
+## Build 24 Settings cleanup
+
+At the owner's request, removed the large automatic-operational-diagnostics card and Revisit Setup Guide button from General Settings. Automatic diagnostics and the setup guide implementation remain intact; the guide is accessible from More → Quick Start Guide and the app Help menu. Setup disclosure and the smaller diagnostics/report-export section remain. Universal Release and packaging guards passed; installed build 24 was checked through native UI to confirm both specified elements are absent. No transfer logic changed, so physical-transfer tests were not repeated. Build 23 rollback ZIP is retained.

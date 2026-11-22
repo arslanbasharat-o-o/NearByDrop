@@ -22,7 +22,7 @@ Filter searches only the already loaded folder; it is not a phone-wide search. S
 
 ## Appearance and setup
 
-Settings → Appearance offers System, Light, Dark, Vice Nights, Coastal Sunrise and Midnight Route. The theme applies to the app's own views; native permission/open/save dialogs remain macOS-managed. General Settings can reopen the seven-step setup guide. Skip to Privacy skips teaching steps, not diagnostic acknowledgment. Closing setup does not silently acknowledge the disclosure.
+Settings → Appearance offers System, Light, Dark, Vice Nights, Coastal Sunrise and Midnight Route. The theme applies to the app's own views; native permission/open/save dialogs remain macOS-managed. More → Quick Start Guide reopens the seven-step setup guide. Skip to Privacy skips teaching steps, not diagnostic acknowledgment. Closing setup does not silently acknowledge the disclosure.
 
 ## Limits and feedback
 
