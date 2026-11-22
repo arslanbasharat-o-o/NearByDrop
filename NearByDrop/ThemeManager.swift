@@ -201,6 +201,14 @@ enum AppTheme: String, CaseIterable, Identifiable {
         }
     }
 
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light, .coastalSunrise: return .light
+        case .dark, .viceNights, .midnightRoute: return .dark
+        }
+    }
+
     func apply() {
         switch self {
         case .system:
@@ -338,6 +346,9 @@ final class ThemeManager: ObservableObject {
     var cardSurface: Color { palette?.surface ?? Color(nsColor: .controlBackgroundColor) }
     var primaryText: Color { palette?.text ?? .primary }
     var secondaryText: Color { palette?.secondaryText ?? .secondary }
+    func navigationText(selected: Bool) -> Color {
+        selected ? presentationAccent : secondaryText
+    }
     var surfaceBorder: Color { palette?.border ?? Color.primary.opacity(0.12) }
     var buttonFill: Color { palette?.button ?? presentationAccent }
     var successColor: Color { palette?.success ?? .green }
@@ -609,10 +620,13 @@ struct NearbyThemeArtwork: View {
 
 struct NearbyWindowSurface: ViewModifier {
     @ObservedObject private var theme = ThemeManager.shared
+    @Environment(\.colorScheme) private var inheritedScheme
     func body(content: Content) -> some View {
         content.foregroundStyle(theme.primaryText)
             .tint(theme.presentationAccent)
             .background(theme.windowSurface)
+            .environment(\.colorScheme, theme.resolvedTheme.colorScheme ?? inheritedScheme)
+            .preferredColorScheme(theme.resolvedTheme.colorScheme)
     }
 }
 

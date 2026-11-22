@@ -837,7 +837,7 @@ struct MenuView: View {
                     } label: {
                         Text(tab.rawValue)
                             .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
-                            .foregroundStyle(isSelected && colorScheme == .dark ? Color(nsColor: .alternateSelectedControlTextColor) : (isSelected ? theme.presentationAccent : Color.secondary))
+                            .foregroundStyle(theme.isCustom ? theme.navigationText(selected: isSelected) : (isSelected && colorScheme == .dark ? Color(nsColor: .alternateSelectedControlTextColor) : theme.navigationText(selected: isSelected)))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 6)
                             .background(isSelected ? (theme.isCustom ? theme.presentationAccent.opacity(0.22) : (colorScheme == .dark ? Color(nsColor: .selectedContentBackgroundColor) : theme.presentationAccent.opacity(0.16))) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))

@@ -150,7 +150,7 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(theme.windowSurface)
+        .nearbyThemedWindow()
         .frame(
             minWidth: NearbyWindowMetrics.settingsMinimumContentSize.width,
             minHeight: NearbyWindowMetrics.settingsMinimumContentSize.height
@@ -190,7 +190,7 @@ struct SettingsView: View {
                 } label: {
                     Label(tab.rawValue, systemImage: tab.icon)
                         .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                        .foregroundStyle(isSelected ? theme.presentationAccent : Color.primary.opacity(0.78))
+                        .foregroundStyle(isSelected ? theme.presentationAccent : theme.primaryText)
                         .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
                         .padding(.horizontal, 11)
                         .background(
@@ -471,10 +471,10 @@ struct SettingsView: View {
                                 VStack(spacing: 6) {
                                     Image(systemName: style.sfSymbol)
                                         .font(.system(size: 16, weight: .medium))
-                                        .foregroundStyle(isSelected ? theme.presentationAccent : Color.secondary)
+                                        .foregroundStyle(theme.navigationText(selected: isSelected))
                                     Text(style.displayName)
                                         .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
-                                        .foregroundStyle(isSelected ? theme.presentationAccent : Color.primary)
+                                        .foregroundStyle(isSelected ? theme.presentationAccent : theme.primaryText)
                                 }
                                 .frame(maxWidth: .infinity, minHeight: 56)
                                 .background(isSelected ? theme.presentationAccent.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -533,11 +533,11 @@ struct SettingsView: View {
                     Spacer(minLength: 0)
                     if isSelected { Image(systemName: "checkmark.circle.fill").font(.system(size: 10)).foregroundStyle(theme.presentationAccent) }
                 }
-                .foregroundStyle(isSelected ? theme.presentationAccent : Color.primary)
+                .foregroundStyle(isSelected ? theme.presentationAccent : theme.primaryText)
             }
             .padding(6)
             .background(isSelected ? theme.presentationAccent.opacity(0.07) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(isSelected ? theme.presentationAccent : Color.primary.opacity(0.12), lineWidth: isSelected ? 1.5 : 1))
+            .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous).stroke(isSelected ? theme.presentationAccent : theme.primaryText.opacity(0.12), lineWidth: isSelected ? 1.5 : 1))
             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(.plain)

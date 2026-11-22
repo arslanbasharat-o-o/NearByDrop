@@ -60,6 +60,14 @@ for appearance in AppTheme.allCases {
         precondition(ratio(palette.success, surface) >= 4.5, "Success contrast: \(appearance)")
     }
     precondition(ratio(.white, palette.button) >= 4.5, "Button contrast: \(appearance)")
+    // Navigation must use palette colors even if the hosting popover still reports light mode.
+    for ambient in [NSAppearance.Name.aqua, .darkAqua] {
+        NSAppearance(named: ambient)!.performAsCurrentDrawingAppearance {
+            precondition(ratio(theme.navigationText(selected: false), palette.background) >= 4.5)
+            precondition(ratio(theme.navigationText(selected: true), palette.background) >= 4.5)
+        }
+    }
+    precondition(appearance.colorScheme == (appearance == .coastalSunrise ? .light : .dark))
     print("Appearance persistence and contrast passed: \(appearance.rawValue)")
 }
 print("Edition preset respects later user choices; standard appearances retained.")
