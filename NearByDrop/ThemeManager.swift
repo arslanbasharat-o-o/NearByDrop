@@ -499,35 +499,42 @@ struct ViceNightsHeader: View {
 
     var body: some View {
         Canvas { context, size in
-            // Keep the left side quiet behind the app name and device name.
-            let horizon = CGPoint(x: size.width * 0.78, y: size.height * 0.45)
-            let sun = CGRect(x: horizon.x - 25, y: horizon.y - 25, width: 50, height: 50)
-            context.fill(Path(ellipseIn: sun), with: .linearGradient(
-                Gradient(colors: [ViceNightsPalette.pink, Color(red: 1, green: 0.48, blue: 0.30)]),
-                startPoint: CGPoint(x: sun.midX, y: sun.minY), endPoint: CGPoint(x: sun.midX, y: sun.maxY)))
-            for offset in [0.0, 7.0, 15.0] {
-                let stripe = CGRect(x: sun.minX, y: sun.midY + offset, width: sun.width, height: 3)
-                context.fill(Path(stripe), with: .color(ViceNightsPalette.background))
-            }
-            for (x, scale) in [(0.92, 1.0), (0.63, 0.65)] {
-                let crown = CGPoint(x: size.width * x, y: size.height * (1 - 0.74 * scale))
-                var trunk = Path()
-                trunk.move(to: CGPoint(x: crown.x - 9 * scale, y: size.height))
-                trunk.addQuadCurve(to: crown, control: CGPoint(x: crown.x + 2, y: size.height * 0.6))
-                context.stroke(trunk, with: .color(ViceNightsPalette.cyan.opacity(0.55)), lineWidth: 3 * scale)
-                for angle in [-2.9, -2.3, -1.6, -0.9, -0.25, 0.4] {
-                    var frond = Path()
-                    frond.move(to: crown)
-                    let end = CGPoint(x: crown.x + cos(angle) * 28 * scale, y: crown.y + sin(angle) * 18 * scale + 10 * scale)
-                    frond.addQuadCurve(to: end, control: CGPoint(x: (crown.x + end.x) / 2, y: min(crown.y, end.y) - 13 * scale))
-                    context.stroke(frond, with: .color(ViceNightsPalette.cyan.opacity(0.55)), style: StrokeStyle(lineWidth: 2 * scale, lineCap: .round))
-                }
-            }
+            Self.draw(in: &context, size: size)
         }
         .opacity(contrast == .increased ? 0.12 : 0.32)
         .clipped()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+
+    // Bound type inference for the older compiler used by the Intel runner.
+    private static func draw(in context: inout GraphicsContext, size: CGSize) {
+        // Keep the left side quiet behind the app name and device name.
+        let horizon = CGPoint(x: size.width * 0.78, y: size.height * 0.45)
+        let sun = CGRect(x: horizon.x - 25, y: horizon.y - 25, width: 50, height: 50)
+        context.fill(Path(ellipseIn: sun), with: .linearGradient(
+            Gradient(colors: [ViceNightsPalette.pink, Color(red: 1, green: 0.48, blue: 0.30)]),
+            startPoint: CGPoint(x: sun.midX, y: sun.minY), endPoint: CGPoint(x: sun.midX, y: sun.maxY)))
+        for offset in [0.0, 7.0, 15.0] {
+            let stripe = CGRect(x: sun.minX, y: sun.midY + offset, width: sun.width, height: 3)
+            context.fill(Path(stripe), with: .color(ViceNightsPalette.background))
+        }
+        let palms: [(CGFloat, CGFloat)] = [(0.92, 1.0), (0.63, 0.65)]
+        let angles: [CGFloat] = [-2.9, -2.3, -1.6, -0.9, -0.25, 0.4]
+        for (x, scale) in palms {
+            let crown = CGPoint(x: size.width * x, y: size.height * (1 - 0.74 * scale))
+            var trunk = Path()
+            trunk.move(to: CGPoint(x: crown.x - 9 * scale, y: size.height))
+            trunk.addQuadCurve(to: crown, control: CGPoint(x: crown.x + 2, y: size.height * 0.6))
+            context.stroke(trunk, with: .color(ViceNightsPalette.cyan.opacity(0.55)), lineWidth: 3 * scale)
+            for angle in angles {
+                var frond = Path()
+                frond.move(to: crown)
+                let end = CGPoint(x: crown.x + cos(angle) * 28 * scale, y: crown.y + sin(angle) * 18 * scale + 10 * scale)
+                frond.addQuadCurve(to: end, control: CGPoint(x: (crown.x + end.x) / 2, y: min(crown.y, end.y) - 13 * scale))
+                context.stroke(frond, with: .color(ViceNightsPalette.cyan.opacity(0.55)), style: StrokeStyle(lineWidth: 2 * scale, lineCap: .round))
+            }
+        }
     }
 }
 
