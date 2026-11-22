@@ -42,19 +42,19 @@ The app is ad hoc signed, not notarized. If macOS blocks it, open it once and ap
 
 Nearby Drop also supports Finder sharing, transfer history, and signed in-app updates. Windows Quick Share was tested with one PC; see the [device verification record](docs/DEVICE-VERIFICATION.md).
 
-## Upgrade candidate
+## What’s new in 2.5
 
-The development branch adds **Vice Nights**, **Coastal Sunrise**, and **Midnight Route**, alongside System, Light, and Dark. Original sunset, coast, and route artwork coordinates with readable controls and state colors. Appearance changes apply immediately and persist.
+Version 2.5 adds **Vice Nights**, **Coastal Sunrise**, and **Midnight Route**, alongside System, Light, and Dark. Original sunset, coast, and route artwork coordinates with readable controls and state colors. Appearance changes apply immediately and persist.
 
-The candidate also includes Connection Doctor, favorite-recipient selection hints, explicit text/link sharing as UTF-8 files, screenshot preview, a seven-step setup guide, and USB current-folder filtering/sorting. Favorites do not authenticate devices or bypass approval. Native text/link Quick Share payload support is unverified; receivers get a clearly labeled `.txt` file. Screenshot capture requires explicit user action, macOS permission, and review.
+The update also includes Connection Doctor, favorite-recipient selection hints, explicit text/link sharing as UTF-8 files, screenshot preview, a seven-step setup guide, and USB current-folder filtering/sorting. Favorites do not authenticate devices or bypass approval. Native text/link Quick Share payload support is unverified; receivers get a clearly labeled `.txt` file. Screenshot capture requires explicit user action, macOS permission, and review.
 
-Large-batch execution remains disabled; the 128-file limit is retained. The diagnostics RC (build 23) fixes custom-theme navigation contrast and sends diagnostic reports automatically after its setup disclosure, without in-app reporting switches. The operational collector/dashboard have been deployed after isolated MySQL checks and backups; configured builds enable operational reporting by default. No public app release has occurred. See [the implementation checklist](docs/upgrade/CHECKLIST.md), [diagnostics contract](docs/upgrade/ANALYTICS.md), and [batch limits](docs/upgrade/EXPERIMENTAL-BATCHES.md).
+Large-batch execution remains disabled; the 128-file limit is retained. Custom-theme navigation contrast is corrected. Configured 2.5 builds send diagnostic reports automatically after the setup disclosure, without in-app reporting switches. The operational collector/dashboard support failures, retries, USB results and coarse timing/error categories. See [the implementation checklist](docs/upgrade/CHECKLIST.md), [diagnostics contract](docs/upgrade/ANALYTICS.md), and [batch limits](docs/upgrade/EXPERIMENTAL-BATCHES.md).
 
-The public download above remains the current stable release. Nearby Drop is not affiliated with Rockstar Games.
+The public download above points to the latest stable release. Nearby Drop is not affiliated with Rockstar Games.
 
 ## Privacy
 
-Wireless transfers go directly over your local network; Nearby Drop does not relay files through its own cloud service. Incoming transfers need your approval unless you trust that device. The current development candidate sends diagnostic reports automatically after setup and offers no in-app off switch. Older public versions may still have reporting controls. They include first launch and app opens (hour-rounded), a random installation ID, app and macOS versions, Mac hardware model, your Mac's advertised name, and the other device's advertised name and broad type after a successful wireless transfer. They never include file names, file contents, or device IDs. See the [privacy policy](https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html).
+Wireless transfers go directly over your local network; Nearby Drop does not relay files through its own cloud service. Incoming transfers need your approval unless you trust that device. Version 2.5 sends diagnostic reports automatically after setup and offers no in-app off switch. Older public versions may still have reporting controls. They include first launch and app opens (hour-rounded), a random installation ID, app and macOS versions, Mac hardware model, your Mac's advertised name, and the other device's advertised name and broad type after a successful wireless transfer. They never include file names, file contents, or device IDs. See the [privacy policy](https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html).
 
 ## Help
 

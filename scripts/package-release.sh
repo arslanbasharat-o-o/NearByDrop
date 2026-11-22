@@ -69,16 +69,10 @@ trap 'rm -rf "$staging"' EXIT
 app="$staging/Nearby Drop.app"
 ditto "$product" "$app"
 if [ "$mode" = "--release-candidate" ] || [ "$mode" = "--diagnostics-candidate" ]; then
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString 2.5.0' "$app/Contents/Info.plist"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 25' "$app/Contents/Info.plist"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleShortVersionString 2.5.0' "$app/Contents/PlugIns/ShareExtension.appex/Contents/Info.plist"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 25' "$app/Contents/PlugIns/ShareExtension.appex/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Nearby Drop Upgrade RC' "$app/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c 'Set :SUEnableAutomaticChecks false' "$app/Contents/Info.plist"
 fi
 if [ "$mode" = "--diagnostics-candidate" ]; then
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 25' "$app/Contents/Info.plist"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 25' "$app/Contents/PlugIns/ShareExtension.appex/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c 'Set :ExpandedDiagnosticsEnabled true' "$app/Contents/Info.plist"
 fi
 if [ "$mode" = "--vice-nights-preview" ]; then
@@ -120,6 +114,7 @@ codesign --force --sign - --timestamp=none --entitlements ShareExtension/ShareEx
 codesign --force --sign - --timestamp=none --options runtime --entitlements NearByDrop/NearByDrop.entitlements "$app"
 codesign --verify --deep --strict --verbose=2 "$app"
 version=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$app/Contents/Info.plist")
+build_number=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$app/Contents/Info.plist")
 minimum=$(/usr/libexec/PlistBuddy -c 'Print LSMinimumSystemVersion' "$app/Contents/Info.plist")
 test "$minimum" = 14.0
 archive="$output/Nearby-Drop-$version$artifact_suffix-universal.zip"
@@ -137,7 +132,7 @@ rm -rf "$dmg_staging"
 (cd "$output" && shasum -a 256 "$(basename "$dmg")" "$(basename "$archive")" > SHA256SUMS.txt)
 if [ "$mode" = "--diagnostics-candidate" ]; then
     cat > "$output/RELEASE-CANDIDATE.txt" <<EOF
-Nearby Drop 2.5.0 automatic-diagnostics release candidate, build 25.
+Nearby Drop $version automatic-diagnostics release candidate, build $build_number.
 Fixes custom-theme navigation contrast. Ad hoc signed, not notarized.
 Diagnostics are automatic after the setup disclosure; there is no in-app reporting switch.
 No public Sparkle appcast. Large-batch execution disabled.
@@ -146,7 +141,7 @@ EOF
     printf 'Created automatic-diagnostics candidate: %s and %s\n' "$dmg" "$archive"
 elif [ "$mode" = "--release-candidate" ]; then
     cat > "$output/RELEASE-CANDIDATE.txt" <<EOF
-Nearby Drop 2.5.0 upgrade release candidate, build 25.
+Nearby Drop $version upgrade release candidate, build $build_number.
 Personal validation build; not a public release. Ad hoc signed, not notarized.
 Diagnostics are automatic after setup; no public Sparkle appcast is generated.
 All six appearances are available in Settings. Native text/link payload support is

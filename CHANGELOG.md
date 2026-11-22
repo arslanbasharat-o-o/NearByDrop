@@ -1,5 +1,18 @@
 # Unreleased
 
+# 2.5.0 (26)
+
+- Add Vice Nights, Coastal Sunrise and Midnight Route appearances, with readable navigation and shared controls.
+- Add Connection Doctor, favorite-recipient hints and a seven-step setup guide.
+- Prepare text and links as UTF-8 files, and preview screenshots before choosing a recipient.
+- Filter and sort the current USB folder, improve breadcrumbs and recover stale connection state.
+- Add job/attempt diagnostics for failures, retries, USB outcomes and coarse timing/error categories.
+- Send diagnostics automatically after the setup disclosure; remove reporting switches and simplify General Settings.
+- Keep local report preview/export under More and Help; never automatically upload the local report.
+- Keep the 128-file wireless limit; large-batch execution remains disabled.
+- Retain the existing Sparkle update key and transfer safety checks. macOS 14+, Apple silicon and Intel binaries.
+- Distribution remains ad hoc signed; Developer ID notarization is not available.
+
 # 2.4.0 (20)
 
 - Require approval for every incoming transfer, including valid QR pairings.
