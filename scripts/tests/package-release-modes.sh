@@ -32,4 +32,9 @@ if ! grep -Fq "Personal preview mode refuses SPARKLE_PRIVATE_KEY." "$tmp/preview
     exit 1
 fi
 
+if SPARKLE_PRIVATE_KEY=not-a-real-key "$root/scripts/package-release.sh" "$tmp/missing-derived" "$tmp/rc-out" --release-candidate >"$tmp/rc.log" 2>&1; then
+    echo "Release candidate mode accepted a release signing secret." >&2
+    exit 1
+fi
+grep -Fq "Release candidate mode refuses SPARKLE_PRIVATE_KEY." "$tmp/rc.log"
 echo "Package mode guards passed."

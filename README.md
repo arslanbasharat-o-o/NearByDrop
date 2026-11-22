@@ -42,9 +42,15 @@ The app is ad hoc signed, not notarized. If macOS blocks it, open it once and ap
 
 Nearby Drop also supports Finder sharing, transfer history, and signed in-app updates. Windows Quick Share was tested with one PC; see the [device verification record](docs/DEVICE-VERIFICATION.md).
 
-## Appearance
+## Upgrade candidate
 
-In builds containing the Vice Nights theme, open **Settings → Appearance → Vice Nights** for a sunset-pink, ocean-cyan, and dark-plum palette with original palm artwork. Switch to **System**, **Light**, or **Dark** to return to a standard appearance; your chosen accent color is preserved. The theme is independent artwork and is not affiliated with Rockstar Games.
+The development branch adds **Vice Nights**, **Coastal Sunrise**, and **Midnight Route**, alongside System, Light, and Dark. Original sunset, coast, and route artwork coordinates with readable controls and state colors. Appearance changes apply immediately and persist.
+
+The candidate also includes Connection Doctor, favorite-recipient selection hints, explicit text/link sharing as UTF-8 files, screenshot preview, a seven-step setup guide, and USB current-folder filtering/sorting. Favorites do not authenticate devices or bypass approval. Native text/link Quick Share payload support is unverified; receivers get a clearly labeled `.txt` file. Screenshot capture requires explicit user action, macOS permission, and review.
+
+Large-batch execution remains disabled; the 128-file limit is retained. Expanded operational diagnostics are implemented behind a disabled rollout gate plus separate consent, with a staging-only migration and dashboard. No production activation or public release has occurred. See [the implementation checklist](docs/upgrade/CHECKLIST.md), [diagnostics contract](docs/upgrade/ANALYTICS.md), and [batch limits](docs/upgrade/EXPERIMENTAL-BATCHES.md).
+
+The public download above remains the current stable release. Nearby Drop is not affiliated with Rockstar Games.
 
 ## Privacy
 

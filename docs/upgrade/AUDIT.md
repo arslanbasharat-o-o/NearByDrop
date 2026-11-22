@@ -26,6 +26,6 @@ Baseline: `e413fc6` on `codex/tropical-upgrade`; this captures the previous priv
 | Collector | Cleanup heuristics delete distinct events sharing installation/name/type/hour | Remove lossy cleanup; UUID idempotency and retention only; never run old heuristic migration in the upgrade |
 | Dashboard | Legacy counts only; no filters, outcomes, coverage or delivery health | Add authenticated operational views with explicit cohorts/pending/unknown and legacy separation |
 | Distribution | `security find-identity -v -p codesigning` returns zero valid identities | Local ad hoc RC possible; Developer ID/notarization/stapling explicitly credential-blocked |
-| Hardware | Prior specific device checks exist; no phone/Windows/Intel hardware attached for this run | Automated encrypted loopback tests and both-architecture builds; document unperformed physical checks |
+| Hardware | Prior specific device checks exist; physical phone/Windows/Intel checks were not performed in this run | Automated encrypted loopback tests and both-architecture builds; document unperformed physical checks |
 
 The baseline test run, new phase checks and release evidence are recorded in CHECKLIST.md and the final verification report. The installed stable app and production diagnostics are left intact.
