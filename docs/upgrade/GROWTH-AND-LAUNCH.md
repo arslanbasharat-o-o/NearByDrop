@@ -23,7 +23,7 @@ Do not repeat vendor speed claims as independent benchmarks. No head-to-head har
 
 Nearby Drop's next candidate brings three original appearances—Vice Nights, Coastal Sunrise and Midnight Route—to a native Mac sharing utility. Connection Doctor explains what the Mac can observe and offers useful QR/USB next steps. Favorite recipients make selection quicker without bypassing approval. You can prepare text or links as UTF-8 files, review a screenshot before sharing, and filter or sort a phone's current USB folder.
 
-The candidate requires macOS 14+, includes Apple silicon and Intel binary slices, and retains the 128-file wireless limit. Compatibility depends on the device/client/network. Build 22 makes expanded operational diagnostics available through separate opt-in; the collector/dashboard are deployed, and reporting remains off until each installation consents. This is independent original artwork, with no Google/Apple/Rockstar affiliation. Signing/notarization and hardware verification status must accompany the approved download.
+The candidate requires macOS 14+, includes Apple silicon and Intel binary slices, and retains the 128-file wireless limit. Compatibility depends on the device/client/network. Build 23 sends diagnostics automatically after its setup disclosure, without in-app reporting switches. The collector/dashboard are deployed. This is independent original artwork, with no Google/Apple/Rockstar affiliation. Signing/notarization and hardware verification status must accompany the approved download.
 
 ## Demonstration storyboard (45 seconds)
 
@@ -41,7 +41,7 @@ The candidate requires macOS 14+, includes Apple silicon and Intel binary slices
 | 1 | Recruit 5–8 voluntary testers across a few Android models; record environment, first-transfer result and friction manually; complete signing/hardware gates | First successful transfer per tested setup; recurring discovery/install failure categories; prioritize the most repeated blocker |
 | 2 | Refine the help/installation copy from those observations; record the demonstration with approved content; prepare one Mac-focused and one Android-focused announcement | Help-page questions answered; time to first success in small observed tests; avoid projecting these samples to all users |
 | 3 | After publication authorization, release the candidate with accurate verification status; share in a small number of relevant communities where the product is useful | Public GitHub asset download deltas, voluntary feedback, reproductions; downloads are not people or active installations |
-| 4 | Compare feedback from themed/default experiences; fix the highest-impact failure; decide whether favorite/doctor workflows warrant deeper investment | Repeat voluntary use, meaningful feedback, and—only after separately authorized opt-in rollout—eligible operational cohorts |
+| 4 | Compare feedback from themed/default experiences; fix the highest-impact failure; decide whether favorite/doctor workflows warrant deeper investment | Repeat voluntary use, meaningful feedback, and—under the disclosed automatic-reporting policy—eligible operational cohorts |
 
 Theme test: ask consenting testers which appearance they choose and why; preserve function/installation instructions across variants. With current small usage, report counts and uncertainty rather than claiming statistically significant lift. No new website trackers, fingerprints, background clipboard access or operational rollout are needed for this preparatory plan.
 

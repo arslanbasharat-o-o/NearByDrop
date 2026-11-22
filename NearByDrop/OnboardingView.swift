@@ -75,7 +75,6 @@ struct OnboardingView: View {
     @State private var currentStep = 0
     @State private var cameraAllowed: Bool = false
     @State private var isPreview = false
-    @State private var shareUsageData = UsageAnalytics.isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let stepCount = 7
@@ -177,9 +176,6 @@ struct OnboardingView: View {
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .nearbyThemedWindow()
-        .onReceive(NotificationCenter.default.publisher(for: UsageAnalytics.preferencesChanged)) { _ in
-            shareUsageData = UsageAnalytics.isEnabled
-        }
         .onAppear {
             checkPermissions()
         }
@@ -366,18 +362,15 @@ struct OnboardingView: View {
 
     private var diagnosticsCard: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Toggle("Send diagnostic reports", isOn: $shareUsageData)
-                .onChange(of: shareUsageData) { _, enabled in
-                    UsageAnalytics.setEnabled(enabled)
-                }
+            Text("Automatic diagnostic reports").font(NearbyTypography.prominentBody)
 
-            Text("On by default. Reports include app and macOS versions, Mac hardware model, this Mac’s name, and nearby device name and type after successful wireless transfers. No file names or contents.")
+            Text("This build sends reports automatically after setup. There is no in-app switch. Reports include app and macOS versions, Mac hardware model, this Mac’s name, and nearby device name and type after successful wireless transfers. No file names or contents.")
                 .font(.system(size: 10))
                 .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
             DisclosureGroup("Timing and installation details") {
-                Text("Reports also record first launch and app opens, using a random installation ID and hour-rounded timestamps. Turn reports off anytime in Settings.")
+                Text("Reports also record first launch and app opens, using a random installation ID and hour-rounded timestamps. Operational reports add transfer starts/outcomes, retries, USB operations, error categories, bucketed sizes/counts/timings and queue depth, with minute-rounded timestamps. Reports are retained for 90 days; up to 200 pending reports can remain on this Mac for seven days.")
                     .font(.system(size: 10))
                     .foregroundStyle(theme.secondaryText)
                     .fixedSize(horizontal: false, vertical: true)

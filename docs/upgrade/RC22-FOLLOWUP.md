@@ -1,5 +1,7 @@
 # Build 22: readable navigation and live operational diagnostics
 
+Historical build 22 record. Build 23 subsequently replaces the opt-in controls with owner-requested automatic reporting; see RC23-AUTOMATIC-DIAGNOSTICS.md.
+
 November 22, 2026, Asia/Karachi. The owner reported unreadable Vice Nights tabs and requested the diagnostics system be updated. This follow-up supersedes build 21's historical deployment/installation status.
 
 ## Theme correction

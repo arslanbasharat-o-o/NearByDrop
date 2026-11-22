@@ -2,7 +2,7 @@
 
 ## Candidate vs public release
 
-The public stable installation remains v2.4.0. The upgrade is built on an isolated branch. `package-release.sh … --release-candidate` prepares a private 2.5.0 / build 21 universal candidate, refuses production Sparkle secrets, checks expanded telemetry is disabled, and generates no public appcast. It does not install over the owner's stable app or publish anything.
+The installed local candidate is 2.5.0/build 23. Both `--release-candidate` and `--diagnostics-candidate` stage build 23, refuse production Sparkle secrets and generate no public appcast. The source reporting capability is enabled by default; reporting is automatic after the setup disclosure. Neither packaging mode publishes anything. Older installed bundles were backed up before replacement.
 
 The normal source/release metadata remains the current public version until a separate approved release bump. Candidate metadata is applied only to a staged bundle before signing. The private candidate disables automatic update checks; a future approved public build retains the usual Sparkle flow.
 
@@ -29,8 +29,8 @@ xcodebuild -project NearByDrop.xcodeproj -scheme NearByDrop -configuration Relea
 bash scripts/package-release.sh build-upgrade dist/upgrade --release-candidate
 ```
 
-Inspect the unpacked archive with deep/strict codesign validation; verify arm64 and x86_64 slices throughout, checksums, DMG integrity, privacy flag and release-candidate metadata. Preserve current receiving pause/consent choices and download/history data. Native open/save/permission dialogs stay under macOS control.
+Inspect the unpacked archive with deep/strict codesign validation; verify arm64 and x86_64 slices throughout, checksums, DMG integrity, privacy flag and release-candidate metadata. Preserve receiving pause choices and download/history data. Reporting in build 23 follows the new automatic policy instead of historical toggle preferences. Native open/save/permission dialogs stay under macOS control.
 
 ## Diagnostics candidate follow-up
 
-`bash scripts/package-release.sh build-upgrade dist/diagnostics-rc --diagnostics-candidate` stages build 22 with the expanded-reporting capability available, but never sets user consent. This explicit packaging mode refuses production Sparkle secrets and generates no public appcast. The normal RC mode still requires the source rollout flag false and produces build 21. See RC22-FOLLOWUP.md for the subsequent authorized server deployment and installed candidate.
+`bash scripts/package-release.sh build-upgrade dist/automatic-diagnostics-rc --diagnostics-candidate` stages build 23 with automatic diagnostics after the setup disclosure. This mode refuses production Sparkle secrets and generates no public appcast. See RC23-AUTOMATIC-DIAGNOSTICS.md for the policy change, installed-app check and actual server receipt.

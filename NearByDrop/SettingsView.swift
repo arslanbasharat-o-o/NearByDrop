@@ -120,8 +120,6 @@ struct SettingsView: View {
     @ObservedObject private var feedback = FeedbackManager.shared
     @ObservedObject private var updater = AppUpdater.shared
     @State private var customName: String = ""
-    @State private var usageAnalyticsEnabled = PreviewRuntime.isSwiftUIPreviews || UsageAnalytics.isEnabled
-    @State private var expandedDiagnostics = UsageAnalytics.operationalEnabled
     @State private var showingDiagnosticsPreview = false
     @State private var diagnosticsReport = ""
     @State private var diagnosticsSaveError: String?
@@ -171,10 +169,6 @@ struct SettingsView: View {
             Button("OK", role: .cancel) { diagnosticsSaveError = nil }
         } message: {
             Text(diagnosticsSaveError ?? "Choose another location and try again.")
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UsageAnalytics.preferencesChanged)) { _ in
-            usageAnalyticsEnabled = UsageAnalytics.isEnabled
-            expandedDiagnostics = UsageAnalytics.operationalEnabled
         }
         .onAppear {
             customName = model.deviceName
@@ -232,9 +226,8 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 15) {
             if UsageAnalytics.operationalRolloutEnabled {
                 VStack(alignment: .leading, spacing: 8) {
-                    Toggle("Share Operational Diagnostics", isOn: $expandedDiagnostics)
-                        .onChange(of: expandedDiagnostics) { _, enabled in UsageAnalytics.setOperationalEnabled(enabled) }
-                    Text("Optional additional reports: random installation ID, app/macOS versions, transfer method/direction, job and attempt IDs, bucketed sizes/counts/timings, outcomes, error categories, and queue depth. No device names, file names, paths, contents, or clipboard data. Retained for 90 days. Requires Share diagnostics to remain enabled.")
+                    Text("Automatic operational diagnostics").font(NearbyTypography.prominentBody)
+                    Text("This build automatically sends random installation ID, app/macOS versions, transfer method/direction, job and attempt IDs, bucketed sizes/counts/timings, outcomes, error categories, and queue depth. Operational reports contain no device names, file names, paths, contents, or clipboard data. Retained for 90 days. There is no in-app reporting switch.")
                         .font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
                 }.padding(12).nearbyCardSurface()
             }
@@ -335,17 +328,10 @@ struct SettingsView: View {
             settingsSection("Diagnostics & troubleshooting") {
                 VStack(spacing: 0) {
                     settingsRow(
-                        title: "Share diagnostics",
-                         subtitle: "Share limited device and transfer diagnostics. No file names or contents are sent."
+                        title: "Automatic diagnostics",
+                        subtitle: "Diagnostic reports are sent automatically after the setup disclosure. Legacy reports include advertised device names and Mac model; no file names or contents are sent."
                     ) {
-                        Toggle("Share diagnostics", isOn: $usageAnalyticsEnabled)
-                            .labelsHidden()
-                            .toggleStyle(.switch)
-                            .tint(theme.presentationAccent)
-                            .accessibilityLabel("Share diagnostics")
-                            .onChange(of: usageAnalyticsEnabled) { _, enabled in
-                                UsageAnalytics.setEnabled(enabled)
-                            }
+                        Text("Automatic").font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
                     }
 
                     settingsDivider

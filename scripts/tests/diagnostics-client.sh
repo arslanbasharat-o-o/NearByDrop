@@ -63,6 +63,8 @@ testDefaults.set(true,forKey:"hasCompletedOnboarding")
 UsageAnalytics.start()
 Thread.sleep(forTimeInterval:0.1)
 precondition(testDefaults.array(forKey:"diagnosticsPendingEvents") == nil, "Upgrade disclosure must precede reporting")
+testDefaults.set(false,forKey:"usageAnalyticsEnabled")
+precondition(UsageAnalytics.isEnabled, "Automatic policy must not depend on the removed toggle")
 testDefaults.set(true,forKey:"diagnosticsDisclosureSeen")
 testDefaults.set(Date().addingTimeInterval(-8 * 86400),forKey:"diagnosticsFirstLaunchDate")
 testDefaults.set("expired-first-event",forKey:"diagnosticsFirstLaunchEventID")
@@ -86,12 +88,9 @@ StubProtocol.lock.lock(); StubProtocol.status=503; StubProtocol.lock.unlock()
 Thread.sleep(forTimeInterval:0.2)
 UsageAnalytics.start()
 waitFor { !(testDefaults.array(forKey:"diagnosticsPendingEvents")?.isEmpty ?? true) }
-UsageAnalytics.setEnabled(false)
-waitFor { testDefaults.array(forKey:"diagnosticsPendingEvents") == nil }
-UsageAnalytics.completedTransfer(direction:"outgoing",peer:RemoteDeviceInfo(name:"Must Not Send",type:.phone))
-Thread.sleep(forTimeInterval:0.1)
-precondition(testDefaults.array(forKey:"diagnosticsPendingEvents") == nil)
-print("Client checks passed: disclosure gate, fields, durable failure queue, retry acknowledgement, transfer report, and opt-out purge.")
+UsageAnalytics.completedTransfer(direction:"outgoing",peer:RemoteDeviceInfo(name:"Automatic Test Phone",type:.phone))
+waitFor { (testDefaults.array(forKey:"diagnosticsPendingEvents")?.count ?? 0) >= 2 }
+print("Client checks passed: disclosure gate, automatic reporting despite historical preferences, fields, durable queue, retry acknowledgment and transfer report.")
 '''
 open(sys.argv[2],'w').write(pre+s+post)
 PY

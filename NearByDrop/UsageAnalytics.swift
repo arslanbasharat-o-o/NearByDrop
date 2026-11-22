@@ -3,9 +3,6 @@ import Darwin
 import NearbyShare
 
 enum UsageAnalytics {
-    static let preferencesChanged = Notification.Name("NearbyDrop.DiagnosticsPreferencesChanged")
-    private static let enabledKey = "usageAnalyticsEnabled"
-    private static let defaultEnabled = true
     private static let installationIDKey = "diagnosticsInstallationID"
     private static let firstLaunchDateKey = "diagnosticsFirstLaunchDate"
     private static let firstLaunchEventIDKey = "diagnosticsFirstLaunchEventID"
@@ -29,11 +26,8 @@ enum UsageAnalytics {
 #endif
     }
 
-    static var isEnabled: Bool {
-        guard !isSwiftUIPreviews else { return false }
-        UserDefaults.standard.register(defaults: [enabledKey: defaultEnabled])
-        return UserDefaults.standard.bool(forKey: enabledKey)
-    }
+    // Reporting is automatic; historical toggle preferences no longer control this policy.
+    static var isEnabled: Bool { !isSwiftUIPreviews }
 
     static var endpointIsConfigured: Bool {
         endpoint != nil
@@ -44,21 +38,6 @@ enum UsageAnalytics {
     }
     static var operationalEnabled: Bool {
         operationalRolloutEnabled && isEnabled && defaultsReady
-            && UserDefaults.standard.integer(forKey: "operationalDiagnosticsConsentVersion") == 2
-    }
-    static func setOperationalEnabled(_ enabled: Bool) {
-        guard !enabled || operationalRolloutEnabled else { return }
-        let changed = (UserDefaults.standard.integer(forKey: "operationalDiagnosticsConsentVersion") == 2) != enabled
-        UserDefaults.standard.set(enabled ? 2 : 0, forKey: "operationalDiagnosticsConsentVersion")
-        if changed { NotificationCenter.default.post(name: preferencesChanged, object: nil) }
-        if !enabled {
-            queue.async {
-                generation += 1; task?.cancel(); task = nil; retryScheduled = false
-                let retained = (UserDefaults.standard.array(forKey: pendingKey) as? [Data] ?? []).filter { !isOperational($0) }
-                UserDefaults.standard.set(retained, forKey: pendingKey)
-                flush()
-            }
-        }
     }
     static func recordOperational(_ kind: OperationalEventKind, context: OperationContext? = nil, error: OperationalError = .none) {
         guard !isSwiftUIPreviews, operationalEnabled, endpoint != nil else { return }
@@ -91,7 +70,6 @@ enum UsageAnalytics {
     static func start() {
         guard !isSwiftUIPreviews else { return }
         let defaults = UserDefaults.standard
-        defaults.register(defaults: [enabledKey: defaultEnabled])
         guard isEnabled, defaultsReady else { return }
 
         let storedFirstLaunch = defaults.object(forKey: firstLaunchDateKey) as? Date
@@ -109,32 +87,6 @@ enum UsageAnalytics {
 
         send("app_opened")
         recordOperational(.clientHealth)
-    }
-
-    static func setEnabled(_ enabled: Bool) {
-        guard !isSwiftUIPreviews else { return }
-        let defaults = UserDefaults.standard
-        defaults.register(defaults: [enabledKey: defaultEnabled])
-        guard defaults.bool(forKey: enabledKey) != enabled else { return }
-        defaults.set(enabled, forKey: enabledKey)
-        if !enabled { defaults.set(0, forKey: "operationalDiagnosticsConsentVersion") }
-        NotificationCenter.default.post(name: preferencesChanged, object: nil)
-
-        if enabled {
-            start()
-        } else {
-            // Do not send a stored first-launch event retroactively after opt-out.
-            defaults.removeObject(forKey: firstLaunchDateKey)
-            defaults.removeObject(forKey: firstLaunchEventIDKey)
-            defaults.removeObject(forKey: firstLaunchSentKey)
-            queue.async {
-                generation += 1
-                retryScheduled = false
-                task?.cancel()
-                task = nil
-                defaults.removeObject(forKey: pendingKey)
-            }
-        }
     }
 
     static func completedTransfer(direction: String, peer: RemoteDeviceInfo) {

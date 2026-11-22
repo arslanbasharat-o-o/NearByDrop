@@ -24,14 +24,16 @@ testDefaults.set(true, forKey: "diagnosticsDisclosureSeen")
 UsageAnalytics.recordOperational(.clientHealth)
 Thread.sleep(forTimeInterval:0.1)
 precondition(testDefaults.array(forKey:"diagnosticsPendingEvents") == nil)
-UsageAnalytics.setOperationalEnabled(true)
-precondition(!UsageAnalytics.operationalEnabled, "Build gate must override consent")
+precondition(!UsageAnalytics.operationalEnabled, "Build gate must still stop reporting")
 operationalTestRollout = true
+testDefaults.set(false, forKey:"diagnosticsDisclosureSeen")
 UsageAnalytics.recordOperational(.clientHealth)
 Thread.sleep(forTimeInterval:0.1)
-precondition(testDefaults.array(forKey:"diagnosticsPendingEvents") == nil, "Separate consent is required")
-UsageAnalytics.setOperationalEnabled(true)
-precondition(UsageAnalytics.operationalEnabled)
+precondition(testDefaults.array(forKey:"diagnosticsPendingEvents") == nil, "Disclosure must precede reporting")
+testDefaults.set(true, forKey:"diagnosticsDisclosureSeen")
+testDefaults.set(false, forKey:"usageAnalyticsEnabled")
+testDefaults.set(0, forKey:"operationalDiagnosticsConsentVersion")
+precondition(UsageAnalytics.operationalEnabled, "Automatic reporting must ignore removed preference controls")
 var operation = OperationContext(method:.wifi,direction:.outgoing,fileCount:2,bytes:1024)
 UsageAnalytics.recordOperational(.transferStarted,context:operation)
 precondition(operation.finish(.failed))
@@ -50,11 +52,7 @@ for object in objects {
     precondition(object["schema_version"] as? Int == 2)
     for key in ["mac_name","peer_name","file_name","path","clipboard","content","mac_model"] { precondition(object[key] == nil) }
 }
-UsageAnalytics.setOperationalEnabled(false)
-waitFor { (testDefaults.array(forKey:"diagnosticsPendingEvents")?.count ?? 0) == 0 }
-precondition(UsageAnalytics.isEnabled, "Operational opt-out must preserve legacy reporting choice")
 StubProtocol.lock.lock(); StubProtocol.status=202; StubProtocol.lock.unlock()
-UsageAnalytics.setOperationalEnabled(true)
 UsageAnalytics.recordOperational(.onboardingCompleted)
 waitFor {
     StubProtocol.lock.lock(); defer { StubProtocol.lock.unlock() }
@@ -63,13 +61,14 @@ waitFor {
 waitFor { (testDefaults.array(forKey:"diagnosticsPendingEvents")?.count ?? 0) == 0 }
 StubProtocol.lock.lock(); let destinations = StubProtocol.destinations; StubProtocol.lock.unlock()
 precondition(!destinations.isEmpty && destinations.allSatisfy { $0 == "operational.php" })
-UsageAnalytics.setEnabled(false)
-waitFor { testDefaults.array(forKey:"diagnosticsPendingEvents") == nil }
-precondition(!UsageAnalytics.operationalEnabled)
-precondition(testDefaults.integer(forKey: "operationalDiagnosticsConsentVersion") == 0)
-UsageAnalytics.setEnabled(true)
-precondition(!UsageAnalytics.operationalEnabled, "Legacy re-enable must not restore expanded consent")
-print("Operational client passed: rollout + consent gates, job/attempt correlation, UUIDs, privacy allowlist, delivery and opt-out purge.")
+UsageAnalytics.recordOperational(.troubleshootingUsed)
+UsageAnalytics.recordOperational(.troubleshootingUsed)
+waitFor {
+    StubProtocol.lock.lock(); defer { StubProtocol.lock.unlock() }
+    return StubProtocol.received.filter { $0["event"] as? String == "troubleshooting_used" }.count == 1
+}
+precondition(UsageAnalytics.operationalEnabled)
+print("Operational client passed: rollout + disclosure gates, automatic reporting, job/attempt correlation, UUIDs, privacy allowlist, delivery and daily sampling.")
 '''
 Path(sys.argv[2]).write_text(pre+source+post)
 PY

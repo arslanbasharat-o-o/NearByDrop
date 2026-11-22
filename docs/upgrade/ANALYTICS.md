@@ -1,10 +1,10 @@
-# Operational diagnostics — opt-in rollout
+# Operational diagnostics — automatic reporting
 
-## Rollout boundaries
+## Reporting policy — build 23
 
-The canonical source Info.plist keeps `ExpandedDiagnosticsEnabled=false`. The explicitly packaged diagnostics RC, build 22, sets the staged flag to **true** so its separate opt-in is visible. Schema 2 additionally requires legacy reporting to remain enabled, onboarding/disclosure acknowledgment, and separately granted consent version 2. Settings shows the additional disclosure/toggle only in an explicitly enabled rollout build. There is no automatic upgrade consent. The PHP endpoint separately requires private config `operational_enabled === true`; its example remains false. Neither a migration nor uploading files enables collection by itself.
+The owner explicitly requested automatic reporting with no in-app switches. `ExpandedDiagnosticsEnabled=true` is now the configured-build default. Reporting begins after onboarding/disclosure acknowledgment; previews and builds without a valid endpoint do not transmit reports. Historical `usageAnalyticsEnabled` and `operationalDiagnosticsConsentVersion` preferences no longer govern the current candidate. Settings and onboarding disclose the data and automatic policy without offering opt-out controls.
 
-On November 22 the owner requested the diagnostics update. The live server was backed up, migration 004 was tested using isolated MySQL temporary tables and then applied twice successfully, the collector/dashboard were deployed, and the server gate enabled. This does not grant consent to any installation. The installed build 22 opt-in was verified off. See RC22-FOLLOWUP.md for deployment evidence and rollback.
+The live server remains enabled following the backed-up deployment described in RC22-FOLLOWUP.md. Its private deployment gate can still stop ingestion operationally; it is not an app-user preference. No public app release or automatic update was published. Older public clients keep their existing behavior until updated.
 
 ## Data contract
 
@@ -18,7 +18,7 @@ The existing three-event v1 stream remains compatible and retains its existing d
 
 ## Delivery and retention
 
-The shared durable queue retains at most 200 events for seven days. Acknowledgment requires HTTP 202 plus `ok:true`. Permanent invalid-payload errors are dropped; transient failures back off exponentially from 60 seconds to at most one hour, honoring Retry-After within that bound. Stable event UUIDs survive delivery retries. Full opt-out cancels delivery and clears pending events. Operational-only opt-out cancels/requeues delivery safely, removes schema 2 reports, and preserves the legacy reporting choice.
+The shared durable queue retains at most 200 events for seven days. Acknowledgment requires HTTP 202 plus `ok:true`. Permanent invalid-payload errors are dropped; transient failures back off exponentially from 60 seconds to at most one hour, honoring Retry-After within that bound. Stable event UUIDs survive delivery retries. The current app has no opt-out controls. Queued events expire after seven days, and the oldest events beyond 200 are discarded.
 
 The server validates enum/category/UUID/timestamp fields and rejects unknown fields, including names/content. It uses prepared SQL and event UUID idempotency. Installation IDs scope job correlation. Health counts accepted, duplicate, rejected, delayed and DB-visible error outcomes without request bodies/identifying strings. Both event systems and health counters retain 90 days; CLI cleanup handles optional operational tables even after rollout is disabled. Low-value sampling applies to UI/health, not transfer outcomes.
 
@@ -30,7 +30,7 @@ Old cleanup compared names/types/hour and could discard distinct reports. New co
 2. Copy a staging-only config with a separate database. Leave `operational_enabled` false initially.
 3. Run `php diagnostics/hostinger/migrations/apply-004.php /absolute/path/to/staging-config.php`. Replay is idempotent; it creates only additive tables/indexes. It does not alter the legacy table or credentials.
 4. Run both PHP smoke suites and client gate/delivery checks. In disposable fixtures only, enable the server gate to test HTTP ingestion.
-5. Review schema/consent text, artifacts, retention, old-client compatibility and outcome definitions with the owner. Production deployment was subsequently authorized and completed for the server; the client requires individual opt-in.
+5. Review schema/consent text, artifacts, retention, old-client compatibility and outcome definitions with the owner. Production deployment was subsequently authorized and completed for the server; build 23 reports automatically after its setup disclosure.
 6. For rollback, disable the client rollout and server gate. Keep additive tables for retention/inspection; do not drop production data to roll back code. Restore legacy endpoint/dashboard files from the verified backup if needed.
 
 SQLite migration replay and HTTP fixtures are automated. MySQL connection-local temporary-table checks subsequently passed on the host, followed by the backed-up additive production migration and authenticated dashboard verification. This was not a separate persistent staging database.

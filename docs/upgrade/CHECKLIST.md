@@ -36,3 +36,14 @@ Debug build and 80 XCTest cases passed. All three custom palettes pass text/stat
 - [x] Test MySQL using temporary tables, back up production, apply additive migration twice and deploy operational dashboard/collector.
 - [x] Package/install build 22 with visible separate opt-in; verify it remains off by default.
 - [x] Rerun 80 tests, universal Release, client/backend and package/security checks.
+
+## Follow-up: build 23 automatic reporting
+
+The owner subsequently requested removing diagnostic opt-out controls and automatic reporting. This supersedes the earlier consent/gate design for the current candidate. See RC23-AUTOMATIC-DIAGNOSTICS.md.
+
+- [x] Remove both Settings switches and onboarding reporting toggle.
+- [x] Automatic reporting after setup disclosure; ignore historical reporting preferences.
+- [x] Preserve data allowlists, retention, bounded retry queue and local report export.
+- [x] Update disclosures/documentation/dashboard wording.
+- [x] Pass 80 app tests, automatic-reporting client tests and universal packaging checks.
+- [x] Install build 23 and verify a genuine client-health report reached the live database.
