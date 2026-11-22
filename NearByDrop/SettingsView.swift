@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 final class SettingsWindowController: NSWindowController, ObservableObject {
     let model: TransferModel
     @Published var selectedTab: SettingsTab = .general
+    @Published private(set) var diagnosticReportRequest = 0
 
     init(model: TransferModel, createWindow: Bool = true) {
         self.model = model
@@ -36,6 +37,11 @@ final class SettingsWindowController: NSWindowController, ObservableObject {
     }
 
     required init?(coder: NSCoder) { return nil }
+
+    func showDiagnosticReport() {
+        show(tab: .general)
+        diagnosticReportRequest += 1
+    }
 
     func show(tab: SettingsTab? = nil) {
         if let tab = tab {
@@ -169,6 +175,9 @@ struct SettingsView: View {
             Button("OK", role: .cancel) { diagnosticsSaveError = nil }
         } message: {
             Text(diagnosticsSaveError ?? "Choose another location and try again.")
+        }
+        .onChange(of: controller.diagnosticReportRequest) { _, _ in
+            prepareDiagnosticsPreview()
         }
         .onAppear {
             customName = model.deviceName
@@ -317,26 +326,7 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            settingsSection("Diagnostics & troubleshooting") {
-                VStack(spacing: 0) {
-                    settingsRow(
-                        title: "Automatic diagnostics",
-                        subtitle: "Diagnostic reports are sent automatically after the setup disclosure. Legacy reports include advertised device names and Mac model; no file names or contents are sent."
-                    ) {
-                        Text("Automatic").font(NearbyTypography.supporting).foregroundStyle(theme.secondaryText)
-                    }
 
-                    settingsDivider
-
-                    settingsRow(
-                        title: "Local diagnostic report",
-                        subtitle: "Create a local report to share with support."
-                    ) {
-                        Button("Export…", action: prepareDiagnosticsPreview)
-                            .buttonStyle(.nearbySecondary)
-                    }
-                }
-            }
 
         }
     }

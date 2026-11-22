@@ -196,6 +196,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
         let guideItem = NSMenuItem(title: "Nearby Drop Quick Start Guide", action: #selector(openGuide(_:)), keyEquivalent: "?")
         guideItem.target = self
         helpMenu.addItem(guideItem)
+        let reportItem = NSMenuItem(title: "Export Diagnostic Report…", action: #selector(openDiagnosticReport(_:)), keyEquivalent: "")
+        reportItem.target = self
+        helpMenu.addItem(reportItem)
         let privacyItem = NSMenuItem(title: "Privacy & Security Policy", action: #selector(openPrivacy(_:)), keyEquivalent: "")
         privacyItem.target = self
         helpMenu.addItem(privacyItem)
@@ -327,6 +330,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     @objc func openGuide(_ sender: Any?) {
         popover.performClose(nil)
         OnboardingWindowController.showOnboarding()
+    }
+    @objc func openDiagnosticReport(_ sender: Any?) {
+        popover.performClose(nil)
+        settingsWindow.showDiagnosticReport()
     }
     @objc func openPrivacy(_ sender: Any?) {
         popover.performClose(nil)
@@ -906,6 +913,7 @@ struct MenuView: View {
 
                 Menu {
                     Button("Connection Doctor…") { showingDoctor = true }
+                    Button("Export Diagnostic Report…") { (NSApp.delegate as? AppDelegate)?.openDiagnosticReport(nil) }
                     Button("Send Text or Link…") { showingText = true }
                     Button("Screenshot to Device…") { showingScreenshot = true }
                     Divider()

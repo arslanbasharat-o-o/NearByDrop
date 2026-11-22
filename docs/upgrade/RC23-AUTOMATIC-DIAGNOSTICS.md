@@ -27,3 +27,9 @@ Physical device transfers were not repeated for this policy change. The candidat
 ## Build 24 Settings cleanup
 
 At the owner's request, removed the large automatic-operational-diagnostics card and Revisit Setup Guide button from General Settings. Automatic diagnostics and the setup guide implementation remain intact; the guide is accessible from More → Quick Start Guide and the app Help menu. Setup disclosure and the smaller diagnostics/report-export section remain. Universal Release and packaging guards passed; installed build 24 was checked through native UI to confirm both specified elements are absent. No transfer logic changed, so physical-transfer tests were not repeated. Build 23 rollback ZIP is retained.
+
+## Build 25 diagnostic-row cleanup
+
+Removed the remaining Automatic diagnostics and Local diagnostic report rows and their section heading from General Settings. Automatic reporting is unchanged. The existing redacted preview/save flow is now reachable through More → Export Diagnostic Report and Help → Export Diagnostic Report. The controller request opens the same Settings-hosted sheet without restoring the removed rows.
+
+Universal Release, packaging guards and deep/strict signature checks passed. Installed build 25 was inspected through native UI: neither row is present, the Help command opens the report preview, and Save Report opens the existing local-only save dialog. Both dialogs were cancelled after verification; no report file was written. Physical transfers were not repeated for this UI-only change. Build 24 is retained as a rollback ZIP.
