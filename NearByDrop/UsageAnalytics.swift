@@ -3,6 +3,7 @@ import Darwin
 import NearbyShare
 
 enum UsageAnalytics {
+    static let preferencesChanged = Notification.Name("NearbyDrop.DiagnosticsPreferencesChanged")
     private static let enabledKey = "usageAnalyticsEnabled"
     private static let defaultEnabled = true
     private static let installationIDKey = "diagnosticsInstallationID"
@@ -47,7 +48,9 @@ enum UsageAnalytics {
     }
     static func setOperationalEnabled(_ enabled: Bool) {
         guard !enabled || operationalRolloutEnabled else { return }
+        let changed = (UserDefaults.standard.integer(forKey: "operationalDiagnosticsConsentVersion") == 2) != enabled
         UserDefaults.standard.set(enabled ? 2 : 0, forKey: "operationalDiagnosticsConsentVersion")
+        if changed { NotificationCenter.default.post(name: preferencesChanged, object: nil) }
         if !enabled {
             queue.async {
                 generation += 1; task?.cancel(); task = nil; retryScheduled = false
@@ -114,6 +117,8 @@ enum UsageAnalytics {
         defaults.register(defaults: [enabledKey: defaultEnabled])
         guard defaults.bool(forKey: enabledKey) != enabled else { return }
         defaults.set(enabled, forKey: enabledKey)
+        if !enabled { defaults.set(0, forKey: "operationalDiagnosticsConsentVersion") }
+        NotificationCenter.default.post(name: preferencesChanged, object: nil)
 
         if enabled {
             start()

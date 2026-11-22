@@ -126,7 +126,7 @@ struct NearbyButtonStyle: ButtonStyle {
             }
             .clipShape(shape)
             .opacity(isEnabled ? 1 : 0.48)
-            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.985 : 1))
             .onHover { hovering = $0 }
             .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: hovering)
@@ -618,4 +618,17 @@ struct NearbyWindowSurface: ViewModifier {
 
 extension View {
     func nearbyThemedWindow() -> some View { modifier(NearbyWindowSurface()) }
+}
+
+struct NearbyCardFocus: ViewModifier {
+    @FocusState private var focused: Bool
+    @ObservedObject private var theme = ThemeManager.shared
+    func body(content: Content) -> some View {
+        content.focused($focused).overlay {
+            if focused { RoundedRectangle(cornerRadius: 10).stroke(theme.presentationAccent, lineWidth: 2).allowsHitTesting(false) }
+        }
+    }
+}
+extension View {
+    func nearbyCardFocus() -> some View { modifier(NearbyCardFocus()) }
 }

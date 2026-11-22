@@ -66,6 +66,9 @@ precondition(!destinations.isEmpty && destinations.allSatisfy { $0 == "operation
 UsageAnalytics.setEnabled(false)
 waitFor { testDefaults.array(forKey:"diagnosticsPendingEvents") == nil }
 precondition(!UsageAnalytics.operationalEnabled)
+precondition(testDefaults.integer(forKey: "operationalDiagnosticsConsentVersion") == 0)
+UsageAnalytics.setEnabled(true)
+precondition(!UsageAnalytics.operationalEnabled, "Legacy re-enable must not restore expanded consent")
 print("Operational client passed: rollout + consent gates, job/attempt correlation, UUIDs, privacy allowlist, delivery and opt-out purge.")
 '''
 Path(sys.argv[2]).write_text(pre+source+post)

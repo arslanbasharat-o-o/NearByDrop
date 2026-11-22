@@ -15,7 +15,8 @@ final class ConnectionPathEvidence: ObservableObject {
         monitor.pathUpdateHandler = { [weak self] path in
             DispatchQueue.main.async {
                 self?.available = path.status == .satisfied
-                self?.summary = path.status == .satisfied ? "macOS reports an available network path." : "macOS does not currently report an available network path."
+                let transport = path.usesInterfaceType(.wifi) ? "Wi-Fi" : path.usesInterfaceType(.wiredEthernet) ? "Ethernet" : "a network interface"
+                self?.summary = path.status == .satisfied ? "macOS reports an available path via \(transport)." : "macOS does not currently report an available network path."
             }
         }
         monitor.start(queue: DispatchQueue(label: "NearbyDrop.ConnectionDoctor"))

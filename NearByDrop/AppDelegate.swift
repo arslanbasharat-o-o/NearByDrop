@@ -410,6 +410,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, MainAppDe
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+    func applicationWillTerminate(_ notification: Notification) {
+#if DEBUG
+        if Bundle.main.object(forInfoDictionaryKey: "NearbyDropDesignPreview") as? Bool == true { return }
+#endif
+        model.discardPreparedShares()
+    }
 
     private func consent(_ id: String, accept: Bool) {
         guard model.incoming[id] != nil, !model.accepted.contains(id) else { return }
@@ -839,6 +845,7 @@ struct MenuView: View {
                             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    .nearbyCardFocus()
                     .help(tab.rawValue)
                     .accessibilityLabel("\(tab.rawValue) tab")
                     .accessibilityValue(isSelected ? "Selected" : "Not selected")

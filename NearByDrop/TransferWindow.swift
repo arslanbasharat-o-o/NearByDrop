@@ -456,6 +456,11 @@ final class TransferModel: NSObject, ObservableObject, ShareExtensionDelegate {
         }
     }
 
+    func discardPreparedShares() {
+        for directory in preparedShareDirectories { try? FileManager.default.removeItem(at: directory) }
+        preparedShareDirectories.removeAll()
+    }
+
     @MainActor
     func stageSharedContent(_ data: Data, name: String) throws {
         guard !sending, !usb.busy else {

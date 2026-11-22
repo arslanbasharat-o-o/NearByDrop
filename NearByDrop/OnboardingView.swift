@@ -177,6 +177,9 @@ struct OnboardingView: View {
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .nearbyThemedWindow()
+        .onReceive(NotificationCenter.default.publisher(for: UsageAnalytics.preferencesChanged)) { _ in
+            shareUsageData = UsageAnalytics.isEnabled
+        }
         .onAppear {
             checkPermissions()
         }
@@ -221,7 +224,7 @@ struct OnboardingView: View {
                             .foregroundStyle(theme.resolvedTheme == appearance ? theme.presentationAccent : theme.primaryText)
                             .nearbyCardSurface()
                             .background { NearbyThemeArtwork(appearance: appearance) }
-                    }.buttonStyle(.plain).accessibilityValue(theme.resolvedTheme == appearance ? "Selected" : "Not selected")
+                    }.buttonStyle(.plain).nearbyCardFocus().accessibilityValue(theme.resolvedTheme == appearance ? "Selected" : "Not selected")
                 }
             }
             Text("You can change appearance anytime in Settings.").foregroundStyle(theme.secondaryText)

@@ -172,6 +172,10 @@ struct SettingsView: View {
         } message: {
             Text(diagnosticsSaveError ?? "Choose another location and try again.")
         }
+        .onReceive(NotificationCenter.default.publisher(for: UsageAnalytics.preferencesChanged)) { _ in
+            usageAnalyticsEnabled = UsageAnalytics.isEnabled
+            expandedDiagnostics = UsageAnalytics.operationalEnabled
+        }
         .onAppear {
             customName = model.deviceName
         }
@@ -537,6 +541,7 @@ struct SettingsView: View {
             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
         .buttonStyle(.plain)
+        .nearbyCardFocus()
         .accessibilityLabel("\(option.rawValue) appearance")
         .accessibilityValue(isSelected ? "Selected" : "Not selected")
     }
