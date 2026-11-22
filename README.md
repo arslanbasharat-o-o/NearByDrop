@@ -48,7 +48,7 @@ The development branch adds **Vice Nights**, **Coastal Sunrise**, and **Midnight
 
 The candidate also includes Connection Doctor, favorite-recipient selection hints, explicit text/link sharing as UTF-8 files, screenshot preview, a seven-step setup guide, and USB current-folder filtering/sorting. Favorites do not authenticate devices or bypass approval. Native text/link Quick Share payload support is unverified; receivers get a clearly labeled `.txt` file. Screenshot capture requires explicit user action, macOS permission, and review.
 
-Large-batch execution remains disabled; the 128-file limit is retained. Expanded operational diagnostics are implemented behind a disabled rollout gate plus separate consent, with a staging-only migration and dashboard. No production activation or public release has occurred. See [the implementation checklist](docs/upgrade/CHECKLIST.md), [diagnostics contract](docs/upgrade/ANALYTICS.md), and [batch limits](docs/upgrade/EXPERIMENTAL-BATCHES.md).
+Large-batch execution remains disabled; the 128-file limit is retained. The diagnostics RC (build 22) fixes custom-theme navigation contrast and exposes optional operational reporting with separate consent. The operational collector/dashboard have been deployed after isolated MySQL checks and backups; standard builds retain the disabled client gate. No public app release has occurred. See [the implementation checklist](docs/upgrade/CHECKLIST.md), [diagnostics contract](docs/upgrade/ANALYTICS.md), and [batch limits](docs/upgrade/EXPERIMENTAL-BATCHES.md).
 
 The public download above remains the current stable release. Nearby Drop is not affiliated with Rockstar Games.
 

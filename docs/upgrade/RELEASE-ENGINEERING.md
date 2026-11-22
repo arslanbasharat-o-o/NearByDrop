@@ -30,3 +30,7 @@ bash scripts/package-release.sh build-upgrade dist/upgrade --release-candidate
 ```
 
 Inspect the unpacked archive with deep/strict codesign validation; verify arm64 and x86_64 slices throughout, checksums, DMG integrity, privacy flag and release-candidate metadata. Preserve current receiving pause/consent choices and download/history data. Native open/save/permission dialogs stay under macOS control.
+
+## Diagnostics candidate follow-up
+
+`bash scripts/package-release.sh build-upgrade dist/diagnostics-rc --diagnostics-candidate` stages build 22 with the expanded-reporting capability available, but never sets user consent. This explicit packaging mode refuses production Sparkle secrets and generates no public appcast. The normal RC mode still requires the source rollout flag false and produces build 21. See RC22-FOLLOWUP.md for the subsequent authorized server deployment and installed candidate.

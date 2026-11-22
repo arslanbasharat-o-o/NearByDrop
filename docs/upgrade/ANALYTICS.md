@@ -1,10 +1,10 @@
-# Operational diagnostics — prepared, not activated
+# Operational diagnostics — opt-in rollout
 
 ## Rollout boundaries
 
-The app's `ExpandedDiagnosticsEnabled` Info.plist value is **false**. Schema 2 additionally requires legacy reporting to remain enabled, onboarding/disclosure acknowledgment, and separately granted consent version 2. Settings shows the additional disclosure/toggle only in an explicitly enabled rollout build. There is no automatic upgrade consent. The PHP endpoint separately requires private config `operational_enabled === true`; its example remains false. Neither a migration nor uploading files enables collection by itself.
+The canonical source Info.plist keeps `ExpandedDiagnosticsEnabled=false`. The explicitly packaged diagnostics RC, build 22, sets the staged flag to **true** so its separate opt-in is visible. Schema 2 additionally requires legacy reporting to remain enabled, onboarding/disclosure acknowledgment, and separately granted consent version 2. Settings shows the additional disclosure/toggle only in an explicitly enabled rollout build. There is no automatic upgrade consent. The PHP endpoint separately requires private config `operational_enabled === true`; its example remains false. Neither a migration nor uploading files enables collection by itself.
 
-Do not enable either production gate without owner authorization. No live server/database change is part of this implementation.
+On November 22 the owner requested the diagnostics update. The live server was backed up, migration 004 was tested using isolated MySQL temporary tables and then applied twice successfully, the collector/dashboard were deployed, and the server gate enabled. This does not grant consent to any installation. The installed build 22 opt-in was verified off. See RC22-FOLLOWUP.md for deployment evidence and rollback.
 
 ## Data contract
 
@@ -30,10 +30,10 @@ Old cleanup compared names/types/hour and could discard distinct reports. New co
 2. Copy a staging-only config with a separate database. Leave `operational_enabled` false initially.
 3. Run `php diagnostics/hostinger/migrations/apply-004.php /absolute/path/to/staging-config.php`. Replay is idempotent; it creates only additive tables/indexes. It does not alter the legacy table or credentials.
 4. Run both PHP smoke suites and client gate/delivery checks. In disposable fixtures only, enable the server gate to test HTTP ingestion.
-5. Review schema/consent text, artifacts, retention, old-client compatibility and outcome definitions with the owner. Production deployment and activation remain pending authorization.
+5. Review schema/consent text, artifacts, retention, old-client compatibility and outcome definitions with the owner. Production deployment was subsequently authorized and completed for the server; the client requires individual opt-in.
 6. For rollback, disable the client rollout and server gate. Keep additive tables for retention/inspection; do not drop production data to roll back code. Restore legacy endpoint/dashboard files from the verified backup if needed.
 
-SQLite migration replay and HTTP fixtures are automated. A MySQL staging run and authenticated deployment remain release gates when that staging infrastructure is available; no claim of production MySQL migration execution is made.
+SQLite migration replay and HTTP fixtures are automated. MySQL connection-local temporary-table checks subsequently passed on the host, followed by the backed-up additive production migration and authenticated dashboard verification. This was not a separate persistent staging database.
 
 ## Metric definitions and limits
 

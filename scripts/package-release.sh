@@ -6,11 +6,18 @@ derived="${1:-build}"
 output="${2:-dist}"
 mode="${3:---ci-unsigned}"
 if [ "$#" -gt 3 ]; then
-    echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--release-candidate|--vice-nights-preview|--release|--release-keychain]" >&2
+    echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--release-candidate|--diagnostics-candidate|--vice-nights-preview|--release|--release-keychain]" >&2
     exit 2
 fi
 
 case "$mode" in
+    --diagnostics-candidate)
+        if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
+            echo "Diagnostics candidate mode refuses SPARKLE_PRIVATE_KEY." >&2
+            exit 2
+        fi
+        artifact_suffix="-diagnostics-rc"
+        ;;
     --release-candidate)
         if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
             echo "Release candidate mode refuses SPARKLE_PRIVATE_KEY." >&2
@@ -48,7 +55,7 @@ case "$mode" in
         ;;
     *)
         echo "Unknown package mode: $mode" >&2
-        echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--release-candidate|--vice-nights-preview|--release|--release-keychain]" >&2
+        echo "Usage: $0 [derived-data-path] [output-dir] [--ci-unsigned|--release-candidate|--diagnostics-candidate|--vice-nights-preview|--release|--release-keychain]" >&2
         exit 2
         ;;
 esac
@@ -61,7 +68,7 @@ staging="$(mktemp -d "${TMPDIR:-/tmp}/nearby-drop-package.XXXXXX")"
 trap 'rm -rf "$staging"' EXIT
 app="$staging/Nearby Drop.app"
 ditto "$product" "$app"
-if [ "$mode" = "--release-candidate" ]; then
+if [ "$mode" = "--release-candidate" ] || [ "$mode" = "--diagnostics-candidate" ]; then
     if [ "$(/usr/libexec/PlistBuddy -c 'Print :ExpandedDiagnosticsEnabled' "$app/Contents/Info.plist")" != false ]; then
         echo "Release candidate refuses an enabled operational telemetry rollout." >&2
         exit 2
@@ -72,6 +79,11 @@ if [ "$mode" = "--release-candidate" ]; then
     /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 21' "$app/Contents/PlugIns/ShareExtension.appex/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Nearby Drop Upgrade RC' "$app/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c 'Set :SUEnableAutomaticChecks false' "$app/Contents/Info.plist"
+fi
+if [ "$mode" = "--diagnostics-candidate" ]; then
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 22' "$app/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleVersion 22' "$app/Contents/PlugIns/ShareExtension.appex/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :ExpandedDiagnosticsEnabled true' "$app/Contents/Info.plist"
 fi
 if [ "$mode" = "--vice-nights-preview" ]; then
     /usr/libexec/PlistBuddy -c 'Add :ViceNightsEdition bool true' "$app/Contents/Info.plist"
@@ -127,7 +139,16 @@ hdiutil create -volname "Nearby Drop" -srcfolder "$dmg_staging" -ov -format UDZO
 rm -rf "$dmg_staging"
 
 (cd "$output" && shasum -a 256 "$(basename "$dmg")" "$(basename "$archive")" > SHA256SUMS.txt)
-if [ "$mode" = "--release-candidate" ]; then
+if [ "$mode" = "--diagnostics-candidate" ]; then
+    cat > "$output/RELEASE-CANDIDATE.txt" <<EOF
+Nearby Drop 2.5.0 diagnostics release candidate, build 22.
+Fixes custom-theme navigation contrast. Ad hoc signed, not notarized.
+Operational reporting is available but requires separate consent in General Settings.
+No automatic opt-in and no public Sparkle appcast. Large-batch execution disabled.
+EOF
+    rm -f "$output/appcast.xml"
+    printf 'Created opt-in diagnostics candidate: %s and %s\n' "$dmg" "$archive"
+elif [ "$mode" = "--release-candidate" ]; then
     cat > "$output/RELEASE-CANDIDATE.txt" <<EOF
 Nearby Drop 2.5.0 upgrade release candidate, build 21.
 Personal validation build; not a public release. Ad hoc signed, not notarized.

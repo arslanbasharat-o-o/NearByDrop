@@ -29,3 +29,7 @@ Settings → Appearance offers System, Light, Dark, Vice Nights, Coastal Sunrise
 Wireless selections remain capped at 128 files. A tested planner exists for future batches, but queue execution is disabled pending receiver/session/access-lifetime verification. No byte-level resumption is promised.
 
 Report issues with version, macOS, broad hardware type, method and a redacted diagnostic category. Settings lets you preview and save a local diagnostic report. Review it before sharing. Never post private files, clipboard contents, credentials or pairing keys.
+
+## Operational diagnostics in build 22
+
+General Settings exposes **Share Operational Diagnostics**, off until separately chosen. It needs the existing Share diagnostics setting on. New reports include job/attempt outcomes, retries, USB operations, coarse stage timings, error categories, app/macOS versions and queue depth. No names, paths, file/clipboard contents or hardware identifiers are added to schema 2. Reports are retained for 90 days. The owner dashboard is at https://nearbydrop.runs-at.dev/operations.php. Old public clients continue legacy reporting; they cannot retroactively supply attempted-transfer or failure details.

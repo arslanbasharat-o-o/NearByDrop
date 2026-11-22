@@ -1,5 +1,7 @@
 # Nearby Drop upgrade: implementation and verification
 
+Historical build 21 baseline below. **Build 22 and the subsequently authorized diagnostics deployment are documented in [RC22-FOLLOWUP.md](RC22-FOLLOWUP.md).**
+
 Verified November 22, 2026. Branch: `codex/tropical-upgrade`. This is a local 2.5.0 / build 21 release candidate, not a published release. The installed public stable v2.4.0 remains in place. No production backend, collection configuration, public website, release feed or remote branch was changed.
 
 ## Acceptance matrix

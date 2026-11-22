@@ -23,7 +23,7 @@ Do not repeat vendor speed claims as independent benchmarks. No head-to-head har
 
 Nearby Drop's next candidate brings three original appearances—Vice Nights, Coastal Sunrise and Midnight Route—to a native Mac sharing utility. Connection Doctor explains what the Mac can observe and offers useful QR/USB next steps. Favorite recipients make selection quicker without bypassing approval. You can prepare text or links as UTF-8 files, review a screenshot before sharing, and filter or sort a phone's current USB folder.
 
-The candidate requires macOS 14+, includes Apple silicon and Intel binary slices, and retains the 128-file wireless limit. Compatibility depends on the device/client/network. Expanded operational diagnostics are prepared but disabled; no new live collection is activated. This is independent original artwork, with no Google/Apple/Rockstar affiliation. Signing/notarization and hardware verification status must accompany the approved download.
+The candidate requires macOS 14+, includes Apple silicon and Intel binary slices, and retains the 128-file wireless limit. Compatibility depends on the device/client/network. Build 22 makes expanded operational diagnostics available through separate opt-in; the collector/dashboard are deployed, and reporting remains off until each installation consents. This is independent original artwork, with no Google/Apple/Rockstar affiliation. Signing/notarization and hardware verification status must accompany the approved download.
 
 ## Demonstration storyboard (45 seconds)
 

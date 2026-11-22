@@ -37,4 +37,9 @@ if SPARKLE_PRIVATE_KEY=not-a-real-key "$root/scripts/package-release.sh" "$tmp/m
     exit 1
 fi
 grep -Fq "Release candidate mode refuses SPARKLE_PRIVATE_KEY." "$tmp/rc.log"
+if SPARKLE_PRIVATE_KEY=not-a-real-key "$root/scripts/package-release.sh" "$tmp/missing-derived" "$tmp/diagnostics-out" --diagnostics-candidate >"$tmp/diagnostics.log" 2>&1; then
+    echo "Diagnostics candidate accepted a release signing secret." >&2
+    exit 1
+fi
+grep -Fq "Diagnostics candidate mode refuses SPARKLE_PRIVATE_KEY." "$tmp/diagnostics.log"
 echo "Package mode guards passed."

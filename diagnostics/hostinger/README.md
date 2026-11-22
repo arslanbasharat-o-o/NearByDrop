@@ -28,8 +28,12 @@ The native app uses no embedded server secret. Its random installation ID is for
 
 ## Upgrading an existing dashboard
 
-Back up its PHP files outside `public_html` and back up MySQL before upgrading. Apply `migrations/002-mac-model.sql` (if not already applied) and `migrations/003-deduplicate.sql` to purge duplicate records, then upload `common.php`, `ingest.php`, `index.php`, and `cleanup.php`; preserve the private configuration and existing dashboard login. Configure a daily PHP cron in hPanel targeting `domains/nearbydrop.runs-at.dev/public_html/cleanup.php`. The CLI cleanup must succeed; requesting `/cleanup.php` through HTTPS must return 404.
+Back up its PHP files outside `public_html` and back up MySQL before upgrading. Apply `migrations/002-mac-model.sql` (if not already applied) but do not reapply historical `003-deduplicate.sql` (its name/hour heuristic can delete distinct events), then upload `common.php`, `ingest.php`, `index.php`, and `cleanup.php`; preserve the private configuration and existing dashboard login. Configure a daily PHP cron in hPanel targeting `domains/nearbydrop.runs-at.dev/public_html/cleanup.php`. The CLI cleanup must succeed; requesting `/cleanup.php` through HTTPS must return 404.
 
 Run `bash diagnostics/hostinger/tests/local-smoke.sh` for setup, sign-in, ingestion, deduplication, timestamp validation, retention, and rate limits. On macOS, run `scripts/tests/diagnostics-client.sh` to compile the shipping client with isolated preferences and simulated HTTP responses. Those client checks exercise the disclosure gate, durable retry acknowledgement, Mac model payload, transfer events, and opt-out queue removal. Release builds still require a real launch and phone transfer against production.
 
 Version 2.4.0 shows the diagnostics choice to existing installations before sending reports. Closing that window leaves reporting blocked; Get Started acknowledges the disclosure, respecting its reporting toggle. Reporting remains on by default as disclosed, and disabling it preserves the installation ID so later re-enabling does not inflate installation counts. That ID is not an account or a hardware identifier.
+
+## Operational diagnostics
+
+Schema 2 adds job/attempt correlation, failures/cancellations, USB operations, stage timing and collector health. See [analytics contract](../../docs/upgrade/ANALYTICS.md). Back up files, private configuration and the database first; test migration 004 on isolated MySQL temporary tables, then apply the additive migration explicitly. Preserve dashboard credentials. Server enablement is separate from client opt-in. Candidate build 22 exposes the separate consent control; it never grants consent automatically.

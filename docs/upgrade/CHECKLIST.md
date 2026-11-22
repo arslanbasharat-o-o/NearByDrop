@@ -1,6 +1,6 @@
 # Master implementation checklist
 
-Scope: supplied MASTER-PROMPT.md. Branch: `codex/tropical-upgrade`. Production deployment, public publication and expanded live telemetry require separate authorization.
+Scope: supplied MASTER-PROMPT.md. Branch: `codex/tropical-upgrade`. Public app publication requires separate authorization. The subsequent diagnostics deployment was requested by the owner; see RC22-FOLLOWUP.md.
 
 - [x] Recoverable baseline commit and code ownership/risk audit
 - [x] Current baseline checks — 72 XCTest cases, PHP smoke and diagnostics client passed
@@ -16,9 +16,9 @@ Scope: supplied MASTER-PROMPT.md. Branch: `codex/tropical-upgrade`. Production d
 
 ## Authorization boundaries
 
-- Installed public v2.4.0 is retained.
-- Expanded production telemetry is not enabled. Client v2 requires an explicit build gate AND separate user consent.
-- No live schema/configuration changes, publishing, external messages, or purchases.
+- Installed app is now diagnostics RC build 22; public v2.4.0 and RC build 21 rollback archives are retained.
+- Operational server ingestion is enabled following the owner request. Client v2 still requires the explicit candidate build gate AND separate user consent.
+- The authorized additive schema/configuration update is complete. No public app publication, external messages or purchases occurred.
 - Physical device tests and Developer ID notarization require hardware/credentials; continue independent work.
 
 ## Product feature validation
@@ -28,3 +28,11 @@ Debug build and 80 XCTest cases passed. All three custom palettes pass text/stat
 ## Diagnostics validation
 
 80 XCTest cases passed. Operational client tests passed for both gates, separate consent, privacy fields, correlated retries, HTTP acknowledgment and opt-out purge. Legacy collector/client regressions passed. Local SQLite migration replay, HTTP ingestion, dashboard authentication/filters, shuffled outcome accounting, conflicting terminals, missing-start coverage and name/content rejection passed. Live collection remains disabled and no production backend was modified. MySQL validation is tracked separately before deployment.
+
+## Follow-up: build 22
+
+- [x] Reproduce and fix actual installed Vice Nights tab contrast; verify native app.
+- [x] Add light/dark-host navigation contrast regression checks.
+- [x] Test MySQL using temporary tables, back up production, apply additive migration twice and deploy operational dashboard/collector.
+- [x] Package/install build 22 with visible separate opt-in; verify it remains off by default.
+- [x] Rerun 80 tests, universal Release, client/backend and package/security checks.

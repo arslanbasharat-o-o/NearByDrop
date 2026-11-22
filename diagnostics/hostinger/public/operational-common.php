@@ -94,7 +94,7 @@ function nd_operational_summary(array $events, int $now): array {
     foreach ($events as $event) {
         $install = $event['installation_id']; $installs[$install] = true;
         $activation[$install][$event['event_type']] = true;
-        foreach (['method','duration_bucket','error_category','stage','queue_bucket','app_version','schema_version'] as $field) {
+        foreach (['method','direction','duration_bucket','connection_duration_bucket','approval_duration_bucket','size_bucket','count_bucket','error_category','stage','queue_bucket','app_version','macos_version','schema_version'] as $field) {
             $value = (string)$event[$field]; $histograms[$field][$value] = ($histograms[$field][$value] ?? 0) + 1;
         }
         if ($event['job_id'] === null) continue;
