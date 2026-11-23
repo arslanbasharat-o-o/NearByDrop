@@ -47,3 +47,13 @@ The owner subsequently requested removing diagnostic opt-out controls and automa
 - [x] Update disclosures/documentation/dashboard wording.
 - [x] Pass 80 app tests, automatic-reporting client tests and universal packaging checks.
 - [x] Install build 23 and verify a genuine client-health report reached the live database.
+
+## Public release completion
+
+- [x] Publish stable 2.5.0/build 26 through the protected signing workflow.
+- [x] Pass Apple silicon, Intel, backend, site and universal packaging checks.
+- [x] Verify public archive and feed signatures against the existing update key.
+- [x] Restore public 2.4.0 for the owner's manual update test.
+- [x] Owner confirmed the update and requested keeping installed 2.5.0/build 26.
+
+See PUBLIC-RELEASE-2.5.0.md for evidence and remaining hardware/notarization limits.
