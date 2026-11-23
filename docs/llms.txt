@@ -20,7 +20,9 @@
 
 ## Verified facts
 
-- Current public release: Nearby Drop v2.5.0 (checked November 22, 2026).
+- Current public release: Nearby Drop v2.5.0 (checked November 23, 2026).
+- Version 2.5 adds Vice Nights, Coastal Sunrise and Midnight Route themes, Connection Doctor, favorite-recipient hints, screenshot sharing with permission and preview, and USB current-folder filtering/sorting.
+- Text and links are sent as UTF-8 .txt files. Favorites do not authenticate devices or bypass approval; every incoming transfer requires approval.
 - Supports macOS 14 or later on Apple silicon and Intel.
 - Free to download; the app and repository are proprietary except for components with separate third-party licenses.
 - Wireless Quick Share transfers use a reachable local network and do not use a Nearby Drop cloud relay. USB MTP uses a direct cable.
