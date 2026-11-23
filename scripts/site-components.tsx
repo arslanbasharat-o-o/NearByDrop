@@ -15,10 +15,10 @@ const appPreviewRoot = document.getElementById("app-preview-root")
 if (appPreviewRoot) createRoot(appPreviewRoot).render(
   <FeatureSteps
     features={[
-      { step: "Send", content: "Choose files and find nearby devices.", image: "assets/screenshots/send.jpg", alt: "Nearby Drop Send screen: wireless Quick Share and AirDrop alternative from Mac to Android" },
-      { step: "Receive", content: "Get ready to receive or scan a QR code.", image: "assets/screenshots/receive.jpg", alt: "Nearby Drop Receive screen: receive Quick Share files from Android and Samsung to Mac" },
-      { step: "Transfers", content: "See sent and received files in one place.", image: "assets/screenshots/transfers.jpg", alt: "Nearby Drop Transfers screen: transfer activity and history on macOS" },
-      { step: "USB", content: "Connect an Android phone for file transfer.", image: "assets/screenshots/usb.jpg", alt: "Nearby Drop USB screen: Android File Transfer MTP USB cable connection for Mac" },
+      { step: "Send", content: "Choose files and find nearby devices.", image: "assets/screenshots/vice-nights.jpg", alt: "Nearby Drop Send screen: wireless Quick Share and AirDrop alternative from Mac to Android" },
+      { step: "Receive", content: "Get ready to receive or scan a QR code.", image: "assets/screenshots/coastal-sunrise.jpg", alt: "Nearby Drop Receive screen: receive Quick Share files from Android and Samsung to Mac" },
+      { step: "Connection Doctor", width: 1080, content: "Find the next step when a device is missing.", image: "assets/screenshots/connection-doctor.jpg", alt: "Nearby Drop Connection Doctor with local network checks and pairing options" },
+      { step: "USB", height: 1080, content: "Connect an Android phone for file transfer.", image: "assets/screenshots/usb-browser.jpg", alt: "Nearby Drop USB screen: Android File Transfer MTP USB cable connection for Mac" },
     ]}
   />,
 )

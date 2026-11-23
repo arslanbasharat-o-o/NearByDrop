@@ -15,16 +15,27 @@
   </p>
 </div>
 
-<table align="center">
+## New in 2.5
+
+**Three original themes. More ways to share.**
+
+<table>
   <tr>
-    <td width="50%" align="center"><strong>Send</strong><br /><img src="docs/assets/screenshots/send.jpg" alt="Nearby Drop Send screen, searching for nearby devices" width="360" /></td>
-    <td width="50%" align="center"><strong>Receive</strong><br /><img src="docs/assets/screenshots/receive.jpg" alt="Nearby Drop Receive screen, ready to receive files" width="360" /></td>
-  </tr>
-  <tr>
-    <td width="50%" align="center"><strong>Transfers</strong><br /><img src="docs/assets/screenshots/transfers.jpg" alt="Nearby Drop Transfers screen with no recent transfers" width="360" /></td>
-    <td width="50%" align="center"><strong>USB</strong><br /><img src="docs/assets/screenshots/usb.jpg" alt="Nearby Drop USB screen with no device connected" width="360" /></td>
+    <td width="33%" align="center"><strong>Vice Nights</strong><br />Sunset pink &amp; ocean cyan<br /><img src="docs/assets/screenshots/vice-nights.jpg" alt="Vice Nights theme with original sunset and palm artwork" width="250" /></td>
+    <td width="33%" align="center"><strong>Coastal Sunrise</strong><br />Warm cream &amp; tropical teal<br /><img src="docs/assets/screenshots/coastal-sunrise.jpg" alt="Coastal Sunrise light theme with teal controls" width="250" /></td>
+    <td width="33%" align="center"><strong>Midnight Route</strong><br />Deep navy &amp; clear cyan<br /><img src="docs/assets/screenshots/midnight-route.jpg" alt="Midnight Route dark theme with cyan controls" width="250" /></td>
   </tr>
 </table>
+
+App previews use sample files and device names. System, Light and Dark remain available.
+
+- **Connection Doctor:** local connection checks, with QR and USB next steps.
+- **Text, links and screenshots:** prepare a UTF-8 text file or preview an image before choosing a receiver.
+- **Favorite receivers:** quicker selection, with incoming approval still required.
+- **USB tools:** filter and sort the current folder, clearer breadcrumbs and connection recovery.
+
+[Explore the new themes and features](https://arslanbasharat-o-o.github.io/NearByDrop/#new-in-25) · [2.5 release notes](https://github.com/arslanbasharat-o-o/NearByDrop/releases/tag/v2.5.0)
+
 
 Nearby Drop is an independent macOS menu bar app. It is not affiliated with Google or Apple.
 
@@ -42,19 +53,17 @@ The app is ad hoc signed, not notarized. If macOS blocks it, open it once and ap
 
 Nearby Drop also supports Finder sharing, transfer history, and signed in-app updates. Windows Quick Share was tested with one PC; see the [device verification record](docs/DEVICE-VERIFICATION.md).
 
-## What’s new in 2.5
+## Details and limits
 
-Version 2.5 adds **Vice Nights**, **Coastal Sunrise**, and **Midnight Route**, alongside System, Light, and Dark. Original sunset, coast, and route artwork coordinates with readable controls and state colors. Appearance changes apply immediately and persist.
+Text and links arrive as clearly labeled UTF-8 .txt files. Native Quick Share text/link payload interoperability is not claimed. Screenshot capture needs explicit user action, macOS permission and review. Favorites are local name/type hints, not authenticated identities.
 
-The update also includes Connection Doctor, favorite-recipient selection hints, explicit text/link sharing as UTF-8 files, screenshot preview, a seven-step setup guide, and USB current-folder filtering/sorting. Favorites do not authenticate devices or bypass approval. Native text/link Quick Share payload support is unverified; receivers get a clearly labeled `.txt` file. Screenshot capture requires explicit user action, macOS permission, and review.
+Wireless selections remain limited to 128 files; large-batch execution is disabled. See [candidate help](docs/upgrade/HELP.md), [diagnostics details](docs/upgrade/ANALYTICS.md) and [batch limits](docs/upgrade/EXPERIMENTAL-BATCHES.md).
 
-Large-batch execution remains disabled; the 128-file limit is retained. Custom-theme navigation contrast is corrected. Configured 2.5 builds send diagnostic reports automatically after the setup disclosure, without in-app reporting switches. The operational collector/dashboard support failures, retries, USB results and coarse timing/error categories. See [the implementation checklist](docs/upgrade/CHECKLIST.md), [diagnostics contract](docs/upgrade/ANALYTICS.md), and [batch limits](docs/upgrade/EXPERIMENTAL-BATCHES.md).
-
-The public download above points to the latest stable release. Nearby Drop is not affiliated with Rockstar Games.
+Nearby Drop is independent and is not affiliated with Google, Apple or Rockstar Games.
 
 ## Privacy
 
-Wireless transfers go directly over your local network; Nearby Drop does not relay files through its own cloud service. Incoming transfers need your approval unless you trust that device. Version 2.5 sends diagnostic reports automatically after setup and offers no in-app off switch. Older public versions may still have reporting controls. They include first launch and app opens (hour-rounded), a random installation ID, app and macOS versions, Mac hardware model, your Mac's advertised name, and the other device's advertised name and broad type after a successful wireless transfer. They never include file names, file contents, or device IDs. See the [privacy policy](https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html).
+Wireless transfers go directly over your local network; Nearby Drop does not relay files through its own cloud service. Every incoming transfer requires your approval, including QR-paired devices. Version 2.5 sends diagnostic reports automatically after setup and offers no in-app off switch. Older public versions may still have reporting controls. They include first launch and app opens (hour-rounded), a random installation ID, app and macOS versions, Mac hardware model, your Mac's advertised name, and the other device's advertised name and broad type after a successful wireless transfer. They never include file names, file contents, or device IDs. See the [privacy policy](https://arslanbasharat-o-o.github.io/NearByDrop/legal/privacy.html).
 
 ## Help
 

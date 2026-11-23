@@ -8,6 +8,8 @@ export interface FeatureStep {
   content: string
   image: string
   alt: string
+  width?: number
+  height?: number
 }
 
 interface FeatureStepsProps {
@@ -57,8 +59,8 @@ export function FeatureSteps({ features, className }: FeatureStepsProps) {
               <img
                 src={activeFeature.image}
                 alt={activeFeature.alt}
-                width="772"
-                height="1012"
+                width={activeFeature.width ?? 780}
+                height={activeFeature.height ?? 1120}
                 loading={currentFeature === 0 ? "eager" : "lazy"}
                 decoding="async"
               />

@@ -1,0 +1,49 @@
+/* Release 2.5: real app previews, using the site's shared appearance tokens. */
+.hero-proof-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(220px, .7fr); max-width: none; gap: 48px; align-items: center; }
+.release-jump { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-top: 24px; font-size: 13px; color: var(--site-muted); }
+.release-jump a, .release-notes-link { color: var(--site-accent); text-underline-offset: 5px; }
+.release-jump a:hover, .release-notes-link:hover { text-decoration: underline; }
+.release-hero-preview { margin: 0 auto; width: 100%; max-width: 290px; }
+.release-hero-preview figcaption { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; font: 10px/1.6 var(--font-mono, monospace); letter-spacing: .08em; color: var(--site-muted); }
+.release-hero-preview img { width: 100%; height: auto; border-radius: 14px; border: 1px solid #60455f; }
+.release-showcase { position: relative; z-index: 10; padding: 80px 0; border-bottom: 1px solid var(--site-line); background: var(--site-page); scroll-margin-top: 90px; }
+.release-heading { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-bottom: 36px; }
+.release-eyebrow, .release-tools article > span { color: var(--site-accent); font: 11px/1.6 var(--font-mono, monospace); letter-spacing: .08em; }
+.release-heading h2 { margin-top: 14px; color: var(--site-title); font-size: clamp(30px, 3.6vw, 44px); line-height: 1.12; font-weight: 700; letter-spacing: -.035em; }
+.release-heading > p { max-width: 360px; color: var(--site-muted); font-size: 15px; line-height: 1.7; }
+.theme-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.theme-preview { overflow: hidden; border: 1px solid; border-radius: 18px; padding: 26px 22px 0; }
+.theme-preview--vice { background: #1d152b; border-color: #61465b; color: #f7efff; }
+.theme-preview--coastal { background: #fff4e4; border-color: #d7c6aa; color: #1c403e; }
+.theme-preview--midnight { background: #101f34; border-color: #28485d; color: #e9f6ff; }
+.theme-preview span { font: 10px/1.6 var(--font-mono, monospace); letter-spacing: .08em; }
+.theme-preview h3 { margin: 8px 0; font-size: 25px; line-height: 1.2; font-weight: 650; letter-spacing: -.02em; }
+.theme-preview p { font-size: 13px; line-height: 1.7; margin-bottom: 24px; }
+.theme-preview a { display: block; max-width: 230px; margin: 0 auto; }
+.theme-preview img { width: 100%; height: auto; border-radius: 12px 12px 0 0; }
+.release-preview-note { margin-top: 16px; color: var(--site-subtle); font-size: 12px; line-height: 1.6; }
+.release-tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; margin: 48px 0 28px; }
+.release-tools article { border-top: 1px solid var(--site-line); padding-top: 18px; }
+.release-tools h3 { color: var(--site-title); font-size: 18px; line-height: 1.4; font-weight: 600; margin: 10px 0; }
+.release-tools p { color: var(--site-muted); font-size: 14px; line-height: 1.7; }
+.release-notes-link { font-size: 14px; }
+.release-showcase a:focus-visible, .release-hero-preview a:focus-visible { outline: 2px solid var(--site-accent); outline-offset: 5px; border-radius: 4px; }
+@media (max-width: 900px) {
+  .hero-proof-layout { grid-template-columns: minmax(0, 1fr) 220px; gap: 28px; }
+  .release-heading { align-items: start; flex-direction: column; gap: 20px; }
+  .release-heading > p { max-width: 560px; }
+  .release-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .theme-preview { padding: 20px 14px 0; }
+  .theme-preview h3 { font-size: 21px; }
+}
+@media (max-width: 640px) {
+  .hero-proof-layout { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .release-hero-preview { max-width: 220px; }
+  .release-showcase { padding: 56px 0; }
+  .theme-gallery { grid-template-columns: minmax(0, 1fr); }
+  .theme-preview { padding: 26px 24px 0; }
+  .theme-preview h3 { font-size: 25px; }
+  .theme-preview a { max-width: 240px; }
+  .release-tools { gap: 24px; margin-top: 36px; }
+}
+@media (max-width: 380px) { .release-tools { grid-template-columns: minmax(0, 1fr); } }

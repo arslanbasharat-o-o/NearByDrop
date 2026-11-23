@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Android File Transfer for Mac &amp; Quick Share (AirDrop for Android) | Nearby Drop</title>
-  <meta name="description" content="Fast, two-way Android file transfer for Mac. Send and receive files wirelessly with Google Quick Share (Nearby Share), USB MTP cable, QR code, and Finder on macOS Sonoma &amp; Sequoia. Free, open, and private.">
+  <title>Nearby Drop 2.5 — Quick Share &amp; Android File Transfer for Mac</title>
+  <meta name="description" content="Quick Share files between Mac and Android. Nearby Drop 2.5 adds three themes, Connection Doctor, screenshot sharing and USB browsing tools. Free for macOS 14+.">
   <meta name="keywords" content="quick share mac, android file transfer mac, quick share for mac, airdrop android to mac, nearby share mac, airdrop alternative android mac, transfer files android to mac, samsung quick share mac, pixel file transfer mac, mac android file transfer, android usb file transfer mac, quick share macos, nearby drop, android mtp mac, send files mac to android">
   <meta name="author" content="Arslan Basharat">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
@@ -15,8 +15,8 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://arslanbasharat-o-o.github.io/NearByDrop/">
   <meta property="og:site_name" content="Nearby Drop">
-  <meta property="og:title" content="Android File Transfer for Mac &amp; Quick Share (AirDrop for Android) | Nearby Drop">
-  <meta property="og:description" content="Fast, two-way Android file transfer for Mac. Send and receive files wirelessly with Google Quick Share (Nearby Share), USB MTP cable, QR code, and Finder on macOS Sonoma &amp; Sequoia.">
+  <meta property="og:title" content="Nearby Drop 2.5 — Quick Share &amp; Android File Transfer for Mac">
+  <meta property="og:description" content="Quick Share files between Mac and Android. Nearby Drop 2.5 adds three themes, Connection Doctor, screenshot sharing and USB browsing tools. Free for macOS 14+.">
   <meta property="og:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -25,8 +25,8 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Android File Transfer for Mac &amp; Quick Share (AirDrop for Android) | Nearby Drop">
-  <meta name="twitter:description" content="Fast, two-way Android file transfer for Mac. Send and receive files wirelessly with Google Quick Share (Nearby Share), USB MTP cable, QR code, and Finder on macOS Sonoma &amp; Sequoia.">
+  <meta name="twitter:title" content="Nearby Drop 2.5 — Quick Share &amp; Android File Transfer for Mac">
+  <meta name="twitter:description" content="Quick Share files between Mac and Android. Nearby Drop 2.5 adds three themes, Connection Doctor, screenshot sharing and USB browsing tools. Free for macOS 14+.">
   <meta name="twitter:image" content="https://arslanbasharat-o-o.github.io/NearByDrop/assets/social-preview.jpg">
 
   <link rel="icon" type="image/png" href="assets/icon.png">
@@ -184,6 +184,7 @@
     }
   </style>
   <link rel="stylesheet" href="assets/site-appearance.css?v=4">
+  <link rel="stylesheet" href="assets/release-25.css?v=1">
 
   <!-- Structured product details, FAQs, and HowTo guide for search engines. -->
   <script type="application/ld+json">
@@ -219,10 +220,10 @@
         "Multi-file and folder selection, drag-and-drop, transfer progress, speed, ETA, and transfer history"
       ],
       "screenshot": [
-        "https://arslanbasharat-o-o.github.io/NearByDrop/assets/screenshots/send.jpg",
-        "https://arslanbasharat-o-o.github.io/NearByDrop/assets/screenshots/receive.jpg",
-        "https://arslanbasharat-o-o.github.io/NearByDrop/assets/screenshots/transfers.jpg",
-        "https://arslanbasharat-o-o.github.io/NearByDrop/assets/screenshots/usb.jpg"
+        "https://arslanbasharat-o-o.github.io/NearByDrop/assets/screenshots/vice-nights.jpg",
+        "https://arslanbasharat-o-o.github.io/NearByDrop/assets/screenshots/coastal-sunrise.jpg",
+        "https://arslanbasharat-o-o.github.io/NearByDrop/assets/screenshots/connection-doctor.jpg",
+        "https://arslanbasharat-o-o.github.io/NearByDrop/assets/screenshots/usb-browser.jpg"
       ],
       "softwareVersion": "2.5.0",
       "url": "https://arslanbasharat-o-o.github.io/NearByDrop/",
@@ -261,7 +262,7 @@
           "name": "What real speeds can I expect over Wi-Fi?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Speeds depend on device Wi-Fi chips, network congestion, and router capabilities. On modern 5 GHz Wi-Fi networks, transfers can reach 30 to 60+ MB/s."
+            "text": "Speeds depend on device Wi-Fi chips, network congestion, and router capabilities. No maximum transfer speed is guaranteed."
           }
         },
         {
@@ -277,7 +278,7 @@
           "name": "Does it work on Samsung, Pixel, Xiaomi, and OnePlus?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes, Nearby Drop works with any Android device supporting Quick Share / Nearby Share, including Samsung Galaxy phones and tablets, Google Pixel, Xiaomi, OnePlus, Motorola, and others on Android 6.0 and newer."
+            "text": "Nearby Drop supports compatible Android Quick Share clients. Compatibility varies with the phone, client version and network; not every model has been tested."
           }
         },
         {
@@ -285,7 +286,7 @@
           "name": "Does Nearby Drop work with Windows Quick Share?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Two-way Windows Quick Share is supported in Nearby Drop v2.5.0, allowing file sharing between Mac and Windows PCs running official Quick Share for Windows."
+            "text": "Nearby Drop supports compatible Windows Quick Share clients. Sending and receiving were tested with one Windows PC in an earlier Debug build; support is not guaranteed for every setup."
           }
         },
         {
@@ -293,7 +294,7 @@
           "name": "Can I scan an Android QR code to receive on my Mac?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes, Nearby Drop includes an in-app camera scanner that reads Android Quick Share QR codes to initiate immediate peer-to-peer file transfers to your Mac."
+            "text": "Yes, Nearby Drop includes an in-app camera scanner that reads Android Quick Share QR codes to begin pairing over a reachable local network."
           }
         }
       ]
@@ -349,14 +350,14 @@
       <details class="mobile-navigation">
         <summary>MENU</summary>
         <nav aria-label="Mobile navigation">
-          <a href="#app-preview">App preview</a><a href="#features">Features</a>
+          <a href="#new-in-25">New in 2.5</a><a href="#app-preview">App preview</a><a href="#features">Features</a>
           <a href="#compatibility">Transfer setup</a><a href="#compare">Transfer status</a>
           <a href="#faq">FAQ</a><a href="#troubleshooting">Troubleshooting</a>
         </nav>
       </details>
       <!-- Desktop Links -->
       <nav aria-label="Main navigation" class="hidden md:flex items-center gap-6 font-mono text-xs text-neutral-400 tracking-wider">
-        <a href="#features" class="hover:text-white transition-colors">// FEATURES</a>
+        <a href="#new-in-25" class="hover:text-white transition-colors">// NEW IN 2.5</a>
         <a href="#compatibility" class="hover:text-white transition-colors">// TRANSFER SETUP</a>
         <a href="#troubleshooting" class="hover:text-white transition-colors">// TROUBLESHOOTING</a>
         <a href="#compare" class="hover:text-white transition-colors">// COMPARISON</a>
@@ -420,7 +421,7 @@
         <div>
           <div class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-neutral-400 border border-theme-border px-3 py-1 bg-theme-surface mb-6 flex-wrap pointer-events-auto">
             <span class="w-1.5 h-1.5 bg-emerald-400 rounded-none"></span>
-            <span>QUICK SHARE FOR MAC</span>
+            <span>NEW IN 2.5 · THREE ORIGINAL THEMES</span>
           </div>
 
           <h1 class="font-display text-4xl sm:text-6xl font-bold uppercase tracking-tight text-white leading-[1.05] mb-5">
@@ -428,7 +429,7 @@
           </h1>
 
           <p class="max-w-xl text-neutral-300 font-sans text-base sm:text-lg leading-relaxed mb-8">
-            <strong>Nearby Drop</strong> lets you send files from your Mac to Android or receive them on your Mac, with USB and Finder sharing in the same app.
+            <strong>Nearby Drop</strong> brings Quick Share and Android USB transfers to your Mac. Version 2.5 adds three fresh themes, Connection Doctor and more ways to share.
           </p>
 
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pointer-events-auto">
@@ -446,6 +447,7 @@
             </div>
           </div>
 
+          <p class="release-jump pointer-events-auto"><a href="#new-in-25">See what’s new in 2.5 <span aria-hidden="true">↓</span></a><span>macOS 14+ · Apple silicon &amp; Intel</span></p>
           <details class="mt-6 max-w-2xl font-mono text-xs pointer-events-auto">
             <summary class="cursor-pointer text-neutral-400 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">PREFER TERMINAL? SHOW THE INSTALL COMMAND</summary>
             <div class="mt-3 p-4 bg-theme-surface border border-theme-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -459,9 +461,30 @@
             </div>
           </details>
         </div>
-
-
+        <figure class="release-hero-preview pointer-events-auto">
+          <figcaption><span>VICE NIGHTS</span><span>NEW IN 2.5 ↗</span></figcaption>
+          <a href="assets/screenshots/vice-nights.jpg" target="_blank" rel="noopener" aria-label="Open the Vice Nights app preview"><img src="assets/screenshots/vice-nights.jpg" alt="Nearby Drop 2.5 in Vice Nights: sunset artwork, pink controls and a prepared file selection" width="780" height="1120" fetchpriority="high" decoding="async"></a>
+        </figure>
       </div>
+    </div>
+  </section>
+
+  <section id="new-in-25" class="release-showcase" aria-labelledby="release-title">
+    <div class="max-w-7xl mx-auto px-5 sm:px-8">
+      <div class="release-heading"><div><p class="release-eyebrow">MEET NEARBY DROP 2.5</p><h2 id="release-title">Three new looks.<br>Your favorite way to share.</h2></div><p>Sunset pink, warm coastal light or midnight navy. Choose your theme in Appearance. System, Light and Dark are still here too.</p></div>
+      <div class="theme-gallery">
+        <article class="theme-preview theme-preview--vice"><div><span>01 / AFTER DARK</span><h3>Vice Nights</h3><p>Sunset pink. Ocean cyan. A little Miami.</p></div><a href="assets/screenshots/vice-nights.jpg" target="_blank" rel="noopener" aria-label="Open Vice Nights screenshot"><img src="assets/screenshots/vice-nights.jpg" alt="Vice Nights theme with original sunset and palm artwork" width="780" height="1120" loading="lazy" decoding="async"></a></article>
+        <article class="theme-preview theme-preview--coastal"><div><span>02 / FIRST LIGHT</span><h3>Coastal Sunrise</h3><p>Warm cream, teal and a softer start.</p></div><a href="assets/screenshots/coastal-sunrise.jpg" target="_blank" rel="noopener" aria-label="Open Coastal Sunrise screenshot"><img src="assets/screenshots/coastal-sunrise.jpg" alt="Coastal Sunrise theme with cream surfaces and teal controls" width="780" height="1120" loading="lazy" decoding="async"></a></article>
+        <article class="theme-preview theme-preview--midnight"><div><span>03 / LATE SHIFT</span><h3>Midnight Route</h3><p>Deep navy. Clear cyan. Stay on course.</p></div><a href="assets/screenshots/midnight-route.jpg" target="_blank" rel="noopener" aria-label="Open Midnight Route screenshot"><img src="assets/screenshots/midnight-route.jpg" alt="Midnight Route theme with navy surfaces and cyan controls" width="780" height="1120" loading="lazy" decoding="async"></a></article>
+      </div>
+      <p class="release-preview-note">App previews use sample files and device names. Original artwork; no game assets.</p>
+      <div class="release-tools">
+        <article><span>CONNECT</span><h3>Connection Doctor</h3><p>Check what your Mac can see, then try clear QR or USB next steps.</p></article>
+        <article><span>SHARE</span><h3>Text, links &amp; screenshots</h3><p>Prepare a text file or review an image before picking its receiver. Text and links arrive as .txt files.</p></article>
+        <article><span>FIND</span><h3>Favorite receivers</h3><p>Keep familiar devices easy to find. Incoming transfers still need your approval.</p></article>
+        <article><span>BROWSE</span><h3>Better USB tools</h3><p>Filter and sort the current folder, follow clearer paths and reconnect after errors.</p></article>
+      </div>
+      <a class="release-notes-link" href="https://github.com/arslanbasharat-o-o/NearByDrop/releases/tag/v2.5.0">Read the 2.5 release notes <span aria-hidden="true">↗</span></a>
     </div>
   </section>
 
@@ -480,14 +503,14 @@
         <div class="app-tour-steps">
           <label class="app-tour-step" for="app-screen-send"><span class="app-tour-step-index">01</span><span class="app-tour-step-copy"><strong>Send</strong><span>Choose files and find nearby devices.</span></span></label>
           <label class="app-tour-step" for="app-screen-receive"><span class="app-tour-step-index">02</span><span class="app-tour-step-copy"><strong>Receive</strong><span>Get ready to receive or scan a QR code.</span></span></label>
-          <label class="app-tour-step" for="app-screen-transfers"><span class="app-tour-step-index">03</span><span class="app-tour-step-copy"><strong>Transfers</strong><span>See sent and received files in one place.</span></span></label>
+          <label class="app-tour-step" for="app-screen-transfers"><span class="app-tour-step-index">03</span><span class="app-tour-step-copy"><strong>Connection Doctor</strong><span>Find the next step when a device is missing.</span></span></label>
           <label class="app-tour-step" for="app-screen-usb"><span class="app-tour-step-index">04</span><span class="app-tour-step-copy"><strong>USB</strong><span>Connect an Android phone for file transfer.</span></span></label>
         </div>
         <div class="app-tour-preview border border-theme-border bg-theme-surface p-2">
-          <figure class="app-tour-screen app-tour-screen--send"><a href="assets/screenshots/send.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/send.jpg" alt="Nearby Drop Send screen: wireless Quick Share and AirDrop alternative from Mac to Android" width="772" height="1012" loading="eager" decoding="async"></a></figure>
-          <figure class="app-tour-screen app-tour-screen--receive"><a href="assets/screenshots/receive.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/receive.jpg" alt="Nearby Drop Receive screen: receive Quick Share files from Android and Samsung to Mac" width="772" height="1012" loading="eager" decoding="async"></a></figure>
-          <figure class="app-tour-screen app-tour-screen--transfers"><a href="assets/screenshots/transfers.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/transfers.jpg" alt="Nearby Drop Transfers screen: transfer activity and history on macOS" width="772" height="1012" loading="eager" decoding="async"></a></figure>
-          <figure class="app-tour-screen app-tour-screen--usb"><a href="assets/screenshots/usb.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/usb.jpg" alt="Nearby Drop USB screen: Android File Transfer MTP USB cable connection for Mac" width="772" height="1012" loading="eager" decoding="async"></a></figure>
+          <figure class="app-tour-screen app-tour-screen--send"><a href="assets/screenshots/vice-nights.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/vice-nights.jpg" alt="Nearby Drop Send screen: wireless Quick Share and AirDrop alternative from Mac to Android" width="780" height="1120" loading="eager" decoding="async"></a></figure>
+          <figure class="app-tour-screen app-tour-screen--receive"><a href="assets/screenshots/coastal-sunrise.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/coastal-sunrise.jpg" alt="Nearby Drop Receive screen: receive Quick Share files from Android and Samsung to Mac" width="780" height="1120" loading="eager" decoding="async"></a></figure>
+          <figure class="app-tour-screen app-tour-screen--transfers"><a href="assets/screenshots/connection-doctor.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/connection-doctor.jpg" alt="Nearby Drop Connection Doctor with local network checks and pairing options" width="1080" height="1120" loading="eager" decoding="async"></a></figure>
+          <figure class="app-tour-screen app-tour-screen--usb"><a href="assets/screenshots/usb-browser.jpg" target="_blank" rel="noopener"><img src="assets/screenshots/usb-browser.jpg" alt="Nearby Drop USB screen: Android File Transfer MTP USB cable connection for Mac" width="780" height="1080" loading="eager" decoding="async"></a></figure>
         </div>
       </fieldset>
       </div>
@@ -511,7 +534,7 @@
           <span class="font-mono text-xs text-emerald-400 block mb-4">[ ANDROID ↔ MAC ]</span>
           <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Two-way Quick Share</h3>
           <p class="font-sans text-sm text-neutral-400 leading-relaxed">Send files between Mac and Android over your local network.</p>
-          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Send files from the Mac to compatible Android devices, or receive Android files on the Mac. Review incoming requests and confirm the matching PIN; trusted devices can be auto-accepted. The regular device-list flow uses a reachable local network.</p></details>
+          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Send files from the Mac to compatible Android devices, or receive Android files on the Mac. Review incoming requests and confirm the matching PIN; every incoming transfer requires approval, including QR-paired devices. The regular device-list flow uses a reachable local network.</p></details>
         </article>
 
         <article class="bg-theme-surface p-6 sm:p-8">
@@ -552,8 +575,8 @@
         <article class="bg-theme-surface p-6 sm:p-8 md:col-span-2 lg:col-span-3">
           <span class="font-mono text-xs text-neutral-400 block mb-4">[ MENU BAR PREFERENCES ]</span>
           <h3 class="font-display text-lg font-bold text-white uppercase mb-3">Make it fit your Mac</h3>
-          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Set your device name, download folder, trusted devices, and appearance.</p>
-          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Rename the Mac as nearby devices see it, choose where received files are saved, auto-accept transfers from trusted devices, launch at login, choose light, dark or system appearance and an accent or menu bar icon, and turn transfer sounds or haptics on or off.</p></details>
+          <p class="font-sans text-sm text-neutral-400 leading-relaxed">Choose your appearance, device name, download folder and favorite recipients.</p>
+          <details class="feature-copy-details"><summary>Read more</summary><p class="font-sans text-sm text-neutral-400 leading-relaxed">Rename the Mac as nearby devices see it, choose where received files are saved, star favorite recipients, launch at login, choose from six appearances and an accent or menu bar icon, and turn transfer sounds or haptics on or off.</p></details>
         </article>
       </div>
       <p class="mt-5 font-mono text-[11px] text-neutral-500">Wireless speeds vary with the devices and network. See the transfer status table below for the tested directions and current limits.</p>
