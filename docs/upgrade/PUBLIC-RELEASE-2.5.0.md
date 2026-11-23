@@ -28,3 +28,9 @@ The local RC was replaced with the verified public 2.4.0/build 20 bundle, preser
 A native history entry showed a completed 35-byte text send to the owner's Pixel 8 Pro during readiness checks; the operational backend received its start and completion reports. Phone-side content hashing, Windows transfers and physical MTP transfers were not repeated. Native screen capture reported unavailable permission on this Mac; actual display capture was not verified.
 
 Distribution remains ad hoc signed, not Developer ID signed or Apple-notarized. The owner chose to defer paid Developer Program enrollment. Sparkle feed/archive signing is separate and was verified successfully.
+
+## Post-push CI timing follow-up
+
+A duplicate main-branch Intel run later failed in the mock diagnostics-client test, after the complete preflight had passed. The test changed its mock HTTP status while an earlier 503 response could still be in flight, then expected a retry within five seconds even though the client correctly backs off for 60 seconds.
+
+The test now synchronizes on request completion before switching mock responses. A deliberately delayed mock response exercises the previously racy boundary. Both diagnostics client suites passed locally after the test-only change. The shipping client and published binary were not changed. Rosetta was unavailable for a local x86_64 follow-up; GitHub's subsequent run provides the Intel check.

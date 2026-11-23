@@ -52,6 +52,7 @@ for object in objects {
     precondition(object["schema_version"] as? Int == 2)
     for key in ["mac_name","peer_name","file_name","path","clipboard","content","mac_model"] { precondition(object[key] == nil) }
 }
+waitFor { UsageAnalytics.requestIsIdleForTesting }
 StubProtocol.lock.lock(); StubProtocol.status=202; StubProtocol.lock.unlock()
 UsageAnalytics.recordOperational(.onboardingCompleted)
 waitFor {

@@ -22,12 +22,14 @@ enum NearbyConnectionManager { static let currentDeviceName = "Test Mac" }
 final class StubProtocol: URLProtocol {
     static let lock = NSLock()
     static var status = 503
+    static var responseDelay: TimeInterval = 0
     static var received: [[String: Any]] = []
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
         Self.lock.lock()
         let status = Self.status
+        let responseDelay = Self.responseDelay
         var body = request.httpBody
         if body == nil, let stream = request.httpBodyStream {
             stream.open(); defer { stream.close() }
@@ -40,12 +42,17 @@ final class StubProtocol: URLProtocol {
         }
         if let body, let value=try? JSONSerialization.jsonObject(with:body) as? [String:Any] { Self.received.append(value) }
         Self.lock.unlock()
+        if responseDelay > 0 { Thread.sleep(forTimeInterval: responseDelay) }
         let response=HTTPURLResponse(url:request.url!,statusCode:status,httpVersion:nil,headerFields:nil)!
         client?.urlProtocol(self,didReceive:response,cacheStoragePolicy:.notAllowed)
         client?.urlProtocol(self,didLoad:Data("{\"ok\":true}".utf8))
         client?.urlProtocolDidFinishLoading(self)
     }
     override func stopLoading() {}
+}
+// Test-only synchronization: a queued report is not evidence its request finished.
+extension UsageAnalytics {
+    static var requestIsIdleForTesting: Bool { queue.sync { task == nil } }
 }
 func waitFor(line: Int = #line, _ predicate: () -> Bool) {
     let end=Date().addingTimeInterval(5)
@@ -55,6 +62,7 @@ func waitFor(line: Int = #line, _ predicate: () -> Bool) {
 '''
 post='''
 URLProtocol.registerClass(StubProtocol.self)
+StubProtocol.responseDelay = 0.35
 defer { testDefaults.removePersistentDomain(forName:suite) }
 UsageAnalytics.start()
 Thread.sleep(forTimeInterval:0.1)
@@ -78,14 +86,14 @@ precondition(payload["mac_model"] as? String != "unknown")
 precondition(payload["mac_name"] as? String == "Test Mac")
 precondition(payload["event"] as? String == "first_launch")
 precondition(payload["file_name"] == nil && payload["peer_id"] == nil)
+waitFor { UsageAnalytics.requestIsIdleForTesting }
 StubProtocol.lock.lock(); StubProtocol.status=202; StubProtocol.lock.unlock()
-Thread.sleep(forTimeInterval:0.2)
 UsageAnalytics.start()
 waitFor { testDefaults.bool(forKey:"diagnosticsFirstLaunchSent") && (testDefaults.array(forKey:"diagnosticsPendingEvents")?.isEmpty ?? false) }
 UsageAnalytics.completedTransfer(direction:"incoming",peer:RemoteDeviceInfo(name:"Test Phone",type:.phone))
 waitFor { StubProtocol.lock.lock(); defer { StubProtocol.lock.unlock() }; return StubProtocol.received.contains { $0["peer_name"] as? String == "Test Phone" } }
+waitFor { UsageAnalytics.requestIsIdleForTesting }
 StubProtocol.lock.lock(); StubProtocol.status=503; StubProtocol.lock.unlock()
-Thread.sleep(forTimeInterval:0.2)
 UsageAnalytics.start()
 waitFor { !(testDefaults.array(forKey:"diagnosticsPendingEvents")?.isEmpty ?? true) }
 UsageAnalytics.completedTransfer(direction:"outgoing",peer:RemoteDeviceInfo(name:"Automatic Test Phone",type:.phone))
